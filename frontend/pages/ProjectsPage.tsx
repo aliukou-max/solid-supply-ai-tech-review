@@ -91,7 +91,7 @@ export function ProjectsPage() {
     <MainLayout
       title="Projektai"
       description="Visi Solid Supply projektai ir jų techniniai vertinimai"
-      action={
+      actions={
         <div className="flex gap-2">
           <Button onClick={() => setCreateOpen(true)}>
             {/* @ts-ignore */}
