@@ -1,6 +1,7 @@
 import React from "react";
 
 const useState = (React as any).useState;
+const useEffect = (React as any).useEffect;
 import { Edit2 } from "lucide-react";
 import type { Component } from "~backend/tech-review/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,11 +16,22 @@ interface ComponentsTabProps {
 
 export function ComponentsTab({ components, onUpdate }: ComponentsTabProps) {
   const [editingComponent, setEditingComponent] = useState(null);
+  const [optimisticComponents, setOptimisticComponents] = useState(components);
+
+  useEffect(() => {
+    setOptimisticComponents(components);
+  }, [components]);
+
+  const handleOptimisticUpdate = (componentId: any, updatedData: any) => {
+    setOptimisticComponents((prev: any) =>
+      prev.map((c: any) => (c.id === componentId ? { ...c, ...updatedData } : c))
+    );
+  };
 
   return (
     <>
       <div className="grid gap-4">
-        {components.map((component) => (
+        {optimisticComponents.map((component: any) => (
           <Card key={component.id}>
             <CardHeader>
               <div className="flex items-start justify-between">
@@ -90,6 +102,9 @@ export function ComponentsTab({ components, onUpdate }: ComponentsTabProps) {
             setEditingComponent(null);
             onUpdate();
           }}
+          onOptimisticUpdate={(updatedData) => 
+            handleOptimisticUpdate(editingComponent.id, updatedData)
+          }
         />
       )}
     </>

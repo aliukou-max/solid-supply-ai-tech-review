@@ -17,6 +17,7 @@ interface EditComponentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
+  onOptimisticUpdate?: (updatedData: Partial<Component>) => void;
 }
 
 interface FormData {
@@ -30,7 +31,7 @@ interface FormData {
   photoUrl: string;
 }
 
-export function EditComponentDialog({ component, open, onOpenChange, onSuccess }: EditComponentDialogProps) {
+export function EditComponentDialog({ component, open, onOpenChange, onSuccess, onOptimisticUpdate }: EditComponentDialogProps) {
   const { register, handleSubmit } = useForm<FormData>({
     defaultValues: {
       material: component.material || "",
@@ -118,18 +119,27 @@ export function EditComponentDialog({ component, open, onOpenChange, onSuccess }
   };
 
   const onSubmit = async (data: FormData) => {
+    const updateData = { ...data, photoUrl };
+    
+    if (onOptimisticUpdate) {
+      onOptimisticUpdate(updateData);
+    }
+    
+    onOpenChange(false);
     setIsLoading(true);
+    
     try {
-      await backend.techReview.updateComponent({ id: component.id, ...data, photoUrl });
+      await backend.techReview.updateComponent({ id: component.id, ...updateData });
       toast({ title: "Komponentas atnaujintas sėkmingai" });
       onSuccess();
     } catch (error) {
       console.error("Failed to update component:", error);
       toast({
         title: "Klaida",
-        description: "Nepavyko atnaujinti komponento",
+        description: "Nepavyko atnaujinti komponento. Atnaujinama...",
         variant: "destructive",
       });
+      onSuccess();
     } finally {
       setIsLoading(false);
     }
