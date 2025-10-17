@@ -7,9 +7,9 @@ export function Sidebar() {
   const location = useLocation();
 
   const navItems = [
-    { path: "/errors", label: "Klaidu registras", icon: AlertCircle },
+    { path: "/", label: "Visi projektai", icon: FolderOpen },
+    { path: "/projects/new", label: "+ Projekta", icon: Plus },
     { path: "/lessons-learnt", label: "Mazgu biblioteka", icon: BookOpen },
-    { path: "/ai-review", label: "AI tech review", icon: Sparkles },
   ];
 
   return (

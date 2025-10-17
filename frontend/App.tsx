@@ -17,8 +17,8 @@ function AppContent() {
       <Sidebar />
       <main className="flex-1 min-h-screen">
         <Routes>
-          <Route path="/" element={<DashboardPage />} />
-          <Route path="/projects" element={<ProjectsPage />} />
+          <Route path="/" element={<ProjectsPage />} />
+          <Route path="/projects/new" element={<ProjectsPage />} />
           <Route path="/projects/:projectId" element={<ProjectDetailPage />} />
           <Route path="/tech-review/:productId" element={<TechReviewPage />} />
           <Route path="/errors" element={<ErrorsPage />} />

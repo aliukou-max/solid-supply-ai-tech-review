@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Plus, Edit2, Calendar } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Edit2, Calendar } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import backend from "~backend/client";
 import type { Project } from "~backend/project/create";
 import { MainLayout } from "@/components/MainLayout";
@@ -11,8 +11,16 @@ import { CreateProjectDialog } from "@/components/CreateProjectDialog";
 import { EditProjectDialog } from "@/components/EditProjectDialog";
 
 export function ProjectsPage() {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [createOpen, setCreateOpen] = useState(false);
   const [editProject, setEditProject] = useState<Project | null>(null);
+
+  useEffect(() => {
+    if (location.pathname === "/projects/new") {
+      setCreateOpen(true);
+    }
+  }, [location.pathname]);
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["projects"],
@@ -23,22 +31,12 @@ export function ProjectsPage() {
     <MainLayout
       title="Projektai"
       description="Visi Solid Supply projektai ir jų techniniai vertinimai"
-      actions={
-        <Button onClick={() => setCreateOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Naujas projektas
-        </Button>
-      }
     >
       {isLoading ? (
         <div className="text-center py-12 text-muted-foreground">Kraunama...</div>
       ) : data?.projects.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-muted-foreground mb-4">Nėra sukurtų projektų</p>
-          <Button onClick={() => setCreateOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Sukurti pirmą projektą
-          </Button>
+          <p className="text-muted-foreground">Nėra sukurtų projektų</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -81,9 +79,17 @@ export function ProjectsPage() {
 
       <CreateProjectDialog
         open={createOpen}
-        onOpenChange={setCreateOpen}
+        onOpenChange={(open) => {
+          setCreateOpen(open);
+          if (!open && location.pathname === "/projects/new") {
+            navigate("/");
+          }
+        }}
         onSuccess={() => {
           setCreateOpen(false);
+          if (location.pathname === "/projects/new") {
+            navigate("/");
+          }
           refetch();
         }}
       />
