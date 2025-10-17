@@ -239,6 +239,8 @@ function PartFolder({ partName, count, onUpdate }: { partName: string; count: nu
     onUpdate();
   };
 
+  const isLogo = partName.toLowerCase().includes('logo');
+
   return (
     <AccordionItem value={partName} className="border rounded-lg px-4">
       <AccordionTrigger className="hover:no-underline">
@@ -254,7 +256,7 @@ function PartFolder({ partName, count, onUpdate }: { partName: string; count: nu
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pt-4">
             {(data?.nodes || []).map((node: any) => (
-              <NodeCard key={node.id} node={node} onUpdate={handleNodeUpdate} />
+              <NodeCard key={node.id} node={node} onUpdate={handleNodeUpdate} isLogo={isLogo} />
             ))}
           </div>
         )}
@@ -263,7 +265,7 @@ function PartFolder({ partName, count, onUpdate }: { partName: string; count: nu
   );
 }
 
-function NodeCard({ node, onUpdate }: { node: any; onUpdate: () => void }) {
+function NodeCard({ node, onUpdate, isLogo = false }: { node: any; onUpdate: () => void; isLogo?: boolean }) {
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -313,7 +315,7 @@ function NodeCard({ node, onUpdate }: { node: any; onUpdate: () => void }) {
   return (
     <>
       <Card className="overflow-hidden hover:shadow-lg transition-shadow group cursor-pointer" onClick={handleDownload}>
-        <div className="relative aspect-[3/4] bg-muted flex items-center justify-center">
+        <div className={`relative ${isLogo ? 'aspect-square' : 'aspect-[3/4]'} bg-muted flex items-center justify-center`}>
           {isLoadingUrl ? (
             <div className="w-full h-full flex items-center justify-center">
               <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
