@@ -1,9 +1,11 @@
 import React from "react";
 
 const useState = (React as any).useState;
+const useEffect = (React as any).useEffect;
 import { useQuery } from "@tanstack/react-query";
 import { Plus, FolderOpen, FileText, Upload, ArrowLeft, Edit2, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { Document, Page, pdfjs } from "react-pdf";
 import backend from "~backend/client";
 import { MainLayout } from "@/components/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -27,6 +29,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+
+pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 export function NodesByProductPage() {
   const [addOpen, setAddOpen] = useState(false);
@@ -263,19 +267,27 @@ function NodeCard({ node, onUpdate }: { node: any; onUpdate: () => void }) {
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState("");
+  const [isLoadingUrl, setIsLoadingUrl] = useState(true);
   const { toast } = useToast();
 
+  useEffect(() => {
+    const loadPdfUrl = async () => {
+      try {
+        const { url } = await backend.nodes.getPdfUrl({ pdfPath: node.pdfUrl });
+        setPdfUrl(url);
+      } catch (error) {
+        console.error("Failed to load PDF URL:", error);
+      } finally {
+        setIsLoadingUrl(false);
+      }
+    };
+    loadPdfUrl();
+  }, [node.pdfUrl]);
+
   const handleDownload = async () => {
-    try {
-      const { url } = await backend.nodes.getPdfUrl({ pdfPath: node.pdfUrl });
-      window.open(url, "_blank");
-    } catch (error) {
-      console.error("Failed to open PDF:", error);
-      toast({
-        title: "Klaida",
-        description: "Nepavyko atidaryti PDF",
-        variant: "destructive",
-      });
+    if (pdfUrl) {
+      window.open(pdfUrl, "_blank");
     }
   };
 
@@ -301,11 +313,38 @@ function NodeCard({ node, onUpdate }: { node: any; onUpdate: () => void }) {
   return (
     <>
       <Card className="overflow-hidden hover:shadow-lg transition-shadow group cursor-pointer" onClick={handleDownload}>
-        <div className="relative aspect-[3/4] bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950 dark:to-red-900 flex items-center justify-center">
-          <FileText className="h-16 w-16 text-red-600 dark:text-red-400" />
-          <div className="absolute top-2 right-2 bg-red-600 text-white text-xs px-2 py-1 rounded">
-            PDF
-          </div>
+        <div className="relative aspect-[3/4] bg-muted flex items-center justify-center">
+          {isLoadingUrl ? (
+            <div className="w-full h-full flex items-center justify-center">
+              <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+            </div>
+          ) : pdfUrl ? (
+            <Document
+              file={pdfUrl}
+              loading={
+                <div className="w-full h-full flex items-center justify-center">
+                  <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+                </div>
+              }
+              error={
+                <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground">
+                  <FileText className="h-12 w-12 mb-2" />
+                  <p className="text-xs">Nepavyko įkelti</p>
+                </div>
+              }
+            >
+              <Page
+                pageNumber={1}
+                width={300}
+                renderTextLayer={false}
+                renderAnnotationLayer={false}
+              />
+            </Document>
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <FileText className="h-12 w-12 text-muted-foreground opacity-50" />
+            </div>
+          )}
         </div>
         <div className="p-3">
           <p className="font-medium text-sm truncate">{node.brandName}</p>
