@@ -263,24 +263,19 @@ function NodeCard({ node, onUpdate }: { node: any; onUpdate: () => void }) {
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [pdfUrl, setPdfUrl] = useState("");
   const { toast } = useToast();
 
-  React.useEffect(() => {
-    const loadPdfUrl = async () => {
-      try {
-        const { url } = await backend.nodes.getPdfUrl({ pdfPath: node.pdfUrl });
-        setPdfUrl(url);
-      } catch (error) {
-        console.error("Failed to load PDF URL:", error);
-      }
-    };
-    loadPdfUrl();
-  }, [node.pdfUrl]);
-
   const handleDownload = async () => {
-    if (pdfUrl) {
-      window.open(pdfUrl, "_blank");
+    try {
+      const { url } = await backend.nodes.getPdfUrl({ pdfPath: node.pdfUrl });
+      window.open(url, "_blank");
+    } catch (error) {
+      console.error("Failed to open PDF:", error);
+      toast({
+        title: "Klaida",
+        description: "Nepavyko atidaryti PDF",
+        variant: "destructive",
+      });
     }
   };
 
@@ -305,20 +300,12 @@ function NodeCard({ node, onUpdate }: { node: any; onUpdate: () => void }) {
 
   return (
     <>
-      <Card className="overflow-hidden hover:shadow-lg transition-shadow group">
-        <div className="relative aspect-[3/4] bg-muted cursor-pointer" onClick={handleDownload}>
-          {pdfUrl ? (
-            <iframe
-              src={`${pdfUrl}#toolbar=0&navpanes=0&scrollbar=0`}
-              className="w-full h-full pointer-events-none"
-              title={node.description}
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <FileText className="h-12 w-12 text-muted-foreground opacity-50" />
-            </div>
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+      <Card className="overflow-hidden hover:shadow-lg transition-shadow group cursor-pointer" onClick={handleDownload}>
+        <div className="relative aspect-[3/4] bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950 dark:to-red-900 flex items-center justify-center">
+          <FileText className="h-16 w-16 text-red-600 dark:text-red-400" />
+          <div className="absolute top-2 right-2 bg-red-600 text-white text-xs px-2 py-1 rounded">
+            PDF
+          </div>
         </div>
         <div className="p-3">
           <p className="font-medium text-sm truncate">{node.brandName}</p>
