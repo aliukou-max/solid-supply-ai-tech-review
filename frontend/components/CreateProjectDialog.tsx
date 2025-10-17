@@ -39,12 +39,12 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess }: CreatePro
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [projectType, setProjectType] = useState<string>("new_development");
   const [products, setProducts] = useState<ProductInput[]>([
-    { tempId: crypto.randomUUID(), ssCode: "", type: "Stalas", name: "" }
+    { tempId: self.crypto.randomUUID(), ssCode: "", type: "Stalas", name: "" }
   ]);
   const { toast } = useToast();
 
   const addProduct = () => {
-    setProducts([...products, { tempId: crypto.randomUUID(), ssCode: "", type: "Stalas", name: "" }]);
+    setProducts([...products, { tempId: self.crypto.randomUUID(), ssCode: "", type: "Stalas", name: "" }]);
   };
 
   const removeProduct = (tempId: string) => {
@@ -93,7 +93,7 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess }: CreatePro
       toast({ title: "Projektas ir gaminiai sukurti sėkmingai" });
       reset();
       setProjectType("new_development");
-      setProducts([{ tempId: crypto.randomUUID(), ssCode: "", type: "Stalas", name: "" }]);
+      setProducts([{ tempId: self.crypto.randomUUID(), ssCode: "", type: "Stalas", name: "" }]);
       onSuccess();
     } catch (error) {
       console.error("Failed to create project:", error);
@@ -110,7 +110,7 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess }: CreatePro
   const handleClose = () => {
     reset();
     setProjectType("new_development");
-    setProducts([{ tempId: crypto.randomUUID(), ssCode: "", type: "Stalas", name: "" }]);
+    setProducts([{ tempId: self.crypto.randomUUID(), ssCode: "", type: "Stalas", name: "" }]);
     onOpenChange(false);
   };
 
@@ -189,7 +189,7 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess }: CreatePro
                         <Input
                           placeholder="pvz. SS001"
                           value={product.ssCode}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateProduct(product.tempId, "ssCode", e.target.value)}
+                          onChange={(e: any) => updateProduct(product.tempId, "ssCode", e.target.value)}
                         />
                       </div>
                       <div className="space-y-1">
@@ -218,7 +218,7 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess }: CreatePro
                         <Input
                           placeholder="pvz. Vitrina A"
                           value={product.name}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateProduct(product.tempId, "name", e.target.value)}
+                          onChange={(e: any) => updateProduct(product.tempId, "name", e.target.value)}
                         />
                       </div>
                     </div>

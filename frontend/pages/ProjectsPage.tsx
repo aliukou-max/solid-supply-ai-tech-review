@@ -16,8 +16,7 @@ import { ImportExcelDialog } from "@/components/ImportExcelDialog";
 import { useToast } from "@/components/ui/use-toast";
 
 interface ProjectStats {
-  count: number;
-  types: string[];
+  products: Array<{ id: string; type: string }>;
 }
 
 export function ProjectsPage() {
@@ -47,10 +46,11 @@ export function ProjectsPage() {
     for (const project of data.projects) {
       try {
         const { products } = await backend.product.listByProject({ projectId: project.id });
-        const uniqueTypes = [...new Set(products.map((p: any) => p.type))];
-        stats[project.id] = { count: products.length, types: uniqueTypes };
+        stats[project.id] = { 
+          products: products.map((p: any) => ({ id: p.id, type: p.type }))
+        };
       } catch (error) {
-        stats[project.id] = { count: 0, types: [] };
+        stats[project.id] = { products: [] };
       }
     }
     
@@ -115,7 +115,7 @@ export function ProjectsPage() {
       ) : (
         <div className="space-y-3">
           {data?.projects.map((project) => {
-            const stats = projectStats[project.id] || { count: 0, types: [] };
+            const stats = projectStats[project.id] || { products: [] };
             
             return (
               <Link 
@@ -129,19 +129,22 @@ export function ProjectsPage() {
                   <div className="p-4">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="font-bold text-lg">{project.id}</h3>
-                          <Badge variant="outline" className="text-xs">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-xs text-muted-foreground uppercase tracking-wide">
                             {getProjectTypeLabel(project.projectType)}
-                          </Badge>
-                          <Badge variant={project.status === 'active' ? 'default' : 'secondary'} className="text-xs">
-                            {project.status}
+                          </span>
+                          <Badge variant="outline" className="text-xs">
+                            {project.client}
                           </Badge>
                         </div>
+                        <h3 className="font-bold text-lg">{project.id}</h3>
                         <p className="font-medium text-base mt-1">{project.name}</p>
                       </div>
                       
                       <div className="flex items-center gap-2">
+                        <Badge variant={project.status === 'active' ? 'default' : 'secondary'} className="text-xs">
+                          {project.status}
+                        </Badge>
                         <Button
                           variant="ghost"
                           size="sm"
@@ -165,22 +168,18 @@ export function ProjectsPage() {
                     </div>
 
                     <div className="space-y-2">
-                      {stats.count > 0 ? (
-                        <div className="text-sm text-muted-foreground">
-                          <p>{stats.count} {stats.count === 1 ? 'gaminys' : 'gaminiai'}</p>
-                          {stats.types.length > 0 && (
-                            <p className="text-xs">Tipai: {stats.types.join(', ')}</p>
-                          )}
+                      {stats.products.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                          {stats.products.map((product) => (
+                            <Badge key={product.id} variant="secondary" className="text-xs">
+                              {product.id}
+                              <span className="ml-1 text-muted-foreground">({product.type})</span>
+                            </Badge>
+                          ))}
                         </div>
                       ) : (
                         <p className="text-sm text-muted-foreground">Nėra gaminių</p>
                       )}
-
-                      <div className="flex items-center gap-3 pt-2">
-                        <Badge variant="outline" className="text-xs">
-                          {project.client}
-                        </Badge>
-                      </div>
                     </div>
                   </div>
                 </div>
