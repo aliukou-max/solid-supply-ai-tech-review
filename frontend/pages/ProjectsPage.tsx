@@ -66,6 +66,7 @@ export function ProjectsPage() {
     }
 
     try {
+      await backend.project.deleteProject({ id: projectId });
       toast({ title: "Projektas ištrintas" });
       refetch();
     } catch (error) {
@@ -128,8 +129,16 @@ export function ProjectsPage() {
                   <div className="p-4">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1">
-                        <h3 className="font-bold text-lg mb-1">{project.id}</h3>
-                        <p className="font-medium text-base">{project.name}</p>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="font-bold text-lg">{project.id}</h3>
+                          <Badge variant="outline" className="text-xs">
+                            {getProjectTypeLabel(project.projectType)}
+                          </Badge>
+                          <Badge variant={project.status === 'active' ? 'default' : 'secondary'} className="text-xs">
+                            {project.status}
+                          </Badge>
+                        </div>
+                        <p className="font-medium text-base mt-1">{project.name}</p>
                       </div>
                       
                       <div className="flex items-center gap-2">
@@ -156,10 +165,6 @@ export function ProjectsPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <p className="text-xs text-muted-foreground uppercase tracking-wide">
-                        {getProjectTypeLabel(project.projectType)}
-                      </p>
-                      
                       {stats.count > 0 ? (
                         <div className="text-sm text-muted-foreground">
                           <p>{stats.count} {stats.count === 1 ? 'gaminys' : 'gaminiai'}</p>
@@ -174,9 +179,6 @@ export function ProjectsPage() {
                       <div className="flex items-center gap-3 pt-2">
                         <Badge variant="outline" className="text-xs">
                           {project.client}
-                        </Badge>
-                        <Badge variant={project.status === 'active' ? 'default' : 'secondary'} className="text-xs">
-                          {project.status}
                         </Badge>
                       </div>
                     </div>
