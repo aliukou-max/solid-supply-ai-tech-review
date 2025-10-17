@@ -69,9 +69,10 @@ export function EditComponentDialog({ component, open, onOpenChange, onSuccess }
     }
 
     setIsUploading(true);
-    try {
-      const reader = new FileReader();
-      reader.onload = async () => {
+    const reader = new FileReader();
+    
+    reader.onload = async () => {
+      try {
         const base64Data = (reader.result as string).split(",")[1];
         const response = await backend.techReview.uploadPhoto({
           fileName: file.name,
@@ -80,18 +81,29 @@ export function EditComponentDialog({ component, open, onOpenChange, onSuccess }
         });
         setPhotoUrl(response.url);
         toast({ title: "Nuotrauka įkelta sėkmingai" });
-      };
-      reader.readAsDataURL(file);
-    } catch (error) {
-      console.error("Failed to upload photo:", error);
+      } catch (error) {
+        console.error("Failed to upload photo:", error);
+        toast({
+          title: "Klaida",
+          description: "Nepavyko įkelti nuotraukos",
+          variant: "destructive",
+        });
+      } finally {
+        setIsUploading(false);
+      }
+    };
+    
+    reader.onerror = () => {
+      console.error("Failed to read file:", reader.error);
       toast({
         title: "Klaida",
-        description: "Nepavyko įkelti nuotraukos",
+        description: "Nepavyko nuskaityti failo",
         variant: "destructive",
       });
-    } finally {
       setIsUploading(false);
-    }
+    };
+    
+    reader.readAsDataURL(file);
   };
 
   const onSubmit = async (data: FormData) => {
