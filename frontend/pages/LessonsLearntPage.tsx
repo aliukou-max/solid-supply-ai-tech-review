@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { BookOpen } from "lucide-react";
 import backend from "~backend/client";
 import type { ProductType } from "~backend/product/types";
 import { MainLayout } from "@/components/MainLayout";
@@ -19,13 +18,7 @@ export function LessonsLearntPage() {
 
   return (
     <MainLayout
-      title={
-        <div className="flex items-center gap-3">
-          <BookOpen className="h-6 w-6" />
-          <span>Lessons Learnt</span>
-        </div>
-      }
-      description="Solid Supply techninių žinių bazė – pasikartojančios klaidos ir sprendimai"
+      title="Mazgų biblioteka"
     >
       <div className="mb-6">
         <Select value={selectedType} onValueChange={(v) => setSelectedType(v as ProductType)}>
