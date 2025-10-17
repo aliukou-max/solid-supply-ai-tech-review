@@ -7,6 +7,8 @@ import { TechReviewPage } from "./pages/TechReviewPage";
 import { LessonsLearntPage } from "./pages/LessonsLearntPage";
 import { ErrorsPage } from "./pages/ErrorsPage";
 import { NodesPage } from "./pages/NodesPage";
+import { NodesByProductPage } from "./pages/NodesByProductPage";
+import { NodesByBrandPage } from "./pages/NodesByBrandPage";
 import { Sidebar } from "./components/Sidebar";
 import { Toaster } from "@/components/ui/toaster";
 
@@ -18,13 +20,16 @@ function AppContent() {
       <Sidebar />
       <main className="flex-1 min-h-screen">
         <Routes>
-          <Route path="/" element={<ProjectsPage />} />
+          <Route path="/" element={<DashboardPage />} />
+          <Route path="/projects" element={<ProjectsPage />} />
           <Route path="/projects/new" element={<ProjectsPage />} />
           <Route path="/projects/:projectId" element={<ProjectDetailPage />} />
           <Route path="/tech-review/:productId" element={<TechReviewPage />} />
           <Route path="/errors" element={<ErrorsPage />} />
           <Route path="/lessons-learnt" element={<LessonsLearntPage />} />
           <Route path="/nodes" element={<NodesPage />} />
+          <Route path="/nodes/by-product" element={<NodesByProductPage />} />
+          <Route path="/nodes/by-brand" element={<NodesByBrandPage />} />
         </Routes>
       </main>
     </div>
