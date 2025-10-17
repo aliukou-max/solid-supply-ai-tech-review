@@ -118,6 +118,7 @@ export function ErrorsPage() {
       Nr: i + 1,
       "Projekto kodas": e.projectCode,
       "Gaminio kodas": e.productCode,
+      Detalė: e.partName || "-",
       "Klaidos aprašymas": e.errorDescription,
       Statusas: e.isResolved ? "Išspręsta" : "Aktyvi",
     }));
@@ -234,6 +235,7 @@ export function ErrorsPage() {
                     <th className="p-2 text-left w-12 text-xs">Nr.</th>
                     <th className="p-2 text-left text-xs">Projekto kodas</th>
                     <th className="p-2 text-left text-xs">Gaminio kodas</th>
+                    <th className="p-2 text-left text-xs">Detalė</th>
                     <th className="p-2 text-left text-xs">Klaidos aprašymas</th>
                     <th className="p-2 text-left w-24 text-xs">Statusas</th>
                   </tr>
@@ -250,6 +252,7 @@ export function ErrorsPage() {
                       <td className="p-2 text-xs text-muted-foreground">{index + 1}</td>
                       <td className="p-2 text-xs font-medium">{error.projectCode}</td>
                       <td className="p-2 text-xs">{error.productCode}</td>
+                      <td className="p-2 text-xs text-muted-foreground">{error.partName || "-"}</td>
                       <td className="p-2 text-xs">{error.errorDescription}</td>
                       <td className="p-2">
                         <Badge variant={error.isResolved ? "default" : "destructive"} className="text-xs">

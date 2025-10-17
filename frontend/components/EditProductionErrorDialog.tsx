@@ -3,6 +3,7 @@ import React from "react";
 const useState = (React as any).useState;
 const useEffect = (React as any).useEffect;
 import { useForm } from "react-hook-form";
+import { useQuery } from "@tanstack/react-query";
 import backend from "~backend/client";
 import type { ProductionError } from "~backend/production-errors/types";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/components/ui/use-toast";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface EditProductionErrorDialogProps {
   error: ProductionError;
@@ -30,6 +38,7 @@ interface EditProductionErrorDialogProps {
 interface FormData {
   projectCode: string;
   productCode: string;
+  partName: string;
   errorDescription: string;
   isResolved: boolean;
 }
@@ -39,19 +48,30 @@ export function EditProductionErrorDialog({ error, open, onOpenChange, onSuccess
     defaultValues: {
       projectCode: error.projectCode,
       productCode: error.productCode,
+      partName: error.partName || "",
       errorDescription: error.errorDescription,
       isResolved: error.isResolved,
     },
   });
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [partName, setPartName] = useState(error.partName || "");
   const isResolved = watch("isResolved");
+
+  const { data: partsData } = useQuery({
+    queryKey: ["nodes-parts"],
+    queryFn: async () => backend.nodes.listParts(),
+  });
+
+  const parts = partsData?.parts || [];
 
   useEffect(() => {
     if (open) {
+      setPartName(error.partName || "");
       reset({
         projectCode: error.projectCode,
         productCode: error.productCode,
+        partName: error.partName || "",
         errorDescription: error.errorDescription,
         isResolved: error.isResolved,
       });
@@ -65,6 +85,7 @@ export function EditProductionErrorDialog({ error, open, onOpenChange, onSuccess
         id: error.id,
         projectCode: data.projectCode,
         productCode: data.productCode,
+        partName: partName || undefined,
         errorDescription: data.errorDescription,
         isResolved: data.isResolved,
       });
@@ -104,6 +125,22 @@ export function EditProductionErrorDialog({ error, open, onOpenChange, onSuccess
                 {...register("productCode", { required: true })}
                 placeholder="pvz. SS-001"
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="partName">Detalė (neprivaloma)</Label>
+              <Select value={partName} onValueChange={setPartName}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Pasirinkite detalę..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">-</SelectItem>
+                  {parts.map((part) => (
+                    <SelectItem key={part.partName} value={part.partName}>
+                      {part.partName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="errorDescription">Klaidos aprašymas</Label>
