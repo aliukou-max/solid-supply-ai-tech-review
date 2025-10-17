@@ -1,6 +1,6 @@
 import { api, APIError } from "encore.dev/api";
 import db from "../db";
-import type { TechReview, Component, Error as ReviewError, AISuggestion } from "./types";
+import type { TechReview, Component, Error as ReviewError, AISuggestion, ComponentPhoto } from "./types";
 
 interface GetTechReviewResponse {
   review: TechReview;
@@ -33,6 +33,18 @@ export const get = api<{ productId: string }, GetTechReviewResponse>(
       WHERE tech_review_id = ${review.id}
       ORDER BY created_at ASC
     `;
+
+    for (const component of components) {
+      const photos = await db.queryAll<ComponentPhoto>`
+        SELECT 
+          id, component_id as "componentId", photo_url as "photoUrl",
+          display_order as "displayOrder", created_at as "createdAt"
+        FROM component_photos
+        WHERE component_id = ${component.id}
+        ORDER BY display_order ASC
+      `;
+      component.photos = photos;
+    }
 
     const errors = await db.queryAll<ReviewError>`
       SELECT 

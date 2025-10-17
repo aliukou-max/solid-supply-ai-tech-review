@@ -18,8 +18,17 @@ export interface Component {
   assemblyNotes?: string;
   nodeId?: string;
   photoUrl?: string;
+  photos?: ComponentPhoto[];
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface ComponentPhoto {
+  id: number;
+  componentId: number;
+  photoUrl: string;
+  displayOrder: number;
+  createdAt: Date;
 }
 
 export interface Error {

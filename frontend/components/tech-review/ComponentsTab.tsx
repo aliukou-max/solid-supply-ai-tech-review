@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { EditComponentDialog } from "./EditComponentDialog";
+import { PhotoGallery } from "./PhotoGallery";
 
 interface ComponentsTabProps {
   components: Component[];
@@ -84,9 +85,17 @@ export function ComponentsTab({ components, onUpdate }: ComponentsTabProps) {
                   <p className="text-sm">{component.assemblyNotes}</p>
                 </div>
               )}
+              {component.photos && component.photos.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs text-muted-foreground">Nuotraukos ({component.photos.length})</p>
+                  <PhotoGallery photos={component.photos} compact />
+                </div>
+              )}
               <div className="flex items-center gap-2">
                 {component.nodeId && <Badge variant="outline">Mazgas: {component.nodeId}</Badge>}
-                {component.photoUrl && <Badge variant="outline">Turi nuotrauką</Badge>}
+                {component.photos && component.photos.length > 0 && (
+                  <Badge variant="outline">{component.photos.length} nuotraukos</Badge>
+                )}
               </div>
             </CardContent>
           </Card>

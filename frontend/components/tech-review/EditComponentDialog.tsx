@@ -1,16 +1,17 @@
 import React from "react";
 
 const useState = (React as any).useState;
+const useRef = (React as any).useRef;
 import { useForm } from "react-hook-form";
 import backend from "~backend/client";
-import type { Component } from "~backend/tech-review/types";
+import type { Component, ComponentPhoto } from "~backend/tech-review/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
-import { Upload, X } from "lucide-react";
+import { Upload, X, FolderUp } from "lucide-react";
 
 interface EditComponentDialogProps {
   component: Component;
@@ -46,14 +47,14 @@ export function EditComponentDialog({ component, open, onOpenChange, onSuccess, 
   });
   const [isLoading, setIsLoading] = useState(false);
   const [photoUrl, setPhotoUrl] = useState(component.photoUrl || "");
+  const [photoGallery, setPhotoGallery] = useState<ComponentPhoto[]>(component.photos || []);
   const [isUploading, setIsUploading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  const handleFileChange = async (e: any) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-
-    const imageFiles = Array.from(files as FileList).filter((f: any) => f.type.startsWith("image/"));
+  const uploadPhotos = async (files: File[]) => {
+    const imageFiles = files.filter((f) => f.type.startsWith("image/"));
     
     if (imageFiles.length === 0) {
       toast({
@@ -64,7 +65,7 @@ export function EditComponentDialog({ component, open, onOpenChange, onSuccess, 
       return;
     }
 
-    const oversizedFiles = imageFiles.filter((f: any) => f.size > 10 * 1024 * 1024);
+    const oversizedFiles = imageFiles.filter((f) => f.size > 10 * 1024 * 1024);
     if (oversizedFiles.length > 0) {
       toast({
         title: "Klaida",
@@ -75,37 +76,38 @@ export function EditComponentDialog({ component, open, onOpenChange, onSuccess, 
     }
 
     setIsUploading(true);
+    const uploadedUrls: string[] = [];
     
     try {
       for (const file of imageFiles) {
-        await new Promise<void>((resolve, reject) => {
+        const base64Data = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
-          
-          reader.onload = async () => {
-            try {
-              const base64Data = (reader.result as string).split(",")[1];
-              const response = await backend.techReview.uploadPhoto({
-                fileName: (file as File).name,
-                fileData: base64Data,
-                contentType: (file as File).type,
-              });
-              setPhotoUrl(response.url);
-              resolve();
-            } catch (error) {
-              reject(error);
-            }
+          reader.onload = () => {
+            const result = reader.result as string;
+            resolve(result.split(",")[1]);
           };
-          
           reader.onerror = () => reject(reader.error);
-          reader.readAsDataURL(file as File);
+          reader.readAsDataURL(file);
         });
+
+        const response = await backend.techReview.uploadPhoto({
+          fileName: file.name,
+          fileData: base64Data,
+          contentType: file.type,
+        });
+        uploadedUrls.push(response.url);
       }
-      
-      toast({ 
-        title: imageFiles.length === 1 
-          ? "Nuotrauka įkelta sėkmingai" 
-          : `${imageFiles.length} nuotraukos įkeltos sėkmingai` 
+
+      await backend.techReview.addPhotos({
+        componentId: component.id,
+        photoUrls: uploadedUrls,
       });
+
+      toast({ 
+        title: `${imageFiles.length} ${imageFiles.length === 1 ? 'nuotrauka įkelta' : 'nuotraukos įkeltos'} sėkmingai` 
+      });
+
+      onSuccess();
     } catch (error) {
       console.error("Failed to upload photos:", error);
       toast({
@@ -115,6 +117,63 @@ export function EditComponentDialog({ component, open, onOpenChange, onSuccess, 
       });
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const handleFileChange = async (e: any) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    await uploadPhotos(Array.from(files));
+  };
+
+  const handleDragOver = (e: any) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: any) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = async (e: any) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files: File[] = [];
+    
+    if (e.dataTransfer.items) {
+      const items = Array.from(e.dataTransfer.items as any);
+      for (const item of items) {
+        if ((item as any).kind === "file") {
+          const file = (item as any).getAsFile();
+          if (file) files.push(file as File);
+        }
+      }
+    } else {
+      files.push(...Array.from(e.dataTransfer.files as any));
+    }
+
+    if (files.length > 0) {
+      await uploadPhotos(files);
+    }
+  };
+
+  const handleDeletePhoto = async (photoId: number) => {
+    try {
+      await backend.techReview.deletePhoto({ photoId });
+      toast({ title: "Nuotrauka ištrinta" });
+      onSuccess();
+    } catch (error) {
+      console.error("Failed to delete photo:", error);
+      toast({
+        title: "Klaida",
+        description: "Nepavyko ištrinti nuotraukos",
+        variant: "destructive",
+      });
     }
   };
 
@@ -182,47 +241,82 @@ export function EditComponentDialog({ component, open, onOpenChange, onSuccess, 
             <Label htmlFor="nodeId">Mazgo ID</Label>
             <Input id="nodeId" {...register("nodeId")} />
           </div>
+          
           <div className="space-y-2">
-            <Label htmlFor="photo">Komponento nuotraukos</Label>
-            <div className="flex items-start gap-4">
-              <div className="flex-1">
+            <Label>Nuotraukų galerija</Label>
+            
+            <div 
+              className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                isDragging ? 'border-primary bg-primary/5' : 'border-border'
+              }`}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
+              <div className="flex flex-col items-center gap-3">
+                <FolderUp className="h-10 w-10 text-muted-foreground" />
+                <div className="space-y-1">
+                  <p className="text-sm font-medium">
+                    Vilkite ir paleiskite nuotraukas čia
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    arba
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading}
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Pasirinkti failus
+                </Button>
                 <Input
-                  id="photo"
+                  ref={fileInputRef}
                   type="file"
                   accept="image/*"
                   multiple
-                  webkitdirectory=""
-                  directory=""
                   onChange={handleFileChange}
-                  disabled={isUploading}
-                  className="cursor-pointer"
+                  className="hidden"
                 />
-                <p className="text-sm text-muted-foreground mt-1">
-                  Pasirinkite folderį su nuotraukomis arba atskiras nuotraukas. Maksimalus dydis vienai: 10MB
+                <p className="text-xs text-muted-foreground">
+                  Maksimalus dydis vienai nuotraukai: 10MB
                 </p>
               </div>
             </div>
-            {photoUrl && (
-              <div className="relative w-32 h-32 border rounded-lg overflow-hidden mt-2">
-                <img src={photoUrl} alt="Preview" className="w-full h-full object-cover" />
-                <Button
-                  type="button"
-                  variant="destructive"
-                  size="icon"
-                  className="absolute top-1 right-1 h-6 w-6"
-                  onClick={() => setPhotoUrl("")}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            )}
+
             {isUploading && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground justify-center p-4">
                 <Upload className="h-4 w-4 animate-pulse" />
                 <span>Įkeliama...</span>
               </div>
             )}
+
+            {photoGallery.length > 0 && (
+              <div className="grid grid-cols-3 gap-3 mt-4">
+                {photoGallery.map((photo: any) => (
+                  <div key={photo.id} className="relative aspect-square border rounded-lg overflow-hidden group">
+                    <img 
+                      src={photo.photoUrl} 
+                      alt={`Photo ${photo.displayOrder + 1}`} 
+                      className="w-full h-full object-cover"
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-1 right-1 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => handleDeletePhoto(photo.id)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
+
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Atšaukti
