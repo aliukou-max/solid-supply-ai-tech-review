@@ -46,12 +46,12 @@ export function NodesByBrandPage() {
 
       try {
         const fileName = file.name.replace(".pdf", "");
-        const parts = fileName.split("_");
+        const parts = fileName.split(" - ").map(p => p.trim());
         
-        const productCode = parts[0] || "UNKNOWN";
-        const brandName = parts[1] || "UNKNOWN";
-        const partName = parts[2] || fileName;
-        const description = parts[3] || "Aprašymas";
+        const brandName = parts[0] || "UNKNOWN";
+        const partName = parts[1] || fileName;
+        const description = parts[2] || "Aprašymas";
+        const productCode = brandName;
 
         const arrayBuffer = await file.arrayBuffer();
         const bytes = new Uint8Array(arrayBuffer);
@@ -171,7 +171,7 @@ export function NodesByBrandPage() {
             <Upload className="h-12 w-12 mx-auto mb-2 text-primary" />
             <p className="text-primary font-medium">Paleiskite PDF failus čia</p>
             <p className="text-xs text-muted-foreground mt-1">
-              Failai bus grupuojami pagal brando pavadinimą iš failo pavadinimo (pvz: PRODUKTAS_BRANDAS_MAZGAS_APRASYMAS.pdf)
+              Failų pavadinimai: BRANDAS - DETALĖ - APRAŠYMAS.pdf (pvz: Dior - Header - Removable.pdf)
             </p>
           </div>
         )}
