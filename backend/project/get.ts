@@ -7,7 +7,7 @@ export const get = api<{ id: string }, Project>(
   { expose: true, method: "GET", path: "/projects/:id" },
   async ({ id }) => {
     const row = await db.queryRow<Project>`
-      SELECT id, name, client, status, created_at as "createdAt", updated_at as "updatedAt"
+      SELECT id, name, client, status, project_type as "projectType", created_at as "createdAt", updated_at as "updatedAt"
       FROM projects
       WHERE id = ${id}
     `;

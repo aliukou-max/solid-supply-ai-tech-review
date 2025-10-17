@@ -5,6 +5,7 @@ interface CreateProjectParams {
   id: string;
   name: string;
   client: string;
+  projectType?: string;
 }
 
 export interface Project {
@@ -12,6 +13,7 @@ export interface Project {
   name: string;
   client: string;
   status: string;
+  projectType?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -22,8 +24,8 @@ export const create = api<CreateProjectParams, Project>(
   async (params) => {
     const now = new Date();
     await db.exec`
-      INSERT INTO projects (id, name, client, status, created_at, updated_at)
-      VALUES (${params.id}, ${params.name}, ${params.client}, 'active', ${now}, ${now})
+      INSERT INTO projects (id, name, client, status, project_type, created_at, updated_at)
+      VALUES (${params.id}, ${params.name}, ${params.client}, 'active', ${params.projectType || 'new_development'}, ${now}, ${now})
     `;
 
     return {
@@ -31,6 +33,7 @@ export const create = api<CreateProjectParams, Project>(
       name: params.name,
       client: params.client,
       status: "active",
+      projectType: params.projectType || 'new_development',
       createdAt: now,
       updatedAt: now,
     };
