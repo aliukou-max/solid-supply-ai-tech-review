@@ -3,7 +3,6 @@ import React from "react";
 const useState = (React as any).useState;
 import { useQuery } from "@tanstack/react-query";
 import { Plus, Upload, Edit2, Trash2, FileSpreadsheet, CheckCircle, AlertCircle, Calendar, Download } from "lucide-react";
-import * as XLSX from "xlsx";
 import backend from "~backend/client";
 import type { ProductionError } from "~backend/production-errors/types";
 import { Button } from "@/components/ui/button";
@@ -83,6 +82,7 @@ export function ErrorsPage() {
     if (!file) return;
 
     try {
+      const XLSX = await import("https://cdn.sheetjs.com/xlsx-0.20.1/package/xlsx.mjs");
       const arrayBuffer = await file.arrayBuffer();
       const workbook = XLSX.read(arrayBuffer, { type: "array" });
       const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
@@ -113,7 +113,7 @@ export function ErrorsPage() {
     event.target.value = "";
   };
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     const exportData = errors.map((e, i) => ({
       Nr: i + 1,
       "Projekto kodas": e.projectCode,
@@ -123,6 +123,7 @@ export function ErrorsPage() {
       Statusas: e.isResolved ? "Išspręsta" : "Aktyvi",
     }));
 
+    const XLSX = await import("https://cdn.sheetjs.com/xlsx-0.20.1/package/xlsx.mjs");
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Klaidos");
