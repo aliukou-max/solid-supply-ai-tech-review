@@ -9,6 +9,7 @@ import { ComponentsTab } from "@/components/tech-review/ComponentsTab";
 import { ErrorsTab } from "@/components/tech-review/ErrorsTab";
 import { LessonsTab } from "@/components/tech-review/LessonsTab";
 import { Badge } from "@/components/ui/badge";
+import { NodeRecommendations } from "@/components/NodeRecommendations";
 
 export function TechReviewPage() {
   const { productId } = useParams<{ productId: string }>();
@@ -88,6 +89,7 @@ export function TechReviewPage() {
           </TabsList>
 
           <TabsContent value="components" className="space-y-4">
+            <NodeRecommendations productId={productId!} />
             <ComponentsTab
               components={data?.components || []}
               onUpdate={refetch}
