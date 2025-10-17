@@ -3,7 +3,7 @@ import React from "react";
 const useState = (React as any).useState;
 const useEffect = (React as any).useEffect;
 import { useQuery } from "@tanstack/react-query";
-import { Edit2, Trash2 } from "lucide-react";
+import { Edit2, Trash2, Plus, FileSpreadsheet } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import backend from "~backend/client";
 import type { Project } from "~backend/project/create";
@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CreateProjectDialog } from "@/components/CreateProjectDialog";
 import { EditProjectDialog } from "@/components/EditProjectDialog";
+import { ImportExcelDialog } from "@/components/ImportExcelDialog";
 import { useToast } from "@/components/ui/use-toast";
 
 interface ProjectStats {
@@ -23,15 +24,10 @@ export function ProjectsPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const [createOpen, setCreateOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [editProject, setEditProject] = useState<Project | null>(null);
   const [projectStats, setProjectStats] = useState<Record<string, ProjectStats>>({});
   const { toast } = useToast();
-
-  useEffect(() => {
-    if (location.pathname === "/projects/new") {
-      setCreateOpen(true);
-    }
-  }, [location.pathname]);
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["projects"],
@@ -94,6 +90,20 @@ export function ProjectsPage() {
     <MainLayout
       title="Projektai"
       description="Visi Solid Supply projektai ir jų techniniai vertinimai"
+      action={
+        <div className="flex gap-2">
+          <Button onClick={() => setCreateOpen(true)}>
+            {/* @ts-ignore */}
+            <Plus className="h-4 w-4 mr-2" />
+            Projektas
+          </Button>
+          <Button variant="outline" onClick={() => setImportOpen(true)}>
+            {/* @ts-ignore */}
+            <FileSpreadsheet className="h-4 w-4 mr-2" />
+            Import Excel
+          </Button>
+        </div>
+      }
     >
       {isLoading ? (
         <div className="text-center py-12 text-muted-foreground">Kraunama...</div>
@@ -180,17 +190,9 @@ export function ProjectsPage() {
 
       <CreateProjectDialog
         open={createOpen}
-        onOpenChange={(open) => {
-          setCreateOpen(open);
-          if (!open && location.pathname === "/projects/new") {
-            navigate("/");
-          }
-        }}
+        onOpenChange={setCreateOpen}
         onSuccess={() => {
           setCreateOpen(false);
-          if (location.pathname === "/projects/new") {
-            navigate("/");
-          }
           refetch();
         }}
       />
@@ -206,6 +208,15 @@ export function ProjectsPage() {
           }}
         />
       )}
+
+      <ImportExcelDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        onSuccess={() => {
+          setImportOpen(false);
+          refetch();
+        }}
+      />
     </MainLayout>
   );
 }

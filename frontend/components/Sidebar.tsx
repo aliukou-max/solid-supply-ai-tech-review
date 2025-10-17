@@ -8,8 +8,7 @@ export function Sidebar() {
 
   const navItems = [
     { path: "/", label: "Dashboard", icon: FolderOpen },
-    { path: "/projects", label: "Visi projektai", icon: FolderOpen },
-    { path: "/projects/new", label: "+ Projekta", icon: Plus },
+    { path: "/projects", label: "Projektai", icon: FolderOpen },
     { path: "/nodes", label: "Mazgu biblioteka", icon: Box },
     { path: "/lessons-learnt", label: "Pamokos", icon: BookOpen },
     { path: "/errors", label: "Klaidu registras", icon: AlertCircle },
