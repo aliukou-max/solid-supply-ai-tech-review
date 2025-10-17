@@ -122,18 +122,12 @@ export function NodesByBrandPage() {
     <MainLayout
       title="Mazgai per brandą"
       actions={
-        <div className="flex items-center gap-2">
-          <Link to="/">
-            <Button variant="outline">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Grįžti
-            </Button>
-          </Link>
-          <Button onClick={() => setAddOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Pridėti mazgą
+        <Link to="/nodes">
+          <Button variant="outline">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Grįžti
           </Button>
-        </div>
+        </Link>
       }
     >
       <Card 
