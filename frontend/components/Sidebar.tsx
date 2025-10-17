@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Package, Plus, FolderOpen, AlertCircle, BookOpen, Sparkles } from "lucide-react";
+import { Package, Plus, FolderOpen, AlertCircle, BookOpen, Sparkles, Box } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
@@ -9,6 +9,7 @@ export function Sidebar() {
   const navItems = [
     { path: "/", label: "Visi projektai", icon: FolderOpen },
     { path: "/projects/new", label: "+ Projekta", icon: Plus },
+    { path: "/nodes", label: "Mazgai", icon: Box },
     { path: "/lessons-learnt", label: "Mazgu biblioteka", icon: BookOpen },
     { path: "/errors", label: "Klaidu registras", icon: AlertCircle },
     { path: "/ai-review", label: "AI tech review", icon: Sparkles },
