@@ -5,6 +5,7 @@ import { ProjectsPage } from "./pages/ProjectsPage";
 import { ProjectDetailPage } from "./pages/ProjectDetailPage";
 import { TechReviewPage } from "./pages/TechReviewPage";
 import { LessonsLearntPage } from "./pages/LessonsLearntPage";
+import { ErrorsPage } from "./pages/ErrorsPage";
 import { Sidebar } from "./components/Sidebar";
 import { Toaster } from "@/components/ui/toaster";
 
@@ -20,6 +21,7 @@ function AppContent() {
           <Route path="/projects" element={<ProjectsPage />} />
           <Route path="/projects/:projectId" element={<ProjectDetailPage />} />
           <Route path="/tech-review/:productId" element={<TechReviewPage />} />
+          <Route path="/errors" element={<ErrorsPage />} />
           <Route path="/lessons-learnt" element={<LessonsLearntPage />} />
         </Routes>
       </main>
