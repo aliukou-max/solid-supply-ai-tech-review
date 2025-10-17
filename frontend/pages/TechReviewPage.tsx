@@ -100,6 +100,8 @@ export function TechReviewPage() {
               errors={data?.errors || []}
               suggestions={data?.suggestions || []}
               productType={product?.type!}
+              projectCode={product?.projectId!}
+              productCode={product?.ssCode!}
               onUpdate={refetch}
             />
           </TabsContent>
