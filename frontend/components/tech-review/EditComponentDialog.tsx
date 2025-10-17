@@ -47,63 +47,72 @@ export function EditComponentDialog({ component, open, onOpenChange, onSuccess }
   const { toast } = useToast();
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
-    if (!file.type.startsWith("image/")) {
+    const imageFiles = Array.from(files).filter(f => f.type.startsWith("image/"));
+    
+    if (imageFiles.length === 0) {
       toast({
         title: "Klaida",
-        description: "Pasirinkite nuotraukos failą",
+        description: "Pasirinkite nuotraukos failus",
         variant: "destructive",
       });
       return;
     }
 
-    if (file.size > 10 * 1024 * 1024) {
+    const oversizedFiles = imageFiles.filter(f => f.size > 10 * 1024 * 1024);
+    if (oversizedFiles.length > 0) {
       toast({
         title: "Klaida",
-        description: "Failo dydis negali viršyti 10MB",
+        description: `${oversizedFiles.length} failų viršija 10MB limitą`,
         variant: "destructive",
       });
       return;
     }
 
     setIsUploading(true);
-    const reader = new FileReader();
     
-    reader.onload = async () => {
-      try {
-        const base64Data = (reader.result as string).split(",")[1];
-        const response = await backend.techReview.uploadPhoto({
-          fileName: file.name,
-          fileData: base64Data,
-          contentType: file.type,
+    try {
+      for (const file of imageFiles) {
+        await new Promise<void>((resolve, reject) => {
+          const reader = new FileReader();
+          
+          reader.onload = async () => {
+            try {
+              const base64Data = (reader.result as string).split(",")[1];
+              const response = await backend.techReview.uploadPhoto({
+                fileName: file.name,
+                fileData: base64Data,
+                contentType: file.type,
+              });
+              setPhotoUrl(response.url);
+              resolve();
+            } catch (error) {
+              reject(error);
+            }
+          };
+          
+          reader.onerror = () => reject(reader.error);
+          reader.readAsDataURL(file);
         });
-        setPhotoUrl(response.url);
-        toast({ title: "Nuotrauka įkelta sėkmingai" });
-      } catch (error) {
-        console.error("Failed to upload photo:", error);
-        toast({
-          title: "Klaida",
-          description: "Nepavyko įkelti nuotraukos",
-          variant: "destructive",
-        });
-      } finally {
-        setIsUploading(false);
       }
-    };
-    
-    reader.onerror = () => {
-      console.error("Failed to read file:", reader.error);
+      
+      toast({ 
+        title: imageFiles.length === 1 
+          ? "Nuotrauka įkelta sėkmingai" 
+          : `${imageFiles.length} nuotraukos įkeltos sėkmingai` 
+      });
+    } catch (error) {
+      console.error("Failed to upload photos:", error);
       toast({
         title: "Klaida",
-        description: "Nepavyko nuskaityti failo",
+        description: "Nepavyko įkelti nuotraukų",
         variant: "destructive",
       });
+    } finally {
       setIsUploading(false);
-    };
-    
-    reader.readAsDataURL(file);
+    }
   };
 
   const onSubmit = async (data: FormData) => {
@@ -162,38 +171,41 @@ export function EditComponentDialog({ component, open, onOpenChange, onSuccess }
             <Input id="nodeId" {...register("nodeId")} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="photo">Komponento nuotrauka</Label>
+            <Label htmlFor="photo">Komponento nuotraukos</Label>
             <div className="flex items-start gap-4">
               <div className="flex-1">
                 <Input
                   id="photo"
                   type="file"
                   accept="image/*"
+                  multiple
+                  webkitdirectory=""
+                  directory=""
                   onChange={handleFileChange}
                   disabled={isUploading}
                   className="cursor-pointer"
                 />
                 <p className="text-sm text-muted-foreground mt-1">
-                  Maksimalus dydis: 10MB. Palaikomi formatai: JPG, PNG, WebP
+                  Pasirinkite folderį su nuotraukomis arba atskiras nuotraukas. Maksimalus dydis vienai: 10MB
                 </p>
               </div>
-              {photoUrl && (
-                <div className="relative w-32 h-32 border rounded-lg overflow-hidden">
-                  <img src={photoUrl} alt="Preview" className="w-full h-full object-cover" />
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="icon"
-                    className="absolute top-1 right-1 h-6 w-6"
-                    onClick={() => setPhotoUrl("")}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              )}
             </div>
+            {photoUrl && (
+              <div className="relative w-32 h-32 border rounded-lg overflow-hidden mt-2">
+                <img src={photoUrl} alt="Preview" className="w-full h-full object-cover" />
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="icon"
+                  className="absolute top-1 right-1 h-6 w-6"
+                  onClick={() => setPhotoUrl("")}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
             {isUploading && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2">
                 <Upload className="h-4 w-4 animate-pulse" />
                 <span>Įkeliama...</span>
               </div>
