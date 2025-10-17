@@ -96,12 +96,12 @@ export function ProjectsPage() {
           <Button onClick={() => setCreateOpen(true)}>
             {/* @ts-ignore */}
             <Plus className="h-4 w-4 mr-2" />
-            Projektas
+            Pridėti projektą
           </Button>
           <Button variant="outline" onClick={() => setImportOpen(true)}>
             {/* @ts-ignore */}
             <FileSpreadsheet className="h-4 w-4 mr-2" />
-            Import Excel
+            Importuoti Excel
           </Button>
         </div>
       }
