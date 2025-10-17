@@ -26,16 +26,28 @@ export function MainLayout({ title, description, actions, children }: MainLayout
                 <span className="text-xl font-bold">Solid Supply</span>
               </div>
               <nav className="flex items-center gap-1">
-                <Link to="/projects">
+                <Link to="/">
                   <div
                     className={cn(
                       "px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                      location.pathname.startsWith("/projects")
+                      location.pathname === "/"
                         ? "bg-accent text-accent-foreground"
                         : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
                     )}
                   >
-                    Projektai
+                    Visi projektai
+                  </div>
+                </Link>
+                <Link to="/projects">
+                  <div
+                    className={cn(
+                      "px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                      location.pathname.startsWith("/projects") && location.pathname !== "/"
+                        ? "bg-accent text-accent-foreground"
+                        : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                    )}
+                  >
+                    Pridėti projektą
                   </div>
                 </Link>
                 <Link to="/lessons-learnt">
