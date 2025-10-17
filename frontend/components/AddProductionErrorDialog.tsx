@@ -44,12 +44,12 @@ export function AddProductionErrorDialog({ open, onOpenChange, onSuccess }: AddP
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [partName, setPartName] = useState("");
 
-  const { data: partsData } = useQuery({
-    queryKey: ["nodes-parts"],
-    queryFn: async () => backend.nodes.listParts(),
+  const { data } = useQuery({
+    queryKey: ["nodes-part-names"],
+    queryFn: async () => backend.nodes.listPartNames(),
   });
 
-  const parts = partsData?.parts || [];
+  const partNames = data?.partNames || [];
 
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
@@ -101,15 +101,15 @@ export function AddProductionErrorDialog({ open, onOpenChange, onSuccess }: AddP
             </div>
             <div className="space-y-2">
               <Label htmlFor="partName">Detalė (neprivaloma)</Label>
-              <Select value={partName || "_none"} onValueChange={(val) => setPartName(val === "_none" ? "" : val)}>
+              <Select value={partName || "_none"} onValueChange={(val: string) => setPartName(val === "_none" ? "" : val)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Pasirinkite detalę..." />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="_none">-</SelectItem>
-                  {parts.map((part) => (
-                    <SelectItem key={part.partName} value={part.partName}>
-                      {part.partName}
+                  {partNames.map((name) => (
+                    <SelectItem key={name} value={name}>
+                      {name}
                     </SelectItem>
                   ))}
                 </SelectContent>
