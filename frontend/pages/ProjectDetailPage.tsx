@@ -40,7 +40,9 @@ export function ProjectDetailPage() {
           </Link>
           <div>
             <div className="flex items-center gap-2">
-              {project?.id} – {project?.client}
+              <span className="font-bold">{project?.id}</span>
+              <span>–</span>
+              <span>{project?.name}</span>
               {productsWithoutDrawing.length > 0 && (
                 <Badge variant="destructive" className="gap-1">
                   <AlertTriangle className="h-3 w-3" />
@@ -48,7 +50,11 @@ export function ProjectDetailPage() {
                 </Badge>
               )}
             </div>
-            <p className="text-sm text-muted-foreground mt-1">{project?.name}</p>
+            {data?.products && data.products.length > 0 && (
+              <div className="text-sm text-muted-foreground mt-1">
+                Gaminiai: {data.products.map(p => `${p.id} (${p.type})`).join(', ')}
+              </div>
+            )}
           </div>
         </div>
       }
