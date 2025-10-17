@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Plus, FolderOpen, FileText } from "lucide-react";
+import { Plus, FolderOpen, FileText, Upload } from "lucide-react";
 import backend from "~backend/client";
 import { MainLayout } from "@/components/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { AddNodeDialog } from "@/components/AddNodeDialog";
+import { useToast } from "@/components/ui/use-toast";
 import {
   Accordion,
   AccordionContent,
@@ -15,6 +16,10 @@ import {
 
 export function NodesPage() {
   const [addOpen, setAddOpen] = useState(false);
+  const [dragActiveProduct, setDragActiveProduct] = useState(false);
+  const [dragActiveBrand, setDragActiveBrand] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const { toast } = useToast();
 
   const { data: productsData, refetch: refetchProducts } = useQuery({
     queryKey: ["nodes-products"],
@@ -35,6 +40,101 @@ export function NodesPage() {
     refetchBrands();
   };
 
+  const processFiles = async (files: File[], productCode?: string, brandName?: string) => {
+    setUploading(true);
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const file of files) {
+      if (file.type !== "application/pdf") continue;
+
+      try {
+        const fileName = file.name.replace(".pdf", "");
+        const parts = fileName.split("_");
+        
+        const finalProductCode = productCode || parts[0] || "UNKNOWN";
+        const finalBrandName = brandName || parts[1] || "UNKNOWN";
+        const partName = parts[2] || fileName;
+        const description = parts[3] || "Aprašymas";
+
+        const arrayBuffer = await file.arrayBuffer();
+        const base64 = Buffer.from(arrayBuffer).toString("base64");
+
+        await backend.nodes.create({
+          productCode: finalProductCode,
+          brandName: finalBrandName,
+          partName: partName,
+          description: description,
+          pdfData: base64,
+          pdfFilename: file.name,
+        });
+
+        successCount++;
+      } catch (error) {
+        console.error(error);
+        errorCount++;
+      }
+    }
+
+    setUploading(false);
+    
+    if (successCount > 0) {
+      toast({ title: `Sėkmingai įkelta ${successCount} failų` });
+      refetchProducts();
+      refetchBrands();
+    }
+    
+    if (errorCount > 0) {
+      toast({ title: `Nepavyko įkelti ${errorCount} failų`, variant: "destructive" });
+    }
+  };
+
+  const handleProductDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragActiveProduct(false);
+
+    const files: File[] = [];
+    
+    if (e.dataTransfer.items) {
+      for (let i = 0; i < e.dataTransfer.items.length; i++) {
+        const item = e.dataTransfer.items[i];
+        if (item.kind === "file") {
+          const file = item.getAsFile();
+          if (file) files.push(file);
+        }
+      }
+    } else {
+      for (let i = 0; i < e.dataTransfer.files.length; i++) {
+        files.push(e.dataTransfer.files[i]);
+      }
+    }
+
+    await processFiles(files);
+  };
+
+  const handleBrandDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragActiveBrand(false);
+
+    const files: File[] = [];
+    
+    if (e.dataTransfer.items) {
+      for (let i = 0; i < e.dataTransfer.items.length; i++) {
+        const item = e.dataTransfer.items[i];
+        if (item.kind === "file") {
+          const file = item.getAsFile();
+          if (file) files.push(file);
+        }
+      }
+    } else {
+      for (let i = 0; i < e.dataTransfer.files.length; i++) {
+        files.push(e.dataTransfer.files[i]);
+      }
+    }
+
+    await processFiles(files);
+  };
+
   return (
     <MainLayout
       title="Mazgų biblioteka"
@@ -46,12 +146,41 @@ export function NodesPage() {
       }
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="p-6">
-          <h2 className="text-xl font-bold mb-4">Mazgai per gaminius</h2>
+        <Card 
+          className={`p-6 transition-colors ${dragActiveProduct ? "border-primary bg-primary/5" : ""}`}
+          onDrop={handleProductDrop}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDragActiveProduct(true);
+          }}
+          onDragLeave={() => setDragActiveProduct(false)}
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold">Mazgai per gaminius</h2>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Upload className="h-4 w-4" />
+              <span>{products.reduce((sum, p) => sum + p.count, 0)} PDF</span>
+            </div>
+          </div>
+          
+          {dragActiveProduct && (
+            <div className="border-2 border-dashed border-primary rounded-lg p-8 text-center mb-4">
+              <Upload className="h-12 w-12 mx-auto mb-2 text-primary" />
+              <p className="text-primary font-medium">Paleiskite PDF failus čia</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Failai bus grupuojami pagal gaminio kodą iš failo pavadinimo
+              </p>
+            </div>
+          )}
+          
           {products.length === 0 ? (
-            <p className="text-muted-foreground text-center py-8">
-              Nėra įkeltų mazgų
-            </p>
+            <div className="text-center py-8 border-2 border-dashed rounded-lg">
+              <Upload className="h-12 w-12 mx-auto mb-2 text-muted-foreground opacity-50" />
+              <p className="text-muted-foreground mb-2">Nėra įkeltų mazgų</p>
+              <p className="text-xs text-muted-foreground">
+                Nutempkite PDF failus čia arba spauskite "Pridėti mazgą"
+              </p>
+            </div>
           ) : (
             <Accordion type="single" collapsible className="space-y-2">
               {products.map((product) => (
@@ -59,20 +188,61 @@ export function NodesPage() {
               ))}
             </Accordion>
           )}
+          
+          {uploading && (
+            <div className="mt-4 text-center text-sm text-muted-foreground">
+              Keliama...
+            </div>
+          )}
         </Card>
 
-        <Card className="p-6">
-          <h2 className="text-xl font-bold mb-4">Mazgai per Brandą</h2>
+        <Card 
+          className={`p-6 transition-colors ${dragActiveBrand ? "border-primary bg-primary/5" : ""}`}
+          onDrop={handleBrandDrop}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDragActiveBrand(true);
+          }}
+          onDragLeave={() => setDragActiveBrand(false)}
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold">Mazgai per Brandą</h2>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Upload className="h-4 w-4" />
+              <span>{brands.reduce((sum, b) => sum + b.count, 0)} PDF</span>
+            </div>
+          </div>
+          
+          {dragActiveBrand && (
+            <div className="border-2 border-dashed border-primary rounded-lg p-8 text-center mb-4">
+              <Upload className="h-12 w-12 mx-auto mb-2 text-primary" />
+              <p className="text-primary font-medium">Paleiskite PDF failus čia</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Failai bus grupuojami pagal brando pavadinimą iš failo pavadinimo
+              </p>
+            </div>
+          )}
+          
           {brands.length === 0 ? (
-            <p className="text-muted-foreground text-center py-8">
-              Nėra įkeltų mazgų
-            </p>
+            <div className="text-center py-8 border-2 border-dashed rounded-lg">
+              <Upload className="h-12 w-12 mx-auto mb-2 text-muted-foreground opacity-50" />
+              <p className="text-muted-foreground mb-2">Nėra įkeltų mazgų</p>
+              <p className="text-xs text-muted-foreground">
+                Nutempkite PDF failus čia arba spauskite "Pridėti mazgą"
+              </p>
+            </div>
           ) : (
             <Accordion type="single" collapsible className="space-y-2">
               {brands.map((brand) => (
                 <BrandFolder key={brand.name} brandName={brand.name} count={brand.count} />
               ))}
             </Accordion>
+          )}
+          
+          {uploading && (
+            <div className="mt-4 text-center text-sm text-muted-foreground">
+              Keliama...
+            </div>
           )}
         </Card>
       </div>
