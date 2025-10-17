@@ -34,13 +34,13 @@ export function NodesByProductPage() {
   const [uploading, setUploading] = useState(false);
   const { toast } = useToast();
 
-  const { data: productsData, refetch } = useQuery({
-    queryKey: ["nodes-products"],
-    queryFn: async () => backend.nodes.listProducts(),
+  const { data: partsData, refetch } = useQuery({
+    queryKey: ["nodes-parts"],
+    queryFn: async () => backend.nodes.listParts(),
   });
 
-  const products = productsData?.products || [];
-  const totalNodes = products.reduce((sum, p) => sum + p.count, 0);
+  const parts = partsData?.parts || [];
+  const totalNodes = parts.reduce((sum, p) => sum + p.count, 0);
 
   const handleSuccess = () => {
     setAddOpen(false);
@@ -152,9 +152,9 @@ export function NodesByProductPage() {
       >
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-xl font-bold">Visi mazgai pagal gaminius</h2>
+            <h2 className="text-xl font-bold">Mazgai pagal detales</h2>
             <p className="text-sm text-muted-foreground mt-1">
-              {products.length} gaminių • {totalNodes} mazgų
+              {parts.length} detalių tipų • {totalNodes} mazgų
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -187,7 +187,7 @@ export function NodesByProductPage() {
           </div>
         )}
         
-        {products.length === 0 ? (
+        {parts.length === 0 ? (
           <div className="text-center py-12 border-2 border-dashed rounded-lg">
             <Upload className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
             <p className="text-lg font-medium mb-2">Nėra įkeltų mazgų</p>
@@ -201,8 +201,8 @@ export function NodesByProductPage() {
           </div>
         ) : (
           <Accordion type="single" collapsible className="space-y-2">
-            {products.map((product) => (
-              <ProductFolder key={product.code} productCode={product.code} count={product.count} onUpdate={refetch} />
+            {parts.map((part) => (
+              <PartFolder key={part.partName} partName={part.partName} count={part.count} onUpdate={refetch} />
             ))}
           </Accordion>
         )}
@@ -224,18 +224,10 @@ export function NodesByProductPage() {
   );
 }
 
-function ProductFolder({ productCode, count, onUpdate }: { productCode: string; count: number; onUpdate: () => void }) {
+function PartFolder({ partName, count, onUpdate }: { partName: string; count: number; onUpdate: () => void }) {
   const { data, isLoading, refetch } = useQuery({
-    queryKey: ["nodes-by-product", productCode],
-    queryFn: async () => backend.nodes.listByProduct({ productCode }),
-  });
-
-  const nodesByPart: Record<string, any[]> = {};
-  (data?.nodes || []).forEach((node: any) => {
-    if (!nodesByPart[node.partName]) {
-      nodesByPart[node.partName] = [];
-    }
-    nodesByPart[node.partName].push(node);
+    queryKey: ["nodes-by-part", partName],
+    queryFn: async () => backend.nodes.listByPartName({ partName }),
   });
 
   const handleNodeUpdate = () => {
@@ -244,11 +236,11 @@ function ProductFolder({ productCode, count, onUpdate }: { productCode: string; 
   };
 
   return (
-    <AccordionItem value={productCode} className="border rounded-lg px-4">
+    <AccordionItem value={partName} className="border rounded-lg px-4">
       <AccordionTrigger className="hover:no-underline">
         <div className="flex items-center gap-2">
-          <FolderOpen className="h-4 w-4 text-orange-600" />
-          <span className="font-medium">{productCode}</span>
+          <FolderOpen className="h-5 w-5 text-blue-600" />
+          <span className="font-medium text-lg">{partName}</span>
           <span className="text-sm text-muted-foreground">({count} mazgų)</span>
         </div>
       </AccordionTrigger>
@@ -256,9 +248,9 @@ function ProductFolder({ productCode, count, onUpdate }: { productCode: string; 
         {isLoading ? (
           <p className="text-sm text-muted-foreground">Kraunama...</p>
         ) : (
-          <div className="space-y-3 pt-2">
-            {Object.entries(nodesByPart).map(([partName, nodes]) => (
-              <PartFolder key={partName} partName={partName} nodes={nodes} onUpdate={handleNodeUpdate} />
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pt-4">
+            {(data?.nodes || []).map((node: any) => (
+              <NodeCard key={node.id} node={node} onUpdate={handleNodeUpdate} />
             ))}
           </div>
         )}
@@ -267,40 +259,29 @@ function ProductFolder({ productCode, count, onUpdate }: { productCode: string; 
   );
 }
 
-function PartFolder({ partName, nodes, onUpdate }: { partName: string; nodes: any[]; onUpdate: () => void }) {
-  return (
-    <div className="border rounded-md">
-      <Accordion type="single" collapsible>
-        <AccordionItem value={partName} className="border-none">
-          <AccordionTrigger className="px-3 py-2 hover:no-underline">
-            <div className="flex items-center gap-2">
-              <FolderOpen className="h-4 w-4 text-blue-600" />
-              <span className="font-medium text-sm">{partName}</span>
-              <span className="text-xs text-muted-foreground">({nodes.length})</span>
-            </div>
-          </AccordionTrigger>
-          <AccordionContent className="px-3 pb-2">
-            <div className="space-y-1">
-              {nodes.map((node) => (
-                <NodeItem key={node.id} node={node} onUpdate={onUpdate} />
-              ))}
-            </div>
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
-    </div>
-  );
-}
-
-function NodeItem({ node, onUpdate }: { node: any; onUpdate: () => void }) {
+function NodeCard({ node, onUpdate }: { node: any; onUpdate: () => void }) {
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState("");
   const { toast } = useToast();
 
+  React.useEffect(() => {
+    const loadPdfUrl = async () => {
+      try {
+        const { url } = await backend.nodes.getPdfUrl({ pdfPath: node.pdfUrl });
+        setPdfUrl(url);
+      } catch (error) {
+        console.error("Failed to load PDF URL:", error);
+      }
+    };
+    loadPdfUrl();
+  }, [node.pdfUrl]);
+
   const handleDownload = async () => {
-    const { url } = await backend.nodes.getPdfUrl({ pdfPath: node.pdfUrl });
-    window.open(url, "_blank");
+    if (pdfUrl) {
+      window.open(pdfUrl, "_blank");
+    }
   };
 
   const handleDelete = async () => {
@@ -324,38 +305,51 @@ function NodeItem({ node, onUpdate }: { node: any; onUpdate: () => void }) {
 
   return (
     <>
-      <div className="flex items-center justify-between p-2 bg-muted/30 rounded hover:bg-muted/50 transition-colors group">
-        <div className="flex items-center gap-2 flex-1 cursor-pointer" onClick={handleDownload}>
-          <FileText className="h-3 w-3 text-red-600 flex-shrink-0" />
-          <div className="flex-1 min-w-0">
-            <p className="text-xs text-muted-foreground truncate">{node.description}</p>
+      <Card className="overflow-hidden hover:shadow-lg transition-shadow group">
+        <div className="relative aspect-[3/4] bg-muted cursor-pointer" onClick={handleDownload}>
+          {pdfUrl ? (
+            <iframe
+              src={`${pdfUrl}#toolbar=0&navpanes=0&scrollbar=0`}
+              className="w-full h-full pointer-events-none"
+              title={node.description}
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <FileText className="h-12 w-12 text-muted-foreground opacity-50" />
+            </div>
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+        </div>
+        <div className="p-3">
+          <p className="font-medium text-sm truncate">{node.brandName}</p>
+          <p className="text-xs text-muted-foreground truncate">{node.description}</p>
+          <div className="flex items-center gap-1 mt-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 flex-1"
+              onClick={(e) => {
+                e.stopPropagation();
+                setEditOpen(true);
+              }}
+            >
+              <Edit2 className="h-3 w-3 mr-1" />
+              Redaguoti
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-destructive hover:text-destructive"
+              onClick={(e) => {
+                e.stopPropagation();
+                setDeleteOpen(true);
+              }}
+            >
+              <Trash2 className="h-3 w-3" />
+            </Button>
           </div>
         </div>
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 w-6 p-0"
-            onClick={(e) => {
-              e.stopPropagation();
-              setEditOpen(true);
-            }}
-          >
-            <Edit2 className="h-3 w-3" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 w-6 p-0 text-destructive hover:text-destructive"
-            onClick={(e) => {
-              e.stopPropagation();
-              setDeleteOpen(true);
-            }}
-          >
-            <Trash2 className="h-3 w-3" />
-          </Button>
-        </div>
-      </div>
+      </Card>
 
       <EditNodeDialog
         node={node}
@@ -369,7 +363,7 @@ function NodeItem({ node, onUpdate }: { node: any; onUpdate: () => void }) {
           <AlertDialogHeader>
             <AlertDialogTitle>Ar tikrai norite ištrinti?</AlertDialogTitle>
             <AlertDialogDescription>
-              Šis veiksmas negrįžtamas. Mazgas "{node.partName}" bus ištrintas.
+              Šis veiksmas negrįžtamas. Mazgas "{node.partName}" - "{node.brandName}" bus ištrintas.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
