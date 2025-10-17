@@ -19,6 +19,7 @@ interface FormData {
   brandName: string;
   partName: string;
   description: string;
+  productType: string;
 }
 
 const useState = (React as any).useState;
@@ -48,6 +49,7 @@ export function AddNodeDialog({ open, onOpenChange, onSuccess }: AddNodeDialogPr
         description: data.description,
         pdfData: base64,
         pdfFilename: pdfFile.name,
+        productType: data.productType || undefined,
       });
 
       toast({ title: "Mazgas sėkmingai pridėtas" });
@@ -115,6 +117,15 @@ export function AddNodeDialog({ open, onOpenChange, onSuccess }: AddNodeDialogPr
             {errors.description && (
               <p className="text-sm text-destructive mt-1">Privalomas laukas</p>
             )}
+          </div>
+
+          <div>
+            <Label htmlFor="productType">Gaminio tipas</Label>
+            <Input
+              id="productType"
+              {...register("productType")}
+              placeholder="pvz. Headboard, Table, Cabinet"
+            />
           </div>
 
           <div>

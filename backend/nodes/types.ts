@@ -5,5 +5,6 @@ export interface Node {
   partName: string;
   description: string;
   pdfUrl: string;
+  productType?: string;
   createdAt: Date;
 }

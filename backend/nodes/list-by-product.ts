@@ -20,9 +20,10 @@ export const listByProduct = api<ListByProductRequest, ListByProductResponse>(
       part_name: string;
       description: string;
       pdf_url: string;
+      product_type: string | null;
       created_at: Date;
     }>`
-      SELECT id, product_code, brand_name, part_name, description, pdf_url, created_at
+      SELECT id, product_code, brand_name, part_name, description, pdf_url, product_type, created_at
       FROM nodes
       WHERE product_code = ${req.productCode}
       ORDER BY created_at DESC
@@ -36,6 +37,7 @@ export const listByProduct = api<ListByProductRequest, ListByProductResponse>(
         partName: row.part_name,
         description: row.description,
         pdfUrl: row.pdf_url,
+        productType: row.product_type || undefined,
         createdAt: row.created_at,
       })),
     };

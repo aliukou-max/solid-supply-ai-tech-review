@@ -11,6 +11,7 @@ interface CreateNodeRequest {
   description: string;
   pdfData: string;
   pdfFilename: string;
+  productType?: string;
 }
 
 interface CreateNodeResponse {
@@ -32,8 +33,8 @@ export const create = api<CreateNodeRequest, CreateNodeResponse>(
     const now = new Date();
     
     await db.exec`
-      INSERT INTO nodes (id, product_code, brand_name, part_name, description, pdf_url, created_at)
-      VALUES (${nodeId}, ${req.productCode}, ${req.brandName}, ${req.partName}, ${req.description}, ${pdfPath}, ${now})
+      INSERT INTO nodes (id, product_code, brand_name, part_name, description, pdf_url, product_type, created_at)
+      VALUES (${nodeId}, ${req.productCode}, ${req.brandName}, ${req.partName}, ${req.description}, ${pdfPath}, ${req.productType || null}, ${now})
     `;
     
     return {
@@ -44,6 +45,7 @@ export const create = api<CreateNodeRequest, CreateNodeResponse>(
         partName: req.partName,
         description: req.description,
         pdfUrl: pdfPath,
+        productType: req.productType,
         createdAt: now,
       },
     };

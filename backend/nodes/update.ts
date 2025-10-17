@@ -8,6 +8,7 @@ interface UpdateNodeRequest {
   brandName?: string;
   partName?: string;
   description?: string;
+  productType?: string;
 }
 
 interface UpdateNodeResponse {
@@ -29,13 +30,15 @@ export const update = api<UpdateNodeRequest, UpdateNodeResponse>(
     const brandName = req.brandName ?? node.brand_name;
     const partName = req.partName ?? node.part_name;
     const description = req.description ?? node.description;
+    const productType = req.productType !== undefined ? req.productType : node.product_type;
 
     await db.exec`
       UPDATE nodes
       SET product_code = ${productCode},
           brand_name = ${brandName},
           part_name = ${partName},
-          description = ${description}
+          description = ${description},
+          product_type = ${productType}
       WHERE id = ${req.id}
     `;
 
@@ -47,6 +50,7 @@ export const update = api<UpdateNodeRequest, UpdateNodeResponse>(
         partName,
         description,
         pdfUrl: node.pdf_url,
+        productType: productType || undefined,
         createdAt: node.created_at,
       },
     };

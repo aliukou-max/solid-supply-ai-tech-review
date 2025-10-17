@@ -14,7 +14,7 @@ export const listByPartName = api<ListByPartNameRequest, ListByPartNameResponse>
   { expose: true, method: "GET", path: "/nodes/by-part/:partName" },
   async (req) => {
     const result = await db.query`
-      SELECT id, product_code, brand_name, part_name, description, pdf_url, created_at
+      SELECT id, product_code, brand_name, part_name, description, pdf_url, product_type, created_at
       FROM nodes
       WHERE part_name = ${req.partName}
       ORDER BY brand_name, created_at DESC
@@ -29,6 +29,7 @@ export const listByPartName = api<ListByPartNameRequest, ListByPartNameResponse>
         partName: row.part_name,
         description: row.description,
         pdfUrl: row.pdf_url,
+        productType: row.product_type || undefined,
         createdAt: row.created_at,
       });
     }

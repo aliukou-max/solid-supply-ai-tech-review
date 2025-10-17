@@ -21,6 +21,7 @@ interface FormData {
   brandName: string;
   partName: string;
   description: string;
+  productType: string;
 }
 
 export function EditNodeDialog({ node, open, onOpenChange, onSuccess }: EditNodeDialogProps) {
@@ -29,6 +30,7 @@ export function EditNodeDialog({ node, open, onOpenChange, onSuccess }: EditNode
       brandName: node.brandName || "",
       partName: node.partName || "",
       description: node.description || "",
+      productType: node.productType || "",
     },
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -43,6 +45,7 @@ export function EditNodeDialog({ node, open, onOpenChange, onSuccess }: EditNode
         partName: data.partName,
         description: data.description,
         productCode: data.brandName,
+        productType: data.productType || undefined,
       });
       toast({ title: "Mazgas atnaujintas sėkmingai" });
       onOpenChange(false);
@@ -77,6 +80,10 @@ export function EditNodeDialog({ node, open, onOpenChange, onSuccess }: EditNode
           <div className="space-y-2">
             <Label htmlFor="description">Aprašymas</Label>
             <Textarea id="description" rows={3} {...register("description")} required />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="productType">Gaminio tipas</Label>
+            <Input id="productType" {...register("productType")} placeholder="pvz. Headboard, Table, Cabinet" />
           </div>
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
