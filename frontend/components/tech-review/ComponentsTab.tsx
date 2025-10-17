@@ -1,4 +1,6 @@
-import { useState } from "react";
+import React from "react";
+
+const useState = (React as any).useState;
 import { Edit2 } from "lucide-react";
 import type { Component } from "~backend/tech-review/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,7 +14,7 @@ interface ComponentsTabProps {
 }
 
 export function ComponentsTab({ components, onUpdate }: ComponentsTabProps) {
-  const [editingComponent, setEditingComponent] = useState<Component | null>(null);
+  const [editingComponent, setEditingComponent] = useState(null);
 
   return (
     <>

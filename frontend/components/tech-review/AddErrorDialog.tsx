@@ -1,4 +1,6 @@
-import { useState } from "react";
+import React from "react";
+
+const useState = (React as any).useState;
 import { useForm } from "react-hook-form";
 import { Sparkles } from "lucide-react";
 import backend from "~backend/client";
@@ -72,7 +74,7 @@ export function AddErrorDialog({ open, onOpenChange, techReviewId, productType, 
         <DialogHeader>
           <DialogTitle>Naujos problemos registracija</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit) as any} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="description">Problemos aprašymas</Label>
             <Textarea

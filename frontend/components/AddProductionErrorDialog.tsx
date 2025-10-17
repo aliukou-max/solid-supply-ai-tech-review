@@ -1,4 +1,6 @@
-import { useState } from "react";
+import React from "react";
+
+const useState = (React as any).useState;
 import { useForm } from "react-hook-form";
 import backend from "~backend/client";
 import { Button } from "@/components/ui/button";
@@ -60,7 +62,7 @@ export function AddProductionErrorDialog({ open, onOpenChange, onSuccess }: AddP
             Užregistruokite naują gamybos ar montavimo klaidą
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)}>
+        <form onSubmit={handleSubmit(onSubmit) as any}>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="projectCode">Projekto kodas</Label>

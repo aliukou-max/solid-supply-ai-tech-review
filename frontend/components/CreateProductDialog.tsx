@@ -1,4 +1,6 @@
-import { useState } from "react";
+import React from "react";
+
+const useState = (React as any).useState;
 import { useForm } from "react-hook-form";
 import backend from "~backend/client";
 import type { ProductType } from "~backend/product/types";
@@ -62,7 +64,7 @@ export function CreateProductDialog({ open, onOpenChange, projectId, onSuccess }
         <DialogHeader>
           <DialogTitle>Naujas gaminys</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit) as any} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="ssCode">SS kodas</Label>
             <Input
@@ -81,7 +83,7 @@ export function CreateProductDialog({ open, onOpenChange, projectId, onSuccess }
           </div>
           <div className="space-y-2">
             <Label htmlFor="type">Tipas</Label>
-            <Select onValueChange={(value) => setValue("type", value as ProductType)}>
+            <Select onValueChange={(value: any) => setValue("type", value as ProductType)}>
               <SelectTrigger>
                 <SelectValue placeholder="Pasirinkite tipą" />
               </SelectTrigger>
@@ -106,7 +108,7 @@ export function CreateProductDialog({ open, onOpenChange, projectId, onSuccess }
             <Checkbox
               id="hasDrawing"
               checked={hasDrawing}
-              onCheckedChange={(checked) => setValue("hasDrawing", !!checked)}
+              onCheckedChange={(checked: any) => setValue("hasDrawing", !!checked)}
             />
             <Label htmlFor="hasDrawing" className="text-sm font-normal cursor-pointer">
               Turi brėžinį

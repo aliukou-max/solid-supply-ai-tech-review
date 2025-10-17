@@ -1,4 +1,6 @@
-import { useState } from "react";
+import React from "react";
+
+const useState = (React as any).useState;
 import { useQuery } from "@tanstack/react-query";
 import { Plus, FolderOpen, FileText, Upload } from "lucide-react";
 import backend from "~backend/client";

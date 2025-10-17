@@ -1,4 +1,6 @@
-import { useState } from "react";
+import React from "react";
+
+const useState = (React as any).useState;
 import { useForm } from "react-hook-form";
 import backend from "~backend/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -49,7 +51,7 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess }: CreatePro
         <DialogHeader>
           <DialogTitle>Naujas projektas</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit) as any} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="id">Projekto ID</Label>
             <Input

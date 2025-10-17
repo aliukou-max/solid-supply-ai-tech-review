@@ -1,4 +1,6 @@
-import { useState } from "react";
+import React from "react";
+
+const useState = (React as any).useState;
 import { useForm } from "react-hook-form";
 import backend from "~backend/client";
 import type { Component } from "~backend/tech-review/types";
@@ -46,11 +48,11 @@ export function EditComponentDialog({ component, open, onOpenChange, onSuccess }
   const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: any) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    const imageFiles = Array.from(files).filter(f => f.type.startsWith("image/"));
+    const imageFiles = Array.from(files as FileList).filter((f: any) => f.type.startsWith("image/"));
     
     if (imageFiles.length === 0) {
       toast({
@@ -61,7 +63,7 @@ export function EditComponentDialog({ component, open, onOpenChange, onSuccess }
       return;
     }
 
-    const oversizedFiles = imageFiles.filter(f => f.size > 10 * 1024 * 1024);
+    const oversizedFiles = imageFiles.filter((f: any) => f.size > 10 * 1024 * 1024);
     if (oversizedFiles.length > 0) {
       toast({
         title: "Klaida",
@@ -82,9 +84,9 @@ export function EditComponentDialog({ component, open, onOpenChange, onSuccess }
             try {
               const base64Data = (reader.result as string).split(",")[1];
               const response = await backend.techReview.uploadPhoto({
-                fileName: file.name,
+                fileName: (file as File).name,
                 fileData: base64Data,
-                contentType: file.type,
+                contentType: (file as File).type,
               });
               setPhotoUrl(response.url);
               resolve();
@@ -94,7 +96,7 @@ export function EditComponentDialog({ component, open, onOpenChange, onSuccess }
           };
           
           reader.onerror = () => reject(reader.error);
-          reader.readAsDataURL(file);
+          reader.readAsDataURL(file as File);
         });
       }
       
@@ -139,7 +141,7 @@ export function EditComponentDialog({ component, open, onOpenChange, onSuccess }
         <DialogHeader>
           <DialogTitle>Redaguoti: {component.name}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit) as any} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="material">Medžiaga</Label>

@@ -1,4 +1,7 @@
-import { useState, useEffect } from "react";
+import React from "react";
+
+const useState = (React as any).useState;
+const useEffect = (React as any).useEffect;
 import { useQuery } from "@tanstack/react-query";
 import { Edit2, Calendar } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";

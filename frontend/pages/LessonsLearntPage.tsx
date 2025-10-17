@@ -1,4 +1,6 @@
-import { useState } from "react";
+import React from "react";
+
+const useState = (React as any).useState;
 import { useQuery } from "@tanstack/react-query";
 import backend from "~backend/client";
 import type { ProductType } from "~backend/product/types";

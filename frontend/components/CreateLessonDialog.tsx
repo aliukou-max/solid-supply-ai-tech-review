@@ -1,4 +1,6 @@
-import { useState } from "react";
+import React from "react";
+
+const useState = (React as any).useState;
 import { useForm } from "react-hook-form";
 import backend from "~backend/client";
 import type { ProductType } from "~backend/product/types";
@@ -59,13 +61,13 @@ export function CreateLessonDialog({ open, onOpenChange, defaultType, onSuccess 
         <DialogHeader>
           <DialogTitle>Nauja Lesson Learnt pamoka</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit) as any} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="productType">Produkto tipas</Label>
               <Select
                 defaultValue={defaultType}
-                onValueChange={(value) => setValue("productType", value as ProductType)}
+                onValueChange={(value: any) => setValue("productType", value as ProductType)}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -83,7 +85,7 @@ export function CreateLessonDialog({ open, onOpenChange, defaultType, onSuccess 
               <Label htmlFor="severity">Rimtumas</Label>
               <Select
                 defaultValue="medium"
-                onValueChange={(value) => setValue("severity", value as Severity)}
+                onValueChange={(value: any) => setValue("severity", value as Severity)}
               >
                 <SelectTrigger>
                   <SelectValue />

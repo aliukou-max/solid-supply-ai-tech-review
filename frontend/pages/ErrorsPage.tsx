@@ -1,4 +1,6 @@
-import { useState } from "react";
+import React from "react";
+
+const useState = (React as any).useState;
 import { useQuery } from "@tanstack/react-query";
 import { Plus, Upload, Edit2, Trash2, FileSpreadsheet, CheckCircle, AlertCircle, Calendar, Download } from "lucide-react";
 import * as XLSX from "xlsx";

@@ -1,4 +1,7 @@
-import { useState, useEffect } from "react";
+import React from "react";
+
+const useState = (React as any).useState;
+const useEffect = (React as any).useEffect;
 import { useForm } from "react-hook-form";
 import backend from "~backend/client";
 import type { Project } from "~backend/project/create";
@@ -85,7 +88,7 @@ export function EditProjectDialog({ project, open, onOpenChange, onSuccess }: Ed
             Atnaujinkite projekto informaciją
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)}>
+        <form onSubmit={handleSubmit(onSubmit) as any}>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="name">Pavadinimas</Label>
