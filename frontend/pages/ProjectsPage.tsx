@@ -47,7 +47,7 @@ export function ProjectsPage() {
       try {
         const { products } = await backend.product.listByProject({ projectId: project.id });
         stats[project.id] = { 
-          products: products.map((p: any) => ({ id: p.id, type: p.type }))
+          products: products.map((p: any) => ({ id: p.ssCode, type: p.type }))
         };
       } catch (error) {
         stats[project.id] = { products: [] };
