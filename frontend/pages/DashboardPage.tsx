@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import backend from "~backend/client";
 import { Card } from "@/components/ui/card";
-import { CheckCircle2, Clock, TrendingUp, Box, Tag } from "lucide-react";
+import { CheckCircle2, Clock, Box } from "lucide-react";
 import { ProjectCard } from "@/components/ProjectCard";
 
 export function DashboardPage() {
@@ -37,7 +37,7 @@ export function DashboardPage() {
   return (
     <div className="p-8">
       <h1 className="text-3xl font-bold mb-8">Dashboard</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <Card className="p-6">
           <div className="flex items-center gap-4">
             <div className="h-12 w-12 bg-green-500/10 rounded-lg flex items-center justify-center">
@@ -62,31 +62,16 @@ export function DashboardPage() {
           </div>
         </Card>
 
-        <Link to="/nodes/by-product" className="block">
+        <Link to="/nodes" className="block">
           <Card className="p-6 hover:bg-accent/50 transition-colors cursor-pointer h-full">
             <div className="flex items-center gap-4">
               <div className="h-12 w-12 bg-orange-500/10 rounded-lg flex items-center justify-center">
                 <Box className="h-6 w-6 text-orange-600" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Mazgai per gaminius</p>
-                <p className="text-3xl font-bold">{totalProductNodes}</p>
-                <p className="text-xs text-muted-foreground mt-1">{products.length} gaminių</p>
-              </div>
-            </div>
-          </Card>
-        </Link>
-
-        <Link to="/nodes/by-brand" className="block">
-          <Card className="p-6 hover:bg-accent/50 transition-colors cursor-pointer h-full">
-            <div className="flex items-center gap-4">
-              <div className="h-12 w-12 bg-purple-500/10 rounded-lg flex items-center justify-center">
-                <Tag className="h-6 w-6 text-purple-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Mazgai per brandą</p>
-                <p className="text-3xl font-bold">{totalBrandNodes}</p>
-                <p className="text-xs text-muted-foreground mt-1">{brands.length} brandų</p>
+                <p className="text-sm text-muted-foreground">Mazgų biblioteka</p>
+                <p className="text-3xl font-bold">{totalProductNodes + totalBrandNodes}</p>
+                <p className="text-xs text-muted-foreground mt-1">{products.length} gaminių • {brands.length} brandų</p>
               </div>
             </div>
           </Card>

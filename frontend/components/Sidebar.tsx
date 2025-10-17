@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Package, Plus, FolderOpen, AlertCircle, BookOpen, Sparkles, Box, Tag } from "lucide-react";
+import { Package, Plus, FolderOpen, AlertCircle, BookOpen, Box } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
@@ -10,9 +10,8 @@ export function Sidebar() {
     { path: "/", label: "Dashboard", icon: FolderOpen },
     { path: "/projects", label: "Visi projektai", icon: FolderOpen },
     { path: "/projects/new", label: "+ Projekta", icon: Plus },
-    { path: "/nodes/by-product", label: "Mazgai per gaminius", icon: Box },
-    { path: "/nodes/by-brand", label: "Mazgai per brandą", icon: Tag },
-    { path: "/lessons-learnt", label: "Mazgu biblioteka", icon: BookOpen },
+    { path: "/nodes", label: "Mazgu biblioteka", icon: Box },
+    { path: "/lessons-learnt", label: "Pamokos", icon: BookOpen },
     { path: "/errors", label: "Klaidu registras", icon: AlertCircle },
   ];
 
