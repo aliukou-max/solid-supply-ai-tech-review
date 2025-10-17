@@ -128,12 +128,12 @@ export function EditProductionErrorDialog({ error, open, onOpenChange, onSuccess
             </div>
             <div className="space-y-2">
               <Label htmlFor="partName">Detalė (neprivaloma)</Label>
-              <Select value={partName} onValueChange={setPartName}>
+              <Select value={partName || "_none"} onValueChange={(val) => setPartName(val === "_none" ? "" : val)}>
                 <SelectTrigger className="bg-background">
                   <SelectValue placeholder="Pasirinkite detalę..." />
                 </SelectTrigger>
                 <SelectContent className="bg-popover">
-                  <SelectItem value="">-</SelectItem>
+                  <SelectItem value="_none">-</SelectItem>
                   {parts.map((part) => (
                     <SelectItem key={part.partName} value={part.partName}>
                       {part.partName}

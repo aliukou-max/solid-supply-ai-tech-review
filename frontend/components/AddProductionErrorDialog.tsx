@@ -101,12 +101,12 @@ export function AddProductionErrorDialog({ open, onOpenChange, onSuccess }: AddP
             </div>
             <div className="space-y-2">
               <Label htmlFor="partName">Detalė (neprivaloma)</Label>
-              <Select value={partName} onValueChange={setPartName}>
+              <Select value={partName || "_none"} onValueChange={(val) => setPartName(val === "_none" ? "" : val)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Pasirinkite detalę..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">-</SelectItem>
+                  <SelectItem value="_none">-</SelectItem>
                   {parts.map((part) => (
                     <SelectItem key={part.partName} value={part.partName}>
                       {part.partName}

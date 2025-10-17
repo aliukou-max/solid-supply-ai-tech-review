@@ -16,6 +16,7 @@ export const listParts = api<void, ListByPartResponse>(
     const result = await db.query`
       SELECT part_name, COUNT(*) as count
       FROM nodes
+      WHERE part_name IS NOT NULL AND part_name != ''
       GROUP BY part_name
       ORDER BY part_name ASC
     `;
