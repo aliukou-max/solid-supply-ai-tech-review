@@ -54,7 +54,12 @@ export function NodesByProductPage() {
         const description = parts[3] || "Aprašymas";
 
         const arrayBuffer = await file.arrayBuffer();
-        const base64 = Buffer.from(arrayBuffer).toString("base64");
+        const bytes = new Uint8Array(arrayBuffer);
+        let binary = '';
+        for (let i = 0; i < bytes.byteLength; i++) {
+          binary += String.fromCharCode(bytes[i]);
+        }
+        const base64 = btoa(binary);
 
         await backend.nodes.create({
           productCode,
