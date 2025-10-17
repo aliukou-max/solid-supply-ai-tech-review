@@ -36,6 +36,7 @@ interface FormData {
   name: string;
   client: string;
   status: string;
+  projectType: string;
 }
 
 export function EditProjectDialog({ project, open, onOpenChange, onSuccess }: EditProjectDialogProps) {
@@ -44,11 +45,13 @@ export function EditProjectDialog({ project, open, onOpenChange, onSuccess }: Ed
       name: project.name,
       client: project.client,
       status: project.status,
+      projectType: project.projectType || 'new_development',
     },
   });
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const status = watch("status");
+  const projectType = watch("projectType");
 
   useEffect(() => {
     if (open) {
@@ -56,6 +59,7 @@ export function EditProjectDialog({ project, open, onOpenChange, onSuccess }: Ed
         name: project.name,
         client: project.client,
         status: project.status,
+        projectType: project.projectType || 'new_development',
       });
     }
   }, [open, project, reset]);
@@ -68,6 +72,7 @@ export function EditProjectDialog({ project, open, onOpenChange, onSuccess }: Ed
         name: data.name,
         client: data.client,
         status: data.status,
+        projectType: data.projectType,
       });
       toast({ title: "Projektas atnaujintas!" });
       onSuccess();
@@ -116,6 +121,24 @@ export function EditProjectDialog({ project, open, onOpenChange, onSuccess }: Ed
                   <SelectItem value="active">Active</SelectItem>
                   <SelectItem value="completed">Completed</SelectItem>
                   <SelectItem value="on-hold">On Hold</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="projectType">Projekto tipas</Label>
+              {/* @ts-ignore */}
+              <Select value={projectType} onValueChange={(value: string) => setValue("projectType", value)}>
+                {/* @ts-ignore */}
+                <SelectTrigger>
+                  {/* @ts-ignore */}
+                  <SelectValue />
+                </SelectTrigger>
+                {/* @ts-ignore */}
+                <SelectContent>
+                  {/* @ts-ignore */}
+                  <SelectItem value="new_development">New Development</SelectItem>
+                  {/* @ts-ignore */}
+                  <SelectItem value="recurring">Recurring</SelectItem>
                 </SelectContent>
               </Select>
             </div>

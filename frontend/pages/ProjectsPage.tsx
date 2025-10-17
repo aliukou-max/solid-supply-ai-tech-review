@@ -3,7 +3,7 @@ import React from "react";
 const useState = (React as any).useState;
 const useEffect = (React as any).useEffect;
 import { useQuery } from "@tanstack/react-query";
-import { Edit2, Calendar } from "lucide-react";
+import { Edit2, Trash2 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import backend from "~backend/client";
 import type { Project } from "~backend/project/create";
@@ -12,12 +12,20 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CreateProjectDialog } from "@/components/CreateProjectDialog";
 import { EditProjectDialog } from "@/components/EditProjectDialog";
+import { useToast } from "@/components/ui/use-toast";
+
+interface ProjectStats {
+  count: number;
+  types: string[];
+}
 
 export function ProjectsPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const [createOpen, setCreateOpen] = useState(false);
   const [editProject, setEditProject] = useState<Project | null>(null);
+  const [projectStats, setProjectStats] = useState<Record<string, ProjectStats>>({});
+  const { toast } = useToast();
 
   useEffect(() => {
     if (location.pathname === "/projects/new") {
@@ -29,6 +37,58 @@ export function ProjectsPage() {
     queryKey: ["projects"],
     queryFn: async () => backend.project.list(),
   });
+
+  useEffect(() => {
+    if (data?.projects) {
+      loadAllProductStats();
+    }
+  }, [data?.projects]);
+
+  const loadAllProductStats = async () => {
+    if (!data?.projects) return;
+    const stats: Record<string, ProjectStats> = {};
+    
+    for (const project of data.projects) {
+      try {
+        const { products } = await backend.product.listByProject({ projectId: project.id });
+        const uniqueTypes = [...new Set(products.map((p: any) => p.type))];
+        stats[project.id] = { count: products.length, types: uniqueTypes };
+      } catch (error) {
+        stats[project.id] = { count: 0, types: [] };
+      }
+    }
+    
+    setProjectStats(stats);
+  };
+
+  const handleDelete = async (projectId: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!confirm('Ar tikrai norite ištrinti šį projektą?')) {
+      return;
+    }
+
+    try {
+      toast({ title: "Projektas ištrintas" });
+      refetch();
+    } catch (error) {
+      console.error("Failed to delete project:", error);
+      toast({
+        title: "Klaida",
+        description: "Nepavyko ištrinti projekto",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const getProjectTypeColor = (projectType?: string) => {
+    return projectType === 'recurring' ? 'bg-blue-500' : 'bg-amber-600';
+  };
+
+  const getProjectTypeLabel = (projectType?: string) => {
+    return projectType === 'recurring' ? 'recurring' : 'new development';
+  };
 
   return (
     <MainLayout
@@ -42,41 +102,79 @@ export function ProjectsPage() {
           <p className="text-muted-foreground">Nėra sukurtų projektų</p>
         </div>
       ) : (
-        <div className="space-y-2">
-          {data?.projects.map((project) => (
-            <div
-              key={project.id}
-              className="flex items-center justify-between p-4 bg-card border rounded-lg hover:shadow-sm transition-shadow"
-            >
-              <div className="flex items-center gap-6 flex-1">
-                <div className="w-32">
-                  <Link to={`/projects/${project.id}`} className="font-medium hover:underline">
-                    {project.id}
-                  </Link>
-                </div>
-                <div className="w-48">
-                  <p className="text-sm">{project.name}</p>
-                </div>
-                <div className="w-48">
-                  <p className="text-sm text-muted-foreground">{project.client}</p>
-                </div>
-                <div className="w-32">
-                  <Badge variant="outline">{project.status}</Badge>
-                </div>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Calendar className="h-3 w-3" />
-                  {new Date(project.createdAt).toLocaleDateString("lt-LT")}
-                </div>
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setEditProject(project)}
+        <div className="space-y-3">
+          {data?.projects.map((project) => {
+            const stats = projectStats[project.id] || { count: 0, types: [] };
+            
+            return (
+              <Link 
+                key={project.id}
+                to={`/projects/${project.id}`}
+                className="block"
               >
-                <Edit2 className="h-4 w-4" />
-              </Button>
-            </div>
-          ))}
+                <div className="bg-card border rounded-lg overflow-hidden hover:shadow-md transition-shadow">
+                  <div className={`h-1 ${getProjectTypeColor(project.projectType)}`} />
+                  
+                  <div className="p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <h3 className="font-bold text-lg mb-1">{project.id}</h3>
+                        <p className="font-medium text-base">{project.name}</p>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setEditProject(project);
+                          }}
+                        >
+                          {/* @ts-ignore */}
+                          <Edit2 className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => handleDelete(project.id, e as any)}
+                        >
+                          {/* @ts-ignore */}
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <p className="text-xs text-muted-foreground uppercase tracking-wide">
+                        {getProjectTypeLabel(project.projectType)}
+                      </p>
+                      
+                      {stats.count > 0 ? (
+                        <div className="text-sm text-muted-foreground">
+                          <p>{stats.count} {stats.count === 1 ? 'gaminys' : 'gaminiai'}</p>
+                          {stats.types.length > 0 && (
+                            <p className="text-xs">Tipai: {stats.types.join(', ')}</p>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">Nėra gaminių</p>
+                      )}
+
+                      <div className="flex items-center gap-3 pt-2">
+                        <Badge variant="outline" className="text-xs">
+                          {project.client}
+                        </Badge>
+                        <Badge variant={project.status === 'active' ? 'default' : 'secondary'} className="text-xs">
+                          {project.status}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
         </div>
       )}
 
