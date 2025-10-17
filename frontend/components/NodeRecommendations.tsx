@@ -34,10 +34,6 @@ export function NodeRecommendations({ productId }: NodeRecommendationsProps) {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    void loadRecommendations();
-  }, [productId, loadRecommendations]);
-
   const loadRecommendations = async () => {
     try {
       setLoading(true);
@@ -51,6 +47,10 @@ export function NodeRecommendations({ productId }: NodeRecommendationsProps) {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    void loadRecommendations();
+  }, [productId]);
 
   const getConfidenceColor = (confidence: number) => {
     if (confidence >= 80) return "text-green-600 dark:text-green-400";
