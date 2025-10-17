@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
+import { Upload, X } from "lucide-react";
 
 interface EditComponentDialogProps {
   component: Component;
@@ -41,12 +42,62 @@ export function EditComponentDialog({ component, open, onOpenChange, onSuccess }
     },
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [photoUrl, setPhotoUrl] = useState(component.photoUrl || "");
+  const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast({
+        title: "Klaida",
+        description: "Pasirinkite nuotraukos failą",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast({
+        title: "Klaida",
+        description: "Failo dydis negali viršyti 10MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const base64Data = (reader.result as string).split(",")[1];
+        const response = await backend.techReview.uploadPhoto({
+          fileName: file.name,
+          fileData: base64Data,
+          contentType: file.type,
+        });
+        setPhotoUrl(response.url);
+        toast({ title: "Nuotrauka įkelta sėkmingai" });
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error("Failed to upload photo:", error);
+      toast({
+        title: "Klaida",
+        description: "Nepavyko įkelti nuotraukos",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const onSubmit = async (data: FormData) => {
     setIsLoading(true);
     try {
-      await backend.techReview.updateComponent({ id: component.id, ...data });
+      await backend.techReview.updateComponent({ id: component.id, ...data, photoUrl });
       toast({ title: "Komponentas atnaujintas sėkmingai" });
       onSuccess();
     } catch (error) {
@@ -94,15 +145,47 @@ export function EditComponentDialog({ component, open, onOpenChange, onSuccess }
             <Label htmlFor="assemblyNotes">Montavimo pastabos</Label>
             <Textarea id="assemblyNotes" rows={3} {...register("assemblyNotes")} />
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="nodeId">Mazgo ID</Label>
-              <Input id="nodeId" {...register("nodeId")} />
+          <div className="space-y-2">
+            <Label htmlFor="nodeId">Mazgo ID</Label>
+            <Input id="nodeId" {...register("nodeId")} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="photo">Komponento nuotrauka</Label>
+            <div className="flex items-start gap-4">
+              <div className="flex-1">
+                <Input
+                  id="photo"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  disabled={isUploading}
+                  className="cursor-pointer"
+                />
+                <p className="text-sm text-muted-foreground mt-1">
+                  Maksimalus dydis: 10MB. Palaikomi formatai: JPG, PNG, WebP
+                </p>
+              </div>
+              {photoUrl && (
+                <div className="relative w-32 h-32 border rounded-lg overflow-hidden">
+                  <img src={photoUrl} alt="Preview" className="w-full h-full object-cover" />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="absolute top-1 right-1 h-6 w-6"
+                    onClick={() => setPhotoUrl("")}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="photoUrl">Nuotraukos URL</Label>
-              <Input id="photoUrl" {...register("photoUrl")} />
-            </div>
+            {isUploading && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Upload className="h-4 w-4 animate-pulse" />
+                <span>Įkeliama...</span>
+              </div>
+            )}
           </div>
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
