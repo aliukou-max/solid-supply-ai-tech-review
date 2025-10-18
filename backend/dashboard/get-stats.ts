@@ -152,14 +152,14 @@ export const getStats = api(
     `;
 
     const productCount = await db.queryRow<{ count: number }>`
-      SELECT COUNT(DISTINCT product_name)::int as count
+      SELECT COUNT(DISTINCT product_code)::int as count
       FROM nodes
     `;
 
     const brandCount = await db.queryRow<{ count: number }>`
-      SELECT COUNT(DISTINCT brand)::int as count
+      SELECT COUNT(DISTINCT brand_name)::int as count
       FROM nodes
-      WHERE brand IS NOT NULL
+      WHERE brand_name IS NOT NULL
     `;
 
     const recentProjects = await db.queryAll<{
