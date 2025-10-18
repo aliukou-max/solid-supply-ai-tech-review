@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Box, Edit2, Flag, Trash2 } from "lucide-react";
+import { Box, Edit2, Flag, Trash2, CheckSquare } from "lucide-react";
 import type { Product } from "~backend/product/types";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,9 +11,10 @@ interface ProductCardProps {
   product: Product;
   onEdit?: () => void;
   onDelete?: () => void;
+  onSelectParts?: () => void;
 }
 
-export function ProductCard({ product, onEdit, onDelete }: ProductCardProps) {
+export function ProductCard({ product, onEdit, onDelete, onSelectParts }: ProductCardProps) {
   const { data: componentPartsData } = useQuery({
     queryKey: ["component-parts-check", product.id],
     queryFn: async () => {
@@ -45,8 +46,23 @@ export function ProductCard({ product, onEdit, onDelete }: ProductCardProps) {
           </div>
         </CardHeader>
       </Link>
-      {(onEdit || onDelete) && (
+      {(onEdit || onDelete || onSelectParts) && (
         <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          {onSelectParts && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e: any) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onSelectParts();
+              }}
+              className="h-8 w-8 p-0"
+              title="Pasirinkti dalis aprašinėjimui"
+            >
+              <CheckSquare className="h-4 w-4" />
+            </Button>
+          )}
           {onEdit && (
             <Button
               variant="ghost"

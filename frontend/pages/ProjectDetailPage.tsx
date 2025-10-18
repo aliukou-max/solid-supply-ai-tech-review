@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/ProductCard";
 import { CreateProductDialog } from "@/components/CreateProductDialog";
 import { EditProductDialog } from "@/components/EditProductDialog";
+import { ReanalyzeDialog } from "@/components/tech-review/ReanalyzeDialog";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -16,6 +17,7 @@ export function ProjectDetailPage() {
   const { projectId } = useParams<{ projectId: string }>();
   const [createOpen, setCreateOpen] = useState(false);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
+  const [selectPartsProduct, setSelectPartsProduct] = useState<Product | null>(null);
   const { toast } = useToast();
 
   const { data: project, isLoading: projectLoading } = useQuery({
@@ -141,6 +143,7 @@ export function ProjectDetailPage() {
               product={product}
               onEdit={() => setEditProduct(product)}
               onDelete={() => handleDeleteProduct(product)}
+              onSelectParts={() => setSelectPartsProduct(product)}
             />
           ))}
         </div>
@@ -163,6 +166,19 @@ export function ProjectDetailPage() {
           product={editProduct}
           onSuccess={() => {
             setEditProduct(null);
+            refetch();
+          }}
+        />
+      )}
+
+      {selectPartsProduct && (
+        <ReanalyzeDialog
+          open={!!selectPartsProduct}
+          onOpenChange={(open) => !open && setSelectPartsProduct(null)}
+          productId={selectPartsProduct.id}
+          productTypeId={selectPartsProduct.productTypeId || ""}
+          onSuccess={() => {
+            setSelectPartsProduct(null);
             refetch();
           }}
         />
