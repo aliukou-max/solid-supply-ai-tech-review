@@ -248,14 +248,20 @@ export function ComponentPartsTabContent({
                 ) : null}
               </div>
               <Select
-                value={getFieldValue(componentPart, 'selectedNodeId') || ""}
+                value={getFieldValue(componentPart, 'selectedNodeId') || "__none__"}
                 onValueChange={(value) => {
                   if (value === "search") {
                     window.open(`/nodes/by-part?name=${encodeURIComponent(componentPart.partName)}`, '_blank');
                     return;
                   }
-                  updateEditData(componentPart.id, 'selectedNodeId', value || null);
-                  updateEditData(componentPart.id, 'hasNode', !!value);
+                  if (value === "__clear__") {
+                    updateEditData(componentPart.id, 'selectedNodeId', null);
+                    updateEditData(componentPart.id, 'hasNode', false);
+                    return;
+                  }
+                  if (value === "__none__") return;
+                  updateEditData(componentPart.id, 'selectedNodeId', value);
+                  updateEditData(componentPart.id, 'hasNode', true);
                 }}
                 disabled={editingPart !== componentPart.id}
               >
@@ -272,7 +278,7 @@ export function ComponentPartsTabContent({
                 </SelectTrigger>
                 <SelectContent>
                   {getFieldValue(componentPart, 'selectedNodeId') && (
-                    <SelectItem value="">-- Išvalyti --</SelectItem>
+                    <SelectItem value="__clear__">-- Išvalyti --</SelectItem>
                   )}
                   {nodeRecommendations[componentPart.id]?.map((rec) => (
                     <SelectItem key={rec.node.id} value={rec.node.id} className="py-2">
@@ -288,7 +294,7 @@ export function ComponentPartsTabContent({
                     </SelectItem>
                   ))}
                   {(!nodeRecommendations[componentPart.id] || nodeRecommendations[componentPart.id]?.length === 0) && (
-                    <SelectItem value="" disabled>
+                    <SelectItem value="__none__" disabled>
                       {loadingRecommendations === componentPart.id ? "Ieškoma pasiūlymų..." : "Nerasta pasiūlymų"}
                     </SelectItem>
                   )}
