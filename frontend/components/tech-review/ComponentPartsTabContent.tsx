@@ -207,15 +207,28 @@ export function ComponentPartsTabContent({
                     <SelectItem value="none">-- Nepasirinkta --</SelectItem>
                     {allNodesData?.nodes
                       ?.filter(node => {
-                        const partName = componentPart.partName?.toLowerCase() || '';
-                        const nodePart = node.partName?.toLowerCase() || '';
-                        return nodePart.includes(partName) || partName.includes(nodePart);
+                        const partName = componentPart.partName?.toLowerCase().trim() || '';
+                        const nodePart = node.partName?.toLowerCase().trim() || '';
+                        
+                        // Exact match or contains
+                        return partName === nodePart || 
+                               nodePart.includes(partName) || 
+                               partName.includes(nodePart);
                       })
                       .map(node => (
                         <SelectItem key={node.id} value={node.id}>
                           {node.productCode} - {node.brandName} ({node.partName})
                         </SelectItem>
                       ))}
+                    {(!allNodesData?.nodes || allNodesData.nodes.filter(node => {
+                      const partName = componentPart.partName?.toLowerCase().trim() || '';
+                      const nodePart = node.partName?.toLowerCase().trim() || '';
+                      return partName === nodePart || 
+                             nodePart.includes(partName) || 
+                             partName.includes(nodePart);
+                    }).length === 0) && (
+                      <SelectItem value="none" disabled>Nerasta mazgų "{componentPart.partName}"</SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
