@@ -210,7 +210,13 @@ export function TechReviewPage() {
         <div className="space-y-4">
           {product?.name && (
             <div className="bg-muted/50 rounded-lg p-4">
-              <Label className="text-sm font-medium mb-2 block">Gaminio aprašymas</Label>
+              <div className="flex items-center justify-between mb-2">
+                <Label className="text-sm font-medium">Aprašymas:</Label>
+                <Button variant="outline" size="sm" onClick={() => setReanalyzeOpen(true)}>
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Redaguoti dalis AI analizei
+                </Button>
+              </div>
               <p className="text-sm text-muted-foreground whitespace-pre-wrap">
                 {product.name}
               </p>
@@ -270,6 +276,7 @@ export function TechReviewPage() {
           onOpenChange={setReanalyzeOpen}
           productId={productId}
           productTypeId={product.productTypeId}
+          productDescription={product.name}
           onSuccess={() => {
             refetchParts();
             setReanalyzeOpen(false);

@@ -14,10 +14,11 @@ interface ReanalyzeDialogProps {
   onOpenChange: (open: boolean) => void;
   productId: string;
   productTypeId: string;
+  productDescription?: string;
   onSuccess: () => void;
 }
 
-export function ReanalyzeDialog({ open, onOpenChange, productId, productTypeId, onSuccess }: ReanalyzeDialogProps) {
+export function ReanalyzeDialog({ open, onOpenChange, productId, productTypeId, productDescription, onSuccess }: ReanalyzeDialogProps) {
   const [description, setDescription] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<any>(null);
@@ -40,8 +41,12 @@ export function ReanalyzeDialog({ open, onOpenChange, productId, productTypeId, 
       }
     };
 
+    if (open && productDescription) {
+      setDescription(productDescription);
+    }
+
     loadParts();
-  }, [open, productTypeId]);
+  }, [open, productTypeId, productDescription]);
 
   const togglePart = (partId: string) => {
     setAvailableParts(prev => prev.map(p => 
@@ -126,7 +131,7 @@ export function ReanalyzeDialog({ open, onOpenChange, productId, productTypeId, 
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="description">Gaminio aprašymas</Label>
+            <Label htmlFor="description">Aprašymas:</Label>
             <Textarea
               id="description"
               value={description}
