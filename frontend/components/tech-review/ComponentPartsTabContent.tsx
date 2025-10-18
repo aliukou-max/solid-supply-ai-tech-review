@@ -197,82 +197,17 @@ export function ComponentPartsTabContent({
                 />
               </div>
               <div className="space-y-1">
-                <Label htmlFor={`node-${componentPart.id}`} className="text-xs">Brėžinio mazgas</Label>
-                {editingPart === componentPart.id ? (
-                  <>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                      {allNodesData?.nodes
-                        ?.filter(node => {
-                          const partName = componentPart.partName?.toLowerCase().trim() || '';
-                          const nodePart = node.partName?.toLowerCase().trim() || '';
-                          
-                          return partName === nodePart || 
-                                 nodePart.includes(partName) || 
-                                 partName.includes(nodePart);
-                        })
-                        .map(node => {
-                          const isSelected = getFieldValue(componentPart, 'selectedNodeId') === node.id;
-                          return (
-                            <div
-                              key={node.id}
-                              onClick={() => updateEditData(componentPart.id, 'selectedNodeId', isSelected ? null : node.id)}
-                              className={`cursor-pointer border rounded p-2 transition-all hover:shadow-md ${
-                                isSelected ? 'border-primary bg-primary/5 ring-2 ring-primary' : 'border-border hover:border-primary/50'
-                              }`}
-                            >
-                              <div className="aspect-video bg-muted rounded overflow-hidden mb-1">
-                                <iframe
-                                  src={`/api/nodes/${node.id}/pdf#view=FitH`}
-                                  className="w-full h-full pointer-events-none"
-                                  title={node.productCode}
-                                />
-                              </div>
-                              <div className="text-[10px] font-medium truncate">{node.productCode} · {node.brandName}</div>
-                            </div>
-                          );
-                        })}
-                    </div>
-                    {(!allNodesData?.nodes || allNodesData.nodes.filter(node => {
-                      const partName = componentPart.partName?.toLowerCase().trim() || '';
-                      const nodePart = node.partName?.toLowerCase().trim() || '';
-                      return partName === nodePart || 
-                             nodePart.includes(partName) || 
-                             partName.includes(nodePart);
-                    }).length === 0) && (
-                      <div className="text-sm text-muted-foreground text-center py-8 border rounded-lg bg-muted/50">
-                        Nerasta mazgų detalei "{componentPart.partName}"
-                        <div className="mt-2">
-                          <Button variant="link" asChild>
-                            <a href="/nodes" target="_blank" rel="noopener noreferrer">
-                              Pridėti naują mazgą →
-                            </a>
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <div className="space-y-2">
-                    <div className="h-8 px-3 py-1.5 rounded-md border border-input bg-muted text-xs">
-                      {componentPart.selectedNodeId 
-                        ? allNodesData?.nodes?.find(n => n.id === componentPart.selectedNodeId)?.productCode || componentPart.selectedNodeId
-                        : 'Nepasirinkta'}
-                    </div>
-                    {componentPart.selectedNodeId && (() => {
-                      const selectedNode = allNodesData?.nodes?.find(n => n.id === componentPart.selectedNodeId);
-                      return selectedNode ? (
-                        <div className="border rounded p-2 bg-muted/50 space-y-1">
-                          <div className="text-xs font-medium">{selectedNode.productCode} - {selectedNode.brandName} · {selectedNode.description}</div>
-                          <iframe
-                            src={`/api/nodes/${selectedNode.id}/pdf`}
-                            className="w-full h-80 border rounded"
-                            title={`PDF: ${selectedNode.productCode}`}
-                          />
-                        </div>
-                      ) : null;
-                    })()}
-                  </div>
-                )}
+                <Label className="text-xs">Brėžinio mazgas</Label>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full justify-start text-xs h-8"
+                  asChild
+                >
+                  <a href={`/nodes/by-part?name=${encodeURIComponent(componentPart.partName)}`} target="_blank" rel="noopener noreferrer">
+                    🔍 Ieškoti "{componentPart.partName}" mazgų →
+                  </a>
+                </Button>
               </div>
             </div>
 

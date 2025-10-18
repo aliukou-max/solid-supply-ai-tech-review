@@ -9,6 +9,7 @@ import { ErrorsPage } from "./pages/ErrorsPage";
 import { NodesPage } from "./pages/NodesPage";
 import { NodesByProductPage } from "./pages/NodesByProductPage";
 import { NodesByBrandPage } from "./pages/NodesByBrandPage";
+import { NodesByPartPage } from "./pages/NodesByPartPage";
 import { Sidebar } from "./components/Sidebar";
 import { Toaster } from "@/components/ui/toaster";
 
@@ -31,6 +32,7 @@ function AppContent() {
           <Route path="/nodes" element={<NodesPage />} />
           <Route path="/nodes/by-product" element={<NodesByProductPage />} />
           <Route path="/nodes/by-brand" element={<NodesByBrandPage />} />
+          <Route path="/nodes/by-part" element={<NodesByPartPage />} />
         </Routes>
       </main>
     </div>
