@@ -192,11 +192,11 @@ export const exportProject = api(
           }
         }
 
-        const photos = await db.queryAll<{ id: number; url: string; fileName: string }>`
-          SELECT id, url, file_name as "fileName"
+        const photos = await db.queryAll<{ id: number; photoUrl: string }>`
+          SELECT id, photo_url as "photoUrl"
           FROM component_part_photos
           WHERE component_part_id = ${part.id}
-          ORDER BY uploaded_at
+          ORDER BY created_at
         `;
 
         if (photos.length > 0) {
@@ -205,10 +205,11 @@ export const exportProject = api(
 
           for (const photo of photos) {
             try {
-              const imageData = await componentPhotos.download(photo.fileName);
+              const fileName = photo.photoUrl.split('/').pop() || photo.fileName;
+              const imageData = await componentPhotos.download(fileName);
               const imageId = workbook.addImage({
                 buffer: imageData,
-                extension: photo.fileName.split('.').pop() || 'jpg',
+                extension: fileName.split('.').pop() || 'jpg',
               });
 
               sheet.addImage(imageId, {
@@ -218,8 +219,8 @@ export const exportProject = api(
 
               currentRow += 12;
             } catch (error) {
-              console.error(`Failed to add image ${photo.fileName}:`, error);
-              sheet.getCell(`B${currentRow}`).value = `[Image: ${photo.fileName}]`;
+              console.error(`Failed to add image ${photo.photoUrl}:`, error);
+              sheet.getCell(`B${currentRow}`).value = `[Image: ${photo.photoUrl}]`;
               currentRow++;
             }
           }
