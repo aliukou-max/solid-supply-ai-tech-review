@@ -204,10 +204,9 @@ async function generatePDF(
           
           const photoKey = photo.photoUrl.replace(/^https?:\/\/[^\/]+\//, '');
           const photoData = await componentPhotos.download(photoKey);
-          const photoBuffer = Buffer.from(photoData);
           
           doc.moveDown(0.3);
-          doc.image(photoBuffer, doc.x + 20, doc.y, { 
+          doc.image(photoData, doc.x + 20, doc.y, { 
             width: 200,
             height: 150,
             align: 'center'
