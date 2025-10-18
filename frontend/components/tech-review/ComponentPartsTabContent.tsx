@@ -213,7 +213,7 @@ export function ComponentPartsTabContent({
                       })
                       .map(node => (
                         <SelectItem key={node.id} value={node.id}>
-                          {node.code} - {node.brand} ({node.productName})
+                          {node.productCode} - {node.brandName} ({node.partName})
                         </SelectItem>
                       ))}
                   </SelectContent>
@@ -303,17 +303,32 @@ export function ComponentPartsTabContent({
                     <SelectValue placeholder="Pridėti klaidą..." />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="none">-- Pasirinkite klaidą --</SelectItem>
                     {allErrorsData?.errors
                       ?.filter(error => {
-                        const lowerDesc = error.description?.toLowerCase() || '';
                         const partName = componentPart.partName?.toLowerCase() || '';
-                        return lowerDesc.includes(partName);
+                        const errorPartName = error.partName?.toLowerCase() || '';
+                        const errorDesc = error.errorDescription?.toLowerCase() || '';
+                        
+                        return errorPartName.includes(partName) || 
+                               partName.includes(errorPartName) ||
+                               errorDesc.includes(partName);
                       })
                       .map(error => (
                         <SelectItem key={error.id} value={error.id.toString()}>
-                          {error.description}
+                          [{error.partName || '?'}] {error.errorDescription}
                         </SelectItem>
                       ))}
+                    {allErrorsData?.errors?.filter(error => {
+                      const partName = componentPart.partName?.toLowerCase() || '';
+                      const errorPartName = error.partName?.toLowerCase() || '';
+                      const errorDesc = error.errorDescription?.toLowerCase() || '';
+                      return errorPartName.includes(partName) || 
+                             partName.includes(errorPartName) ||
+                             errorDesc.includes(partName);
+                    }).length === 0 && (
+                      <SelectItem value="none" disabled>Nerasta klaidų šiai detalei</SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
                 {(getFieldValue(componentPart, 'linkedErrors') && getFieldValue(componentPart, 'linkedErrors').length > 0) && (
@@ -322,7 +337,7 @@ export function ComponentPartsTabContent({
                       const error = allErrorsData?.errors.find(e => e.id === errorId);
                       return error ? (
                         <Badge key={errorId} variant="secondary" className="gap-1">
-                          {error.description}
+                          [{error.partName || '?'}] {error.errorDescription}
                           <X 
                             className="h-3 w-3 cursor-pointer" 
                             onClick={() => {
