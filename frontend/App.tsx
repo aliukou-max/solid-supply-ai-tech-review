@@ -10,6 +10,7 @@ import { NodesPage } from "./pages/NodesPage";
 import { NodesByProductPage } from "./pages/NodesByProductPage";
 import { NodesByBrandPage } from "./pages/NodesByBrandPage";
 import { NodesByPartPage } from "./pages/NodesByPartPage";
+import ProductTypesAdminPage from "./pages/ProductTypesAdminPage";
 import { Sidebar } from "./components/Sidebar";
 import { Toaster } from "@/components/ui/toaster";
 
@@ -33,6 +34,7 @@ function AppContent() {
           <Route path="/nodes/by-product" element={<NodesByProductPage />} />
           <Route path="/nodes/by-brand" element={<NodesByBrandPage />} />
           <Route path="/nodes/by-part" element={<NodesByPartPage />} />
+          <Route path="/admin/product-types" element={<ProductTypesAdminPage />} />
         </Routes>
       </main>
     </div>
