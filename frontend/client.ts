@@ -568,6 +568,8 @@ import { create as api_production_errors_create_create } from "~backend/producti
 import { deleteErrors as api_production_errors_delete_deleteErrors } from "~backend/production-errors/delete";
 import { list as api_production_errors_list_list } from "~backend/production-errors/list";
 import { listByProduct as api_production_errors_list_by_product_listByProduct } from "~backend/production-errors/list-by-product";
+import { listDeleted as api_production_errors_list_deleted_listDeleted } from "~backend/production-errors/list-deleted";
+import { restoreErrors as api_production_errors_restore_restoreErrors } from "~backend/production-errors/restore";
 import { update as api_production_errors_update_update } from "~backend/production-errors/update";
 
 export namespace production_errors {
@@ -582,6 +584,8 @@ export namespace production_errors {
             this.deleteErrors = this.deleteErrors.bind(this)
             this.list = this.list.bind(this)
             this.listByProduct = this.listByProduct.bind(this)
+            this.listDeleted = this.listDeleted.bind(this)
+            this.restoreErrors = this.restoreErrors.bind(this)
             this.update = this.update.bind(this)
         }
 
@@ -626,12 +630,23 @@ export namespace production_errors {
             return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_production_errors_list_by_product_listByProduct>
         }
 
+        public async listDeleted(): Promise<ResponseType<typeof api_production_errors_list_deleted_listDeleted>> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI(`/production-errors/deleted`, {method: "GET", body: undefined})
+            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_production_errors_list_deleted_listDeleted>
+        }
+
+        public async restoreErrors(params: RequestType<typeof api_production_errors_restore_restoreErrors>): Promise<ResponseType<typeof api_production_errors_restore_restoreErrors>> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI(`/production-errors/restore`, {method: "POST", body: JSON.stringify(params)})
+            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_production_errors_restore_restoreErrors>
+        }
+
         public async update(params: RequestType<typeof api_production_errors_update_update>): Promise<ResponseType<typeof api_production_errors_update_update>> {
             // Construct the body with only the fields which we want encoded within the body (excluding query string or header fields)
             const body: Record<string, any> = {
                 errorDescription: params.errorDescription,
                 isResolved:       params.isResolved,
-                partName:         params.partName,
                 productCode:      params.productCode,
                 projectCode:      params.projectCode,
             }
