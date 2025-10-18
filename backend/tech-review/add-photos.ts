@@ -1,5 +1,6 @@
 import { api } from "encore.dev/api";
 import db from "../db";
+import { createAuditLog } from "./audit-types";
 
 interface AddPhotosRequest {
   componentId: number;
@@ -14,6 +15,9 @@ interface AddPhotosResponse {
 export const addPhotos = api<AddPhotosRequest, AddPhotosResponse>(
   { expose: true, method: "POST", path: "/tech-reviews/components/:componentId/photos" },
   async ({ componentId, photoUrls }) => {
+    const component = await db.queryRow<{ tech_review_id: number; name: string }>`
+      SELECT tech_review_id, name FROM components WHERE id = ${componentId}
+    `;
     const photoIds: number[] = [];
 
     const maxOrder = await db.queryRow<{ max: number | null }>`
@@ -35,6 +39,18 @@ export const addPhotos = api<AddPhotosRequest, AddPhotosResponse>(
         photoIds.push(result.id);
         nextOrder++;
       }
+    }
+
+    if (component && photoIds.length > 0) {
+      await createAuditLog({
+        techReviewId: component.tech_review_id,
+        userId: "system",
+        userName: "User",
+        action: "add",
+        entityType: "photo",
+        entityId: componentId.toString(),
+        changeDescription: `${photoIds.length} photo(s) added to component "${component.name}"`,
+      });
     }
 
     return { success: true, photoIds };

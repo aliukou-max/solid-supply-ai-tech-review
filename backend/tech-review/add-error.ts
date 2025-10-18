@@ -1,5 +1,6 @@
 import { api } from "encore.dev/api";
 import db from "../db";
+import { createAuditLog } from "./audit-types";
 
 interface AddErrorParams {
   techReviewId: number;
@@ -32,6 +33,16 @@ export const addError = api<AddErrorParams, ErrorResponse>(
     if (!row) {
       throw new Error("Failed to add error");
     }
+
+    await createAuditLog({
+      techReviewId: params.techReviewId,
+      userId: "system",
+      userName: "User",
+      action: "add",
+      entityType: "error",
+      entityId: row.id.toString(),
+      changeDescription: `Error added: "${params.description.substring(0, 100)}${params.description.length > 100 ? '...' : ''}"`,
+    });
 
     return { id: row.id };
   }

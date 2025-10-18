@@ -566,6 +566,7 @@ export namespace product_types {
 import { bulkCreate as api_production_errors_bulk_create_bulkCreate } from "~backend/production-errors/bulk-create";
 import { create as api_production_errors_create_create } from "~backend/production-errors/create";
 import { deleteErrors as api_production_errors_delete_deleteErrors } from "~backend/production-errors/delete";
+import { importErrorsExcel as api_production_errors_import_errors_excel_importErrorsExcel } from "~backend/production-errors/import-errors-excel";
 import { list as api_production_errors_list_list } from "~backend/production-errors/list";
 import { listByProduct as api_production_errors_list_by_product_listByProduct } from "~backend/production-errors/list-by-product";
 import { listDeleted as api_production_errors_list_deleted_listDeleted } from "~backend/production-errors/list-deleted";
@@ -582,6 +583,7 @@ export namespace production_errors {
             this.bulkCreate = this.bulkCreate.bind(this)
             this.create = this.create.bind(this)
             this.deleteErrors = this.deleteErrors.bind(this)
+            this.importErrorsExcel = this.importErrorsExcel.bind(this)
             this.list = this.list.bind(this)
             this.listByProduct = this.listByProduct.bind(this)
             this.listDeleted = this.listDeleted.bind(this)
@@ -610,6 +612,12 @@ export namespace production_errors {
             // Now make the actual call to the API
             const resp = await this.baseClient.callTypedAPI(`/production-errors`, {query, method: "DELETE", body: undefined})
             return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_production_errors_delete_deleteErrors>
+        }
+
+        public async importErrorsExcel(params: RequestType<typeof api_production_errors_import_errors_excel_importErrorsExcel>): Promise<ResponseType<typeof api_production_errors_import_errors_excel_importErrorsExcel>> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI(`/production-errors/import-excel`, {method: "POST", body: JSON.stringify(params)})
+            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_production_errors_import_errors_excel_importErrorsExcel>
         }
 
         public async list(): Promise<ResponseType<typeof api_production_errors_list_list>> {
@@ -749,6 +757,7 @@ import { deletePhoto as api_techReview_delete_photo_deletePhoto } from "~backend
 import { exportExcel as api_techReview_export_excel_exportExcel } from "~backend/tech-review/export-excel";
 import { exportPDF as api_techReview_export_pdf_exportPDF } from "~backend/tech-review/export-pdf";
 import { get as api_techReview_get_get } from "~backend/tech-review/get";
+import { getAuditHistory as api_techReview_get_audit_history_getAuditHistory } from "~backend/tech-review/get-audit-history";
 import { importExcel as api_techReview_import_excel_importExcel } from "~backend/tech-review/import-excel";
 import { listComponentParts as api_techReview_list_component_parts_listComponentParts } from "~backend/tech-review/list-component-parts";
 import { previewExcel as api_techReview_preview_excel_previewExcel } from "~backend/tech-review/preview-excel";
@@ -775,6 +784,7 @@ export namespace techReview {
             this.exportExcel = this.exportExcel.bind(this)
             this.exportPDF = this.exportPDF.bind(this)
             this.get = this.get.bind(this)
+            this.getAuditHistory = this.getAuditHistory.bind(this)
             this.importExcel = this.importExcel.bind(this)
             this.listComponentParts = this.listComponentParts.bind(this)
             this.previewExcel = this.previewExcel.bind(this)
@@ -857,6 +867,12 @@ export namespace techReview {
             // Now make the actual call to the API
             const resp = await this.baseClient.callTypedAPI(`/tech-reviews/${encodeURIComponent(params.productId)}`, {method: "GET", body: undefined})
             return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_techReview_get_get>
+        }
+
+        public async getAuditHistory(params: { techReviewId: number }): Promise<ResponseType<typeof api_techReview_get_audit_history_getAuditHistory>> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI(`/tech-reviews/${encodeURIComponent(params.techReviewId)}/audit-history`, {method: "GET", body: undefined})
+            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_techReview_get_audit_history_getAuditHistory>
         }
 
         public async importExcel(params: RequestType<typeof api_techReview_import_excel_importExcel>): Promise<ResponseType<typeof api_techReview_import_excel_importExcel>> {

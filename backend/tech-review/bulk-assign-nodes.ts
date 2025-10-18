@@ -1,5 +1,6 @@
 import { api } from "encore.dev/api";
 import db from "../db";
+import { createAuditLog } from "./audit-types";
 
 interface BulkAssignNodesRequest {
   assignments: Array<{
@@ -45,6 +46,23 @@ export const bulkAssignNodes = api(
       await db.exec`
         COMMIT
       `;
+
+      if (req.assignments.length > 0) {
+        const firstPart = await db.queryRow<{ tech_review_id: number }>`
+          SELECT tech_review_id FROM component_parts WHERE id = ${req.assignments[0].componentPartId}
+        `;
+
+        if (firstPart) {
+          await createAuditLog({
+            techReviewId: firstPart.tech_review_id,
+            userId: "system",
+            userName: "User",
+            action: "assign",
+            entityType: "node",
+            changeDescription: `Bulk assigned nodes to ${req.assignments.length} component part(s)`,
+          });
+        }
+      }
 
       return { success: true, updated: req.assignments.length };
     } catch (error) {

@@ -1,6 +1,7 @@
 import { api, APIError } from "encore.dev/api";
 import db from "../db";
 import type { TechReview, Component, Error as ReviewError, AISuggestion, ComponentPhoto } from "./types";
+import { createAuditLog } from "./audit-types";
 
 interface GetTechReviewResponse {
   review: TechReview;
@@ -73,6 +74,15 @@ export const get = api<{ productId: string }, GetTechReviewResponse>(
         createdAt: now,
         updatedAt: now,
       };
+
+      await createAuditLog({
+        techReviewId,
+        userId: "system",
+        userName: "System",
+        action: "create",
+        entityType: "tech_review",
+        changeDescription: `Tech review auto-created for product ${productId}`,
+      });
     }
 
     const components = await db.queryAll<Component>`

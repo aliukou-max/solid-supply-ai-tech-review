@@ -14,6 +14,7 @@ import { LessonsTab } from "@/components/tech-review/LessonsTab";
 import { ComponentPartsTabContent } from "@/components/tech-review/ComponentPartsTabContent";
 import { ReanalyzeDialog } from "@/components/tech-review/ReanalyzeDialog";
 import { NodeAssignmentSummary } from "@/components/tech-review/NodeAssignmentSummary";
+import { AuditHistoryTab } from "@/components/tech-review/AuditHistoryTab";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -359,6 +360,9 @@ export function TechReviewPage() {
                   </TabsTrigger>
                 );
               })}
+              <TabsTrigger value="history">
+                History
+              </TabsTrigger>
             </TabsList>
 
             <div>
@@ -387,6 +391,10 @@ export function TechReviewPage() {
                 </TabsContent>
               );
             })}
+            
+            <TabsContent value="history" className="space-y-4 mt-0">
+              {data?.review.id && <AuditHistoryTab techReviewId={data.review.id} />}
+            </TabsContent>
             </div>
           </Tabs>
         </div>

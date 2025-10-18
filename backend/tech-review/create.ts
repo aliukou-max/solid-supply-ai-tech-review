@@ -3,6 +3,7 @@ import db from "../db";
 import { getComponentTemplates } from "./templates";
 import type { TechReview } from "./types";
 import type { ProductType } from "../product/types";
+import { createAuditLog } from "./audit-types";
 
 interface CreateTechReviewParams {
   productId: string;
@@ -62,6 +63,15 @@ export const create = api<CreateTechReviewParams, TechReview>(
         `;
       }
     }
+
+    await createAuditLog({
+      techReviewId,
+      userId: "system",
+      userName: "System",
+      action: "create",
+      entityType: "tech_review",
+      changeDescription: `Tech review created for product ${params.productId}`,
+    });
 
     return {
       id: techReviewId,
