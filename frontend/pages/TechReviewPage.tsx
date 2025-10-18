@@ -208,7 +208,7 @@ export function TechReviewPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {product?.name && (
+          {data?.review.generalNotes && (
             <div className="bg-muted/50 rounded-lg p-4">
               <div className="flex items-center justify-between mb-2">
                 <Label className="text-sm font-medium">Aprašymas:</Label>
@@ -218,7 +218,7 @@ export function TechReviewPage() {
                 </Button>
               </div>
               <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                {product.name}
+                {data.review.generalNotes}
               </p>
             </div>
           )}
@@ -276,9 +276,10 @@ export function TechReviewPage() {
           onOpenChange={setReanalyzeOpen}
           productId={productId}
           productTypeId={product.productTypeId}
-          productDescription={product.name}
+          productDescription={data?.review.generalNotes}
           onSuccess={() => {
             refetchParts();
+            refetch();
             setReanalyzeOpen(false);
           }}
         />

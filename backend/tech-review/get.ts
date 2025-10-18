@@ -14,7 +14,7 @@ export const get = api<{ productId: string }, GetTechReviewResponse>(
   { expose: true, method: "GET", path: "/tech-reviews/:productId" },
   async ({ productId }) => {
     let review = await db.queryRow<TechReview>`
-      SELECT id, product_id as "productId", status, created_at as "createdAt", updated_at as "updatedAt"
+      SELECT id, product_id as "productId", status, general_notes as "generalNotes", created_at as "createdAt", updated_at as "updatedAt"
       FROM tech_reviews
       WHERE product_id = ${productId}
     `;
@@ -69,6 +69,7 @@ export const get = api<{ productId: string }, GetTechReviewResponse>(
         id: techReviewId,
         productId: productId,
         status: "draft",
+        generalNotes: undefined,
         createdAt: now,
         updatedAt: now,
       };

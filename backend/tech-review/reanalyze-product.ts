@@ -67,6 +67,12 @@ export const reanalyzeProduct = api(
         WHERE tech_review_id = ${techReview.id}
       `;
 
+      await db.exec`
+        UPDATE tech_reviews
+        SET general_notes = ${req.description}, updated_at = NOW()
+        WHERE id = ${techReview.id}
+      `;
+
       const allowedPartIds = req.selectedPartIds && req.selectedPartIds.length > 0 
         ? new Set(req.selectedPartIds)
         : null;

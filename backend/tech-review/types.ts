@@ -2,6 +2,7 @@ export interface TechReview {
   id: number;
   productId: string;
   status: string;
+  generalNotes?: string;
   createdAt: Date;
   updatedAt: Date;
 }
