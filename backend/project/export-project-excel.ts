@@ -19,8 +19,8 @@ export const exportProjectExcel = api(
     path: "/project/:projectId/export-excel",
   },
   async ({ projectId }: ExportProjectExcelRequest): Promise<ExportProjectExcelResponse> => {
-    const project = await db.queryRow<{ id: string; name: string; client: string; code?: string; type: string }>`
-      SELECT id, name, client, code, type FROM projects WHERE id = ${projectId}
+    const project = await db.queryRow<{ id: string; name: string; client: string; projectType: string }>`
+      SELECT id, name, client, project_type as "projectType" FROM projects WHERE id = ${projectId}
     `;
 
     if (!project) {
@@ -63,9 +63,8 @@ export const exportProjectExcel = api(
     const infoRows = [
       ['Project ID', project.id],
       ['Project Name', project.name],
-      ['Project Code', project.code || 'N/A'],
       ['Client', project.client],
-      ['Project Type', project.type],
+      ['Project Type', project.projectType],
       ['Total Products', products.length.toString()],
       ['Export Date', new Date().toLocaleDateString()],
     ];
@@ -198,7 +197,7 @@ export const exportProjectExcel = api(
         let assignedNodeName = '';
         if (part.selectedNodeId) {
           const node = await db.queryRow<{ productName: string; brand: string | null; partName: string }>`
-            SELECT product_name as "productName", brand, part_name as "partName"
+            SELECT product_code as "productName", brand_name as "brand", part_name as "partName"
             FROM nodes
             WHERE id = ${part.selectedNodeId}
           `;
@@ -458,7 +457,7 @@ export const exportProjectExcel = api(
 
       for (const part of partsWithNodes) {
         const node = await db.queryRow<{ productName: string; brand: string | null; partName: string }>`
-          SELECT product_name as "productName", brand, part_name as "partName"
+          SELECT product_code as "productName", brand_name as "brand", part_name as "partName"
           FROM nodes
           WHERE id = ${part.selectedNodeId}
         `;

@@ -36,8 +36,8 @@ export const exportExcel = api(
       throw APIError.notFound("product not found");
     }
 
-    const project = await db.queryRow<{ name: string; code?: string; type: string }>`
-      SELECT name, code, type
+    const project = await db.queryRow<{ id: string; name: string; projectType: string }>`
+      SELECT id, name, project_type as "projectType"
       FROM projects
       WHERE id = ${product.projectId}
     `;
@@ -48,7 +48,7 @@ export const exportExcel = api(
         c.grain_direction as "grainDirection", c.technical_notes as "technicalNotes",
         c.assembly_notes as "assemblyNotes", c.node_id as "nodeId", c.photo_url as "photoUrl",
         c.created_at as "createdAt", c.updated_at as "updatedAt",
-        n.name as "nodeName", n.drawing_url as "nodeDrawingUrl"
+        n.product_code as "nodeName", n.pdf_url as "nodeDrawingUrl"
       FROM components c
       LEFT JOIN nodes n ON c.node_id = n.id
       WHERE c.tech_review_id = ${review.id}
@@ -77,7 +77,7 @@ export const exportExcel = api(
         e.description, e.solution, e.lesson_learnt_id as "lessonLearntId", e.status,
         e.created_at as "createdAt", e.resolved_at as "resolvedAt",
         c.name as "componentName",
-        ll.title as "lessonTitle"
+        ll.error_description as "lessonTitle"
       FROM errors e
       LEFT JOIN components c ON e.component_id = c.id
       LEFT JOIN lessons_learnt ll ON e.lesson_learnt_id = ll.id
@@ -97,9 +97,9 @@ export const exportExcel = api(
       SELECT 
         cp.id, cp.part_name as "partName", cp.has_done as "hasDone",
         cp.has_node as "hasNode", cp.had_errors as "hadErrors", cp.notes,
-        n.name as "nodeName"
+        n.product_code as "nodeName"
       FROM component_parts cp
-      LEFT JOIN nodes n ON cp.node_id = n.id
+      LEFT JOIN nodes n ON cp.selected_node_id = n.id
       WHERE cp.tech_review_id = ${review.id}
       ORDER BY cp.sort_order, cp.part_name
     `;
@@ -115,10 +115,10 @@ export const exportExcel = api(
       category: string;
       occurrenceCount: number;
     }>`
-      SELECT id, title, description, solution, category, occurrence_count as "occurrenceCount"
+      SELECT id, error_description as "title", error_description as "description", solution, product_type as "category", occurrence_count as "occurrenceCount"
       FROM lessons_learnt
       WHERE id = ANY(${uniqueLessonIds})
-      ORDER BY title ASC
+      ORDER BY error_description ASC
     ` : [];
 
     const excelBuffer = await generateExcel(review, product, project, components, errors, componentParts, lessons);
@@ -132,7 +132,7 @@ export const exportExcel = api(
 async function generateExcel(
   review: TechReview,
   product: { name: string; type: string },
-  project: { name: string; code?: string; type: string } | null,
+  project: { id: string; name: string; projectType: string } | null,
   components: (Component & { nodeName?: string; nodeDrawingUrl?: string })[],
   errors: (ReviewError & { componentName?: string; lessonTitle?: string })[],
   componentParts: { id: number; partName: string; hasDone: boolean; hasNode: boolean; hadErrors: boolean; notes?: string; nodeName?: string }[],
@@ -162,8 +162,8 @@ async function generateExcel(
     ['Product Name', product.name],
     ['Product Type', product.type],
     ['Project Name', project ? project.name : 'N/A'],
-    ['Project Code', project?.code || 'N/A'],
-    ['Project Type', project ? project.type : 'N/A'],
+    ['Project Code', project?.id || 'N/A'],
+    ['Project Type', project ? project.projectType : 'N/A'],
     ['Review Status', review.status.toUpperCase()],
     ['Created Date', review.createdAt.toLocaleDateString()],
     ['Last Updated', review.updatedAt.toLocaleDateString()],

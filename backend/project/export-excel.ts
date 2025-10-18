@@ -180,7 +180,7 @@ export const exportProject = api(
 
         if (part.selectedNodeId) {
           const node = await db.queryRow<{ productName: string; brand: string | null; partName: string }>`
-            SELECT product_name as "productName", brand, part_name as "partName"
+            SELECT product_code as "productName", brand_name as "brand", part_name as "partName"
             FROM nodes
             WHERE id = ${part.selectedNodeId}
           `;
