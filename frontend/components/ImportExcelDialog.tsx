@@ -77,10 +77,15 @@ export function ImportExcelDialog({ open, onOpenChange, onSuccess }: ImportExcel
   useEffect(() => {
     const loadProductTypes = async () => {
       try {
-        const { productTypes } = await backend.productTypes.list();
+        const { productTypes } = await backend.product_types.list();
         setProductTypes(productTypes);
       } catch (error) {
         console.error("Failed to load product types:", error);
+        toast({
+          title: "Klaida",
+          description: "Nepavyko pakrauti produktų tipų",
+          variant: "destructive",
+        });
       }
     };
     if (open) {
