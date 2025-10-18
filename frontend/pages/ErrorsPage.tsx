@@ -82,58 +82,37 @@ export function ErrorsPage() {
     if (!file) return;
 
     try {
-      const XLSX = await import("https://cdn.sheetjs.com/xlsx-0.20.1/package/xlsx.mjs");
-      const arrayBuffer = await file.arrayBuffer();
-      const workbook = XLSX.read(arrayBuffer, { type: "array" });
-      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-      
-      // Read as array format to get columns by index
-      const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 }) as any[][];
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const base64 = (e.target?.result as string)?.split(',')[1];
+          if (!base64) {
+            toast({ title: "Klaida skaitant failą", variant: "destructive" });
+            return;
+          }
 
-      console.log("Excel data loaded:", jsonData);
-      console.log("First row (header):", jsonData[0]);
-      console.log("Second row (data):", jsonData[1]);
+          const result = await backend.production_errors.importErrorsExcel({
+            fileData: base64,
+            filename: file.name,
+          });
 
-      if (jsonData.length === 0) {
-        toast({ title: "Nėra duomenų importavimui", variant: "destructive" });
-        return;
-      }
-
-      // Skip first row (header) and process data
-      const errorsToImport = jsonData
-        .slice(1)
-        .filter((row) => {
-          console.log("Processing row:", row);
-          if (!row || row.length === 0) return false;
-          const errorDesc = row[2];
-          if (!errorDesc) return false;
-          const trimmed = String(errorDesc).trim();
-          return trimmed.length > 0;
-        })
-        .map((row) => {
-          const projectCode = row[0] ? String(row[0]).trim() : "";
-          const productCode = row[1] ? String(row[1]).trim() : "";
+          const message = `✓ Importuota ${result.errorsCreated} klaidų${result.skipped > 0 ? `, praleista ${result.skipped}` : ''}`;
           
-          return {
-            projectCode: projectCode || undefined,
-            productCode: productCode || undefined,
-            errorDescription: String(row[2]).trim(),
-          };
-        });
+          if (result.warnings.length > 0) {
+            console.log("Import warnings:", result.warnings);
+          }
 
-      console.log("Errors to import:", errorsToImport);
-
-      if (errorsToImport.length === 0) {
-        toast({ title: "Nėra duomenų importavimui. Patikrinkite ar C stulpelis užpildytas.", variant: "destructive" });
-        return;
-      }
-
-      await backend.production_errors.bulkCreate({ errors: errorsToImport });
-      toast({ title: `Importuota klaidų: ${errorsToImport.length}` });
-      refetch();
+          toast({ title: message });
+          refetch();
+        } catch (error) {
+          console.error("Import error:", error);
+          toast({ title: "Klaida importuojant Excel", variant: "destructive" });
+        }
+      };
+      reader.readAsDataURL(file);
     } catch (error) {
-      console.error("Import error:", error);
-      toast({ title: "Klaida importuojant Excel", variant: "destructive" });
+      console.error("File read error:", error);
+      toast({ title: "Klaida skaitant failą", variant: "destructive" });
     }
 
     event.target.value = "";
