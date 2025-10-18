@@ -250,15 +250,33 @@ export const importExcel = api(
 
                   console.log(`✓ AI matched "${comp.name}" → "${matchingPart.partName}": ${comp.material}, ${comp.finish}`);
                 } else {
-                  const maxSortOrder = parts.length > 0 ? Math.max(...parts.map(p => p.sortOrder)) : 0;
-                  const newSortOrder = maxSortOrder + 1;
-                  
-                  const partId = `PTP-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-                  
-                  await db.exec`
-                    INSERT INTO product_type_parts (id, product_type_id, name, sort_order, created_at)
-                    VALUES (${partId}, ${productType}, ${comp.name}, ${newSortOrder}, NOW())
+                  const existingTypePart = await db.queryRow<{ id: string; sortOrder: number }>`
+                    SELECT id, sort_order as "sortOrder"
+                    FROM product_type_parts
+                    WHERE product_type_id = ${productType}
+                      AND LOWER(name) = LOWER(${comp.name})
                   `;
+
+                  let partId: string;
+                  let sortOrder: number;
+
+                  if (existingTypePart) {
+                    partId = existingTypePart.id;
+                    sortOrder = existingTypePart.sortOrder;
+                    console.log(`✓ Found existing product_type_part "${comp.name}" (${partId})`);
+                  } else {
+                    const maxSortOrder = parts.length > 0 ? Math.max(...parts.map(p => p.sortOrder)) : 0;
+                    sortOrder = maxSortOrder + 1;
+                    partId = `PTP-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+                    
+                    await db.exec`
+                      INSERT INTO product_type_parts (id, product_type_id, name, sort_order, created_at)
+                      VALUES (${partId}, ${productType}, ${comp.name}, ${sortOrder}, NOW())
+                    `;
+                    
+                    console.log(`✓ AI created new product_type_part "${comp.name}" (${partId})`);
+                    warnings.push(`${row.ssCode} – AI sukūrė naują tipo dalį "${comp.name}"`);
+                  }
                   
                   const notes = [
                     comp.other,
@@ -273,7 +291,7 @@ export const importExcel = api(
                       created_at, updated_at
                     )
                     VALUES (
-                      ${techReview.id}, ${partId}, ${comp.name}, ${newSortOrder},
+                      ${techReview.id}, ${partId}, ${comp.name}, ${sortOrder},
                       false, false, false,
                       ${comp.material || null}, ${comp.finish || null}, ${notes || null},
                       NOW(), NOW()
@@ -281,9 +299,10 @@ export const importExcel = api(
                     RETURNING id
                   `;
                   
-                  parts.push({ id: partId, name: comp.name, sortOrder: newSortOrder });
+                  parts.push({ id: partId, name: comp.name, sortOrder });
+                  createdComponentParts.push({ id: newComponentPart!.id, partName: comp.name });
                   
-                  console.log(`✓ AI created new part "${comp.name}" with material: ${comp.material}, finish: ${comp.finish}`);
+                  console.log(`✓ AI created new component_part "${comp.name}" with material: ${comp.material}, finish: ${comp.finish}`);
                   warnings.push(`${row.ssCode} – AI sukūrė naują kortelę "${comp.name}"`);
                 }
 
