@@ -91,7 +91,7 @@ INSERT INTO product_type_parts (id, product_type_id, name, sort_order, created_a
 ('PTP-DrawerCabinet-5', 'Drawer Cabinet', 'Plinth', 5, NOW()),
 ('PTP-DrawerCabinet-6', 'Drawer Cabinet', 'Handles', 6, NOW()),
 
-('PTP-Backwall-1', 'Backwall', 'Front fascia', 1, NOW()),
+('PTP-Backwall-1', 'Backwall', 'Header', 1, NOW()),
 ('PTP-Backwall-2', 'Backwall', 'Back panel', 2, NOW()),
 ('PTP-Backwall-3', 'Backwall', 'Sides', 3, NOW()),
 ('PTP-Backwall-4', 'Backwall', 'Visual / Lightbox', 4, NOW()),
@@ -131,7 +131,7 @@ INSERT INTO product_type_parts (id, product_type_id, name, sort_order, created_a
 
 ('PTP-DisplayCounter-1', 'Display Counter', 'Top glass', 1, NOW()),
 ('PTP-DisplayCounter-2', 'Display Counter', 'Base cabinet', 2, NOW()),
-('PTP-DisplayCounter-3', 'Display Counter', 'Front fascia', 3, NOW()),
+('PTP-DisplayCounter-3', 'Display Counter', 'Header', 3, NOW()),
 ('PTP-DisplayCounter-4', 'Display Counter', 'Lighting channel', 4, NOW()),
 ('PTP-DisplayCounter-5', 'Display Counter', 'Storage compartment', 5, NOW()),
 
