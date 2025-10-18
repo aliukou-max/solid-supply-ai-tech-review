@@ -19,13 +19,19 @@ export function TechReviewPage() {
 
   const { data: product, isLoading: productLoading } = useQuery({
     queryKey: ["product", productId],
-    queryFn: async () => backend.product.get({ id: productId! }),
+    queryFn: async () => {
+      if (!productId) throw new Error("Product ID is required");
+      return backend.product.get({ id: productId });
+    },
     enabled: !!productId,
   });
 
   const { data, isLoading: reviewLoading, refetch } = useQuery({
     queryKey: ["tech-review", productId],
-    queryFn: async () => backend.techReview.get({ productId: productId! }),
+    queryFn: async () => {
+      if (!productId) throw new Error("Product ID is required");
+      return backend.techReview.get({ productId });
+    },
     enabled: !!productId,
   });
 
