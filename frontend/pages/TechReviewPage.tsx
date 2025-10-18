@@ -199,20 +199,18 @@ export function TechReviewPage() {
       {productLoading || reviewLoading ? (
         <div className="text-center py-12 text-muted-foreground">Kraunama...</div>
       ) : (
-        <Tabs key={productTypeParts?.parts[0]?.name} defaultValue={productTypeParts?.parts[0]?.name || "errors"} className="flex gap-6">
-          <div className="w-64 flex-shrink-0">
-            <TabsList className="flex flex-col h-auto w-full items-stretch">
-              {productTypeParts?.parts.map((part) => {
-                return (
-                  <TabsTrigger key={part.id} value={part.name} className="justify-start">
-                    {part.name}
-                  </TabsTrigger>
-                );
-              })}
-            </TabsList>
-          </div>
+        <Tabs key={productTypeParts?.parts[0]?.name} defaultValue={productTypeParts?.parts[0]?.name || "errors"} className="space-y-4">
+          <TabsList className="w-full justify-start h-auto flex-wrap">
+            {productTypeParts?.parts.map((part) => {
+              return (
+                <TabsTrigger key={part.id} value={part.name}>
+                  {part.name}
+                </TabsTrigger>
+              );
+            })}
+          </TabsList>
 
-          <div className="flex-1 min-w-0">
+          <div>
             {productTypeParts?.parts.map((part) => {
               const partComponentParts = componentPartsData?.parts.filter(
                 cp => cp.productTypePartId === part.id
