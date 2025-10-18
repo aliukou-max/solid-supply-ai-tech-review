@@ -55,8 +55,9 @@ export const importExcel = api(
       if (!req.fileData) throw new Error("Excel failas tuščias arba nerastas");
 
       const buffer = Buffer.from(req.fileData, "base64");
+      const data = new Uint8Array(buffer);
       const workbook = new ExcelJS.Workbook();
-      await workbook.xlsx.load(buffer as any);
+      await workbook.xlsx.load(data);
 
       const sheet = await findValidSheet(workbook);
       console.log(`📘 Naudojamas lapas: ${sheet.name}`);
@@ -132,6 +133,11 @@ export const importExcel = api(
         }
 
         if (!ss) break;
+        
+        if (!name) {
+          warnings.push(`⚠ Eilutė ${i}: Tuščias pavadinimas (C stulpelis), praleista.`);
+          continue;
+        }
 
         if (i === 26) {
           console.log(`\n📋 FIRST PRODUCT Row ${i}:`);
