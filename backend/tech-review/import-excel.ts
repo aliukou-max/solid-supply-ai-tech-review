@@ -18,6 +18,7 @@ interface ExcelRow {
 interface ImportExcelRequest {
   fileData: string;
   filename: string;
+  manualTypeOverrides?: Record<string, string>;
 }
 
 interface ImportExcelResponse {
@@ -166,7 +167,13 @@ export const importExcel = api(
             continue;
           }
 
-          const productType = await determineProductTypeFromName(row.productName);
+          let productType: string;
+          if (req.manualTypeOverrides && req.manualTypeOverrides[row.ssCode]) {
+            productType = req.manualTypeOverrides[row.ssCode];
+            console.log(`✓ Produktas "${row.ssCode}" naudoja rankinį tipą: ${productType}`);
+          } else {
+            productType = await determineProductTypeFromName(row.productName, row.description);
+          }
 
           await db.exec`
             INSERT INTO products (id, project_id, ss_code, name, type, product_type_id, has_drawing, created_at, updated_at)
@@ -378,48 +385,27 @@ function extractProjectCode(filename: string): string {
   return match ? match[0].toUpperCase() : "";
 }
 
-async function determineProductTypeFromName(productName: string): Promise<string> {
-  const name = productName.toLowerCase();
-
-  const allTypes = await db.queryAll<{ id: string; name: string }>`
-    SELECT id, name FROM product_types ORDER BY name
+async function determineProductTypeFromName(productName: string, description: string): Promise<string> {
+  const combinedText = `${productName} ${description}`.toLowerCase();
+  
+  const synonyms = await db.queryAll<{ synonym: string; productTypeId: string }>`
+    SELECT s.synonym, s.product_type_id as "productTypeId"
+    FROM product_type_synonyms s
+    ORDER BY LENGTH(s.synonym) DESC
   `;
 
-  for (const type of allTypes) {
-    const typeName = type.name.toLowerCase();
-    const typeWords = typeName.split(/\s+/);
-
-    for (const word of typeWords) {
-      if (word.length > 3 && name.includes(word)) {
-        console.log(`✓ Produktas "${productName}" priskirtas tipui "${type.name}"`);
-        return type.id;
-      }
+  for (const { synonym, productTypeId } of synonyms) {
+    const pattern = new RegExp(`\\b${synonym.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+    if (pattern.test(combinedText)) {
+      console.log(`✓ Produktas "${productName}" priskirtas tipui "${productTypeId}" per sinonimą "${synonym}"`);
+      return productTypeId;
     }
   }
 
-  if (name.includes("backwall") || name.includes("back wall") || name.includes("wall")) {
-    const backwall = allTypes.find(t => t.name.toLowerCase().includes("backwall"));
-    if (backwall) return backwall.id;
-  }
-  if (name.includes("shelf") || name.includes("shelv") || name.includes("lentyna")) {
-    const shelf = allTypes.find(t => t.name.toLowerCase().includes("lentyna") || t.name.toLowerCase().includes("shelf"));
-    if (shelf) return shelf.id;
-  }
-  if (name.includes("vitrina") || name.includes("showcase") || name.includes("cabinet") || name.includes("counter")) {
-    const vitrina = allTypes.find(t => t.name.toLowerCase().includes("vitrina") || t.name.toLowerCase().includes("cabinet"));
-    if (vitrina) return vitrina.id;
-  }
-  if (name.includes("table") || name.includes("stalas") || name.includes("island") || name.includes("desk")) {
-    const table = allTypes.find(t => t.name.toLowerCase().includes("stalas") || t.name.toLowerCase().includes("table"));
-    if (table) return table.id;
-  }
-  if (name.includes("lightbox") || name.includes("light box")) {
-    const lightbox = allTypes.find(t => t.name.toLowerCase().includes("lightbox"));
-    if (lightbox) return lightbox.id;
-  }
-
   console.log(`⚠ Produktas "${productName}" nebuvo priskirtas jokiam tipui, naudojamas "Kita"`);
-  const kita = allTypes.find(t => t.name.toLowerCase() === "kita");
+  const kita = await db.queryRow<{ id: string }>`
+    SELECT id FROM product_types WHERE LOWER(name) = 'kita' OR LOWER(id) = 'kita' LIMIT 1
+  `;
   return kita?.id || "Kita";
 }
 

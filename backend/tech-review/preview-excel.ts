@@ -1,5 +1,6 @@
 import { api } from "encore.dev/api";
 import ExcelJS from "exceljs";
+import db from "../db";
 
 interface ColumnMapping {
   ssCodeColumn: string;
@@ -14,6 +15,9 @@ interface PreviewRow {
   productName: string;
   description: string;
   rowNumber: number;
+  detectedType: string | null;
+  detectedTypeId: string | null;
+  matchedKeyword: string | null;
 }
 
 interface PreviewExcelRequest {
@@ -81,7 +85,7 @@ export const previewExcel = api(
         warnings.push(`Alternative description columns found: ${columnMapping.alternativeDescriptionColumns.join(", ")}`);
       }
 
-      const { rows, totalCount } = extractPreviewRows(sheet, columnMapping);
+      const { rows, totalCount } = await extractPreviewRows(sheet, columnMapping);
       
       return {
         projectCode,
@@ -177,10 +181,10 @@ function detectColumns(sheet: ExcelJS.Worksheet): ColumnMapping {
   };
 }
 
-function extractPreviewRows(
+async function extractPreviewRows(
   sheet: ExcelJS.Worksheet,
   mapping: ColumnMapping
-): { rows: PreviewRow[]; totalCount: number } {
+): Promise<{ rows: PreviewRow[]; totalCount: number }> {
   const startRow = 26;
   const maxPreview = 5;
   const rows: PreviewRow[] = [];
@@ -203,11 +207,15 @@ function extractPreviewRows(
     if (name) {
       totalCount++;
       if (rows.length < maxPreview) {
+        const typeMatch = await detectProductType(name, desc);
         rows.push({
           ssCode: ss,
           productName: name,
           description: desc,
           rowNumber: i,
+          detectedType: typeMatch.typeName,
+          detectedTypeId: typeMatch.typeId,
+          matchedKeyword: typeMatch.matchedKeyword,
         });
       }
     }
@@ -245,4 +253,40 @@ async function findValidSheet(workbook: ExcelJS.Workbook): Promise<ExcelJS.Works
 function extractProjectCode(filename: string): string {
   const match = filename.match(/[A-Z]{2,3}\d{6}/i);
   return match ? match[0].toUpperCase() : "";
+}
+
+async function detectProductType(productName: string, description: string): Promise<{
+  typeId: string | null;
+  typeName: string | null;
+  matchedKeyword: string | null;
+}> {
+  const combinedText = `${productName} ${description}`.toLowerCase();
+  
+  const synonyms = await db.queryAll<{ synonym: string; productTypeId: string; productTypeName: string }>`
+    SELECT s.synonym, s.product_type_id as "productTypeId", pt.name as "productTypeName"
+    FROM product_type_synonyms s
+    JOIN product_types pt ON pt.id = s.product_type_id
+    ORDER BY LENGTH(s.synonym) DESC
+  `;
+
+  for (const { synonym, productTypeId, productTypeName } of synonyms) {
+    const pattern = new RegExp(`\\b${synonym.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+    if (pattern.test(combinedText)) {
+      return {
+        typeId: productTypeId,
+        typeName: productTypeName,
+        matchedKeyword: synonym,
+      };
+    }
+  }
+
+  const kitaType = await db.queryRow<{ id: string; name: string }>`
+    SELECT id, name FROM product_types WHERE LOWER(name) = 'kita' OR LOWER(id) = 'kita' LIMIT 1
+  `;
+
+  return {
+    typeId: kitaType?.id || null,
+    typeName: kitaType?.name || null,
+    matchedKeyword: null,
+  };
 }

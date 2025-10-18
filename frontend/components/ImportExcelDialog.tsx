@@ -1,6 +1,7 @@
-import React, { useState } from "react";
-import { Upload, FileSpreadsheet, AlertCircle, CheckCircle2, Eye, Info } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Upload, FileSpreadsheet, AlertCircle, CheckCircle2, Eye, Info, Edit3 } from "lucide-react";
 import backend from "~backend/client";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +33,9 @@ interface PreviewData {
     productName: string;
     description: string;
     rowNumber: number;
+    detectedType: string | null;
+    detectedTypeId: string | null;
+    matchedKeyword: string | null;
   }>;
   totalRowsFound: number;
   warnings: string[];
@@ -42,6 +46,8 @@ export function ImportExcelDialog({ open, onOpenChange, onSuccess }: ImportExcel
   const [fileData, setFileData] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [previewData, setPreviewData] = useState<PreviewData | null>(null);
+  const [manualTypeOverrides, setManualTypeOverrides] = useState<Record<string, string>>({});
+  const [productTypes, setProductTypes] = useState<Array<{ id: string; name: string }>>([]);
   const [importResult, setImportResult] = useState<{ projectId: string; projectName: string; productsCreated: number } | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [aiAnalysisResults, setAiAnalysisResults] = useState<any[]>([]);
@@ -68,6 +74,20 @@ export function ImportExcelDialog({ open, onOpenChange, onSuccess }: ImportExcel
     }
   };
 
+  useEffect(() => {
+    const loadProductTypes = async () => {
+      try {
+        const { productTypes } = await backend.productTypes.list();
+        setProductTypes(productTypes);
+      } catch (error) {
+        console.error("Failed to load product types:", error);
+      }
+    };
+    if (open) {
+      loadProductTypes();
+    }
+  }, [open]);
+
   const handlePreview = async () => {
     if (!file) {
       toast({
@@ -80,6 +100,7 @@ export function ImportExcelDialog({ open, onOpenChange, onSuccess }: ImportExcel
 
     setIsLoading(true);
     setPreviewData(null);
+    setManualTypeOverrides({});
 
     toast({
       title: "Analizuojama...",
@@ -148,6 +169,7 @@ export function ImportExcelDialog({ open, onOpenChange, onSuccess }: ImportExcel
       const result = await backend.techReview.importExcel({
         fileData: fileData,
         filename: file.name,
+        manualTypeOverrides: Object.keys(manualTypeOverrides).length > 0 ? manualTypeOverrides : undefined,
       });
 
       setImportResult({
@@ -334,29 +356,82 @@ export function ImportExcelDialog({ open, onOpenChange, onSuccess }: ImportExcel
                 <div className="border rounded-lg p-4 space-y-3">
                   <h4 className="font-medium">Duomenų pavyzdys (pirmi 5)</h4>
                   <div className="space-y-2 max-h-80 overflow-y-auto">
-                    {previewData.previewRows.map((row, idx) => (
-                      <div key={idx} className="border rounded-md p-3 space-y-2 text-sm bg-muted/30">
-                        <div className="flex items-start justify-between">
-                          <div className="space-y-1 flex-1">
-                            <div className="flex gap-3">
-                              <span className="text-muted-foreground text-xs">Eilutė {row.rowNumber}</span>
-                              <span className="font-medium">{row.ssCode}</span>
+                    {previewData.previewRows.map((row, idx) => {
+                      const currentTypeId = manualTypeOverrides[row.ssCode] || row.detectedTypeId;
+                      const currentType = productTypes.find(t => t.id === currentTypeId);
+                      const isUnmatched = !row.matchedKeyword;
+                      
+                      return (
+                        <div key={idx} className={`border rounded-md p-3 space-y-2 text-sm ${isUnmatched ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-500' : 'bg-muted/30'}`}>
+                          <div className="flex items-start justify-between">
+                            <div className="space-y-1 flex-1">
+                              <div className="flex gap-3">
+                                <span className="text-muted-foreground text-xs">Eilutė {row.rowNumber}</span>
+                                <span className="font-medium">{row.ssCode}</span>
+                              </div>
+                              <p className="font-medium text-base">{row.productName}</p>
                             </div>
-                            <p className="font-medium text-base">{row.productName}</p>
                           </div>
+                          
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="bg-background rounded p-2">
+                              <p className="text-muted-foreground text-xs mb-1">Aptiktas tipas:</p>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-medium">{currentType?.name || 'Nėra'}</span>
+                                {row.matchedKeyword && (
+                                  <Badge variant="secondary" className="text-[10px]">
+                                    "{row.matchedKeyword}"
+                                  </Badge>
+                                )}
+                                {isUnmatched && (
+                                  <Badge variant="destructive" className="text-[10px]">
+                                    Neaptikta
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                            
+                            <div className="space-y-1">
+                              <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                                <Edit3 className="h-3 w-3" />
+                                Pakeisti tipą:
+                              </Label>
+                              <Select
+                                value={currentTypeId || ""}
+                                onValueChange={(value) => {
+                                  setManualTypeOverrides(prev => ({
+                                    ...prev,
+                                    [row.ssCode]: value
+                                  }));
+                                }}
+                              >
+                                <SelectTrigger className="h-8 text-xs">
+                                  <SelectValue placeholder="Pasirinkite tipą" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {productTypes.map((type) => (
+                                    <SelectItem key={type.id} value={type.id} className="text-xs">
+                                      {type.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                          
+                          {row.description ? (
+                            <div className="bg-background rounded p-2 text-xs">
+                              <p className="text-muted-foreground mb-1">Aprašymas:</p>
+                              <p className="whitespace-pre-wrap">{row.description.slice(0, 200)}{row.description.length > 200 ? '...' : ''}</p>
+                            </div>
+                          ) : (
+                            <div className="bg-destructive/10 rounded p-2 text-xs text-destructive">
+                              Aprašymas nerastas
+                            </div>
+                          )}
                         </div>
-                        {row.description ? (
-                          <div className="bg-background rounded p-2 text-xs">
-                            <p className="text-muted-foreground mb-1">Aprašymas:</p>
-                            <p className="whitespace-pre-wrap">{row.description.slice(0, 200)}{row.description.length > 200 ? '...' : ''}</p>
-                          </div>
-                        ) : (
-                          <div className="bg-destructive/10 rounded p-2 text-xs text-destructive">
-                            Aprašymas nerastas
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               </div>
