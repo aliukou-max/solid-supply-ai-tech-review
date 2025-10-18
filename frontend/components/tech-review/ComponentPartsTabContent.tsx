@@ -196,45 +196,77 @@ export function ComponentPartsTabContent({
               <div className="space-y-2">
                 <Label htmlFor={`node-${componentPart.id}`}>Brėžinio mazgas</Label>
                 {editingPart === componentPart.id ? (
-                  <Select
-                    value={getFieldValue(componentPart, 'selectedNodeId') || 'none'}
-                    onValueChange={(value) => updateEditData(componentPart.id, 'selectedNodeId', value === 'none' ? null : value)}
-                  >
-                    <SelectTrigger id={`node-${componentPart.id}`}>
-                      <SelectValue placeholder="Pasirinkite mazgą..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">-- Nepasirinkta --</SelectItem>
-                      {allNodesData?.nodes
-                        ?.filter(node => {
+                  <>
+                    <Select
+                      value={getFieldValue(componentPart, 'selectedNodeId') || 'none'}
+                      onValueChange={(value) => updateEditData(componentPart.id, 'selectedNodeId', value === 'none' ? null : value)}
+                    >
+                      <SelectTrigger id={`node-${componentPart.id}`}>
+                        <SelectValue placeholder="Pasirinkite mazgą..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">-- Nepasirinkta --</SelectItem>
+                        {allNodesData?.nodes
+                          ?.filter(node => {
+                            const partName = componentPart.partName?.toLowerCase().trim() || '';
+                            const nodePart = node.partName?.toLowerCase().trim() || '';
+                            
+                            return partName === nodePart || 
+                                   nodePart.includes(partName) || 
+                                   partName.includes(nodePart);
+                          })
+                          .map(node => (
+                            <SelectItem key={node.id} value={node.id}>
+                              {node.productCode} - {node.brandName} ({node.partName})
+                            </SelectItem>
+                          ))}
+                        {(!allNodesData?.nodes || allNodesData.nodes.filter(node => {
                           const partName = componentPart.partName?.toLowerCase().trim() || '';
                           const nodePart = node.partName?.toLowerCase().trim() || '';
-                          
                           return partName === nodePart || 
                                  nodePart.includes(partName) || 
                                  partName.includes(nodePart);
-                        })
-                        .map(node => (
-                          <SelectItem key={node.id} value={node.id}>
-                            {node.productCode} - {node.brandName} ({node.partName})
-                          </SelectItem>
-                        ))}
-                      {(!allNodesData?.nodes || allNodesData.nodes.filter(node => {
-                        const partName = componentPart.partName?.toLowerCase().trim() || '';
-                        const nodePart = node.partName?.toLowerCase().trim() || '';
-                        return partName === nodePart || 
-                               nodePart.includes(partName) || 
-                               partName.includes(nodePart);
-                      }).length === 0) && (
-                        <SelectItem value="none" disabled>Nerasta mazgų "{componentPart.partName}"</SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
+                        }).length === 0) && (
+                          <SelectItem value="none" disabled>Nerasta mazgų "{componentPart.partName}"</SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
+                    {getFieldValue(componentPart, 'selectedNodeId') && getFieldValue(componentPart, 'selectedNodeId') !== 'none' && (() => {
+                      const selectedNode = allNodesData?.nodes?.find(n => n.id === getFieldValue(componentPart, 'selectedNodeId'));
+                      return selectedNode ? (
+                        <div className="border rounded-lg p-3 bg-muted/50 space-y-2">
+                          <div className="text-sm font-medium">{selectedNode.productCode} - {selectedNode.brandName}</div>
+                          <div className="text-xs text-muted-foreground">{selectedNode.description}</div>
+                          <iframe
+                            src={`/api/nodes/${selectedNode.id}/pdf`}
+                            className="w-full h-96 border rounded"
+                            title={`PDF: ${selectedNode.productCode}`}
+                          />
+                        </div>
+                      ) : null;
+                    })()}
+                  </>
                 ) : (
-                  <div className="h-10 px-3 py-2 rounded-md border border-input bg-muted text-sm">
-                    {componentPart.selectedNodeId 
-                      ? allNodesData?.nodes?.find(n => n.id === componentPart.selectedNodeId)?.productCode || componentPart.selectedNodeId
-                      : 'Nepasirinkta'}
+                  <div className="space-y-2">
+                    <div className="h-10 px-3 py-2 rounded-md border border-input bg-muted text-sm">
+                      {componentPart.selectedNodeId 
+                        ? allNodesData?.nodes?.find(n => n.id === componentPart.selectedNodeId)?.productCode || componentPart.selectedNodeId
+                        : 'Nepasirinkta'}
+                    </div>
+                    {componentPart.selectedNodeId && (() => {
+                      const selectedNode = allNodesData?.nodes?.find(n => n.id === componentPart.selectedNodeId);
+                      return selectedNode ? (
+                        <div className="border rounded-lg p-3 bg-muted/50 space-y-2">
+                          <div className="text-sm font-medium">{selectedNode.productCode} - {selectedNode.brandName}</div>
+                          <div className="text-xs text-muted-foreground">{selectedNode.description}</div>
+                          <iframe
+                            src={`/api/nodes/${selectedNode.id}/pdf`}
+                            className="w-full h-96 border rounded"
+                            title={`PDF: ${selectedNode.productCode}`}
+                          />
+                        </div>
+                      ) : null;
+                    })()}
                   </div>
                 )}
               </div>
