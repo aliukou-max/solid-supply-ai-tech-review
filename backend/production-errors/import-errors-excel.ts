@@ -35,7 +35,22 @@ export const importErrorsExcel = api(
       const workbook = new ExcelJS.Workbook();
       await workbook.xlsx.load(buffer);
 
-      const sheet = workbook.worksheets[0];
+      console.log(`📊 Excel lapai: ${workbook.worksheets.map(s => s.name).join(", ")}`);
+
+      // Ieškome "WW" lapo arba naudojame pirmą
+      let sheet = workbook.worksheets.find(s => 
+        s.name.toUpperCase().includes("WW") || 
+        s.name.toUpperCase().includes("KLAIDOS") ||
+        s.name.toUpperCase().includes("ERRORS")
+      );
+      
+      if (!sheet) {
+        console.log(`⚠️  "WW" lapas nerastas, naudojamas pirmas lapas: ${workbook.worksheets[0]?.name}`);
+        sheet = workbook.worksheets[0];
+      } else {
+        console.log(`✅ Naudojamas lapas: ${sheet.name}`);
+      }
+      
       if (!sheet) throw new Error("Excel faile nėra lapų");
 
       const errorRows = extractErrorRows(sheet);
