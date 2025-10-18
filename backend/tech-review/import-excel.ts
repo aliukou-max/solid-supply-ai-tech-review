@@ -32,7 +32,12 @@ interface ImportExcelResponse {
 }
 
 export const importExcel = api(
-  { expose: true, method: "POST", path: "/tech-review/import-excel" },
+  { 
+    expose: true, 
+    method: "POST", 
+    path: "/tech-review/import-excel",
+    bodyLimit: 50 * 1024 * 1024, // 50MB limit for large Excel files
+  },
   async (req: ImportExcelRequest): Promise<ImportExcelResponse> => {
     const warnings: string[] = [];
     let productsCreated = 0;
