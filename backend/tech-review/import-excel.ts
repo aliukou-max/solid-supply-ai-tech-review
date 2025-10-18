@@ -289,13 +289,14 @@ If the description is too vague or empty, return an empty array: []`;
         model: "gpt-4o-mini",
         messages: [{ role: "user", content: prompt }],
         temperature: 0.3,
-        response_format: { type: "json_object" },
       }),
     });
 
     if (!response.ok) {
-      console.error("OpenAI API error:", await response.text());
-      return createFallbackComponent(description);
+      const errorText = await response.text();
+      console.error("OpenAI API error status:", response.status);
+      console.error("OpenAI API response:", errorText);
+      throw new Error(`OpenAI API failed: ${errorText}`);
     }
 
     const data = (await response.json()) as {
