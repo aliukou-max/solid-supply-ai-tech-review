@@ -88,7 +88,7 @@ export const importExcel = api(
       }
 
       const rows: ExcelRow[] = [];
-      for (let i = 27; i < 1000; i++) {
+      for (let i = 26; i < 1000; i++) {
         const ss = sheet.getCell(`B${i}`).text?.trim();
         const name = sheet.getCell(`C${i}`).text?.trim();
         const desc = sheet.getCell(`AC${i}`).text?.trim();
@@ -102,7 +102,7 @@ export const importExcel = api(
       }
 
       console.log(`📦 Rasta produktų: ${rows.length}`);
-      if (rows.length === 0) throw new Error("Excel faile nerasta produktų nuo B27 eilutės.");
+      if (rows.length === 0) throw new Error("Excel faile nerasta produktų nuo B26 eilutės.");
 
       for (const row of rows) {
         try {
@@ -182,14 +182,14 @@ export const importExcel = api(
 
 async function findValidSheet(workbook: ExcelJS.Workbook): Promise<ExcelJS.Worksheet> {
   const main = workbook.getWorksheet("Products information");
-  if (main && main.getCell("B27").text?.trim()) return main;
+  if (main && main.getCell("B26").text?.trim()) return main;
 
   let best: ExcelJS.Worksheet | null = null;
   let maxCount = 0;
 
   for (const s of workbook.worksheets) {
     let count = 0;
-    for (let i = 27; i < 100; i++) {
+    for (let i = 26; i < 100; i++) {
       const ss = s.getCell(`B${i}`).text;
       const desc = s.getCell(`AC${i}`).text;
       if (ss && desc) count++;
