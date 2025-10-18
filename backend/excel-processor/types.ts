@@ -18,3 +18,14 @@ export interface ProductTypeMatch {
   typeName: string | null;
   matchedKeyword: string | null;
 }
+
+export interface ErrorRow {
+  productCode: string;
+  description: string;
+  rowNumber: number;
+}
+
+export interface ProjectBlock {
+  projectCode: string;
+  startRow: number;
+}
