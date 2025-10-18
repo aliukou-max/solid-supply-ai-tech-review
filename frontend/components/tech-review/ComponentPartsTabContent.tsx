@@ -33,7 +33,6 @@ export function ComponentPartsTabContent({
   onDeletePart,
   uploadingPhoto,
 }: ComponentPartsTabContentProps) {
-  const [editingPart, setEditingPart] = useState<number | null>(null);
   const [editData, setEditData] = useState<Record<number, any>>({});
   const [nodeRecommendations, setNodeRecommendations] = useState<Record<number, any[]>>({});
   const [loadingRecommendations, setLoadingRecommendations] = useState<number | null>(null);
@@ -82,14 +81,10 @@ export function ComponentPartsTabContent({
   };
 
   const handleSave = async (componentPartId: number) => {
-    await onSavePart(componentPartId, editData[componentPartId] || {});
-    setEditingPart(null);
-    setEditData(prev => ({ ...prev, [componentPartId]: {} }));
-  };
-
-  const handleCancel = (componentPartId: number) => {
-    setEditingPart(null);
-    setEditData(prev => ({ ...prev, [componentPartId]: {} }));
+    if (Object.keys(editData[componentPartId] || {}).length > 0) {
+      await onSavePart(componentPartId, editData[componentPartId]);
+      setEditData(prev => ({ ...prev, [componentPartId]: {} }));
+    }
   };
 
   if (partComponentParts.length === 0) {
@@ -110,28 +105,6 @@ export function ComponentPartsTabContent({
             <CardTitle className="flex items-center justify-between">
               <span className="text-base">{componentPart.partName}</span>
               <div className="flex gap-1">
-                {editingPart === componentPart.id ? (
-                  <>
-                    <Button 
-                      variant="default" 
-                      size="sm"
-                      onClick={() => handleSave(componentPart.id)}
-                      className="h-7 px-2 text-xs"
-                    >
-                      <Save className="h-3 w-3 mr-1" />
-                      Išsaugoti
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => handleCancel(componentPart.id)}
-                      className="h-7 px-2 text-xs"
-                    >
-                      Atšaukti
-                    </Button>
-                  </>
-                ) : (
-                  <>
                     <label className="cursor-pointer">
                       <Input
                         type="file"
@@ -156,24 +129,14 @@ export function ComponentPartsTabContent({
                         </span>
                       </Button>
                     </label>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => setEditingPart(componentPart.id)}
-                      className="h-7 px-2"
-                    >
-                      <Edit2 className="h-3 w-3" />
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => onDeletePart(componentPart.id)}
-                      className="h-7 px-2"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </>
-                )}
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => onDeletePart(componentPart.id)}
+                  className="h-7 px-2"
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
               </div>
             </CardTitle>
           </CardHeader>
@@ -203,7 +166,7 @@ export function ComponentPartsTabContent({
                   id={`material-${componentPart.id}`}
                   value={getFieldValue(componentPart, 'material') || ''}
                   onChange={(e) => updateEditData(componentPart.id, 'material', e.target.value)}
-                  disabled={editingPart !== componentPart.id}
+                  onBlur={() => handleSave(componentPart.id)}
                   placeholder="Pvz.: MDF, Fanera..."
                   className="h-8 text-sm"
                 />
@@ -214,7 +177,7 @@ export function ComponentPartsTabContent({
                   id={`finish-${componentPart.id}`}
                   value={getFieldValue(componentPart, 'finish') || ''}
                   onChange={(e) => updateEditData(componentPart.id, 'finish', e.target.value)}
-                  disabled={editingPart !== componentPart.id}
+                  onBlur={() => handleSave(componentPart.id)}
                   placeholder="Pvz.: Dažyta, Laminuota..."
                   className="h-8 text-sm"
                 />
@@ -227,7 +190,7 @@ export function ComponentPartsTabContent({
                 id={`drawing-${componentPart.id}`}
                 value={getFieldValue(componentPart, 'drawingCode') || ''}
                 onChange={(e) => updateEditData(componentPart.id, 'drawingCode', e.target.value)}
-                disabled={editingPart !== componentPart.id}
+                onBlur={() => handleSave(componentPart.id)}
                 placeholder="Brėžinio kodas"
                 className="h-8 text-sm"
               />
@@ -262,8 +225,8 @@ export function ComponentPartsTabContent({
                   if (value === "__none__") return;
                   updateEditData(componentPart.id, 'selectedNodeId', value);
                   updateEditData(componentPart.id, 'hasNode', true);
+                  handleSave(componentPart.id);
                 }}
-                disabled={editingPart !== componentPart.id}
               >
                 <SelectTrigger className="h-8 text-xs">
                   <SelectValue placeholder={loadingRecommendations === componentPart.id ? "Ieškoma..." : "Pasirinkite mazgą..."}>
@@ -311,7 +274,7 @@ export function ComponentPartsTabContent({
                 id={`tech-desc-${componentPart.id}`}
                 value={getFieldValue(componentPart, 'technologicalDescription') || ''}
                 onChange={(e) => updateEditData(componentPart.id, 'technologicalDescription', e.target.value)}
-                disabled={editingPart !== componentPart.id}
+                onBlur={() => handleSave(componentPart.id)}
                 placeholder="Technologinis aprašymas..."
                 rows={2}
                 className="text-sm"
@@ -324,7 +287,7 @@ export function ComponentPartsTabContent({
                 id={`assembly-${componentPart.id}`}
                 value={getFieldValue(componentPart, 'assemblyTechnology') || ''}
                 onChange={(e) => updateEditData(componentPart.id, 'assemblyTechnology', e.target.value)}
-                disabled={editingPart !== componentPart.id}
+                onBlur={() => handleSave(componentPart.id)}
                 placeholder="Surinkimo technologija..."
                 rows={2}
                 className="text-sm"
@@ -337,7 +300,7 @@ export function ComponentPartsTabContent({
                 id={`notes-${componentPart.id}`}
                 value={getFieldValue(componentPart, 'notes') || ''}
                 onChange={(e) => updateEditData(componentPart.id, 'notes', e.target.value)}
-                disabled={editingPart !== componentPart.id}
+                onBlur={() => handleSave(componentPart.id)}
                 placeholder="Pastabos..."
                 rows={2}
                 className="text-sm"
@@ -349,8 +312,10 @@ export function ComponentPartsTabContent({
                 <Checkbox
                   id={`done-${componentPart.id}`}
                   checked={getFieldValue(componentPart, 'hasDone')}
-                  onCheckedChange={(checked) => updateEditData(componentPart.id, 'hasDone', checked)}
-                  disabled={editingPart !== componentPart.id}
+                  onCheckedChange={(checked) => {
+                    updateEditData(componentPart.id, 'hasDone', checked);
+                    handleSave(componentPart.id);
+                  }}
                 />
                 <Label htmlFor={`done-${componentPart.id}`} className="text-xs">Atlikta</Label>
               </div>
@@ -358,8 +323,10 @@ export function ComponentPartsTabContent({
                 <Checkbox
                   id={`has-node-${componentPart.id}`}
                   checked={getFieldValue(componentPart, 'hasNode')}
-                  onCheckedChange={(checked) => updateEditData(componentPart.id, 'hasNode', checked)}
-                  disabled={editingPart !== componentPart.id}
+                  onCheckedChange={(checked) => {
+                    updateEditData(componentPart.id, 'hasNode', checked);
+                    handleSave(componentPart.id);
+                  }}
                 />
                 <Label htmlFor={`has-node-${componentPart.id}`} className="text-xs">Turi mazgą</Label>
               </div>
@@ -367,8 +334,10 @@ export function ComponentPartsTabContent({
                 <Checkbox
                   id={`errors-${componentPart.id}`}
                   checked={getFieldValue(componentPart, 'hadErrors')}
-                  onCheckedChange={(checked) => updateEditData(componentPart.id, 'hadErrors', checked)}
-                  disabled={editingPart !== componentPart.id}
+                  onCheckedChange={(checked) => {
+                    updateEditData(componentPart.id, 'hadErrors', checked);
+                    handleSave(componentPart.id);
+                  }}
                 />
                 <Label htmlFor={`errors-${componentPart.id}`} className="text-xs">Turėjo klaidų</Label>
               </div>
@@ -383,8 +352,8 @@ export function ComponentPartsTabContent({
                     if (value === 'none') return;
                     const currentErrors = getFieldValue(componentPart, 'linkedErrors') || [];
                     updateEditData(componentPart.id, 'linkedErrors', [...currentErrors, parseInt(value)]);
+                    handleSave(componentPart.id);
                   }}
-                  disabled={editingPart !== componentPart.id}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Pridėti klaidą..." />
@@ -428,9 +397,9 @@ export function ComponentPartsTabContent({
                           <X 
                             className="h-3 w-3 cursor-pointer" 
                             onClick={() => {
-                              if (editingPart !== componentPart.id) return;
                               const currentErrors = getFieldValue(componentPart, 'linkedErrors') || [];
                               updateEditData(componentPart.id, 'linkedErrors', currentErrors.filter((id: number) => id !== errorId));
+                              handleSave(componentPart.id);
                             }}
                           />
                         </Badge>

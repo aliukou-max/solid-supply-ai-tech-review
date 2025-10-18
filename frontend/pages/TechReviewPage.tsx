@@ -207,18 +207,6 @@ export function TechReviewPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          <NodeAssignmentSummary 
-            componentParts={componentPartsData?.parts || []}
-            onNavigateToPart={(partName) => {
-              const part = productTypeParts?.parts.find(p => 
-                componentPartsData?.parts.some(cp => 
-                  cp.productTypePartId === p.id && cp.partName === partName
-                )
-              );
-              if (part) setActiveTab(part.name);
-            }}
-          />
-
           <Tabs 
             key={productTypeParts?.parts[0]?.name} 
             value={activeTab || productTypeParts?.parts[0]?.name || "errors"}
