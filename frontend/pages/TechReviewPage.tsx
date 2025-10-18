@@ -1,6 +1,6 @@
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, FileText, Lightbulb, Sparkles } from "lucide-react";
+import { ArrowLeft, FileText, Lightbulb, Sparkles, Download, FileSpreadsheet } from "lucide-react";
 import backend from "~backend/client";
 import { MainLayout } from "@/components/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,12 @@ import { LessonsTab } from "@/components/tech-review/LessonsTab";
 import { ComponentPartsTabContent } from "@/components/tech-review/ComponentPartsTabContent";
 import { ReanalyzeDialog } from "@/components/tech-review/ReanalyzeDialog";
 import { NodeAssignmentSummary } from "@/components/tech-review/NodeAssignmentSummary";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export function TechReviewPage() {
   const { productId } = useParams<{ productId: string }>();
@@ -185,6 +191,66 @@ export function TechReviewPage() {
     }
   };
 
+  const handleExportPDF = async () => {
+    if (!productId) return;
+    
+    try {
+      const result = await backend.techReview.exportPDF({ productId });
+      
+      const bytes = atob(result.data);
+      const byteNumbers = new Array(bytes.length);
+      for (let i = 0; i < bytes.length; i++) {
+        byteNumbers[i] = bytes.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: 'application/pdf' });
+      
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = result.filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast({ title: "PDF atsisiųstas" });
+    } catch (error) {
+      console.error(error);
+      toast({ title: "Klaida atsisiunčiant PDF", variant: "destructive" });
+    }
+  };
+
+  const handleExportExcel = async () => {
+    if (!productId) return;
+    
+    try {
+      const result = await backend.techReview.exportExcel({ productId });
+      
+      const bytes = atob(result.data);
+      const byteNumbers = new Array(bytes.length);
+      for (let i = 0; i < bytes.length; i++) {
+        byteNumbers[i] = bytes.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = result.filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast({ title: "Excel atsisiųstas" });
+    } catch (error) {
+      console.error(error);
+      toast({ title: "Klaida atsisiunčiant Excel", variant: "destructive" });
+    }
+  };
+
 
 
   return (
@@ -216,6 +282,24 @@ export function TechReviewPage() {
               {product.drawingReference}
             </Button>
           )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">
+                <Download className="h-4 w-4 mr-2" />
+                Eksportuoti
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleExportPDF}>
+                <FileText className="h-4 w-4 mr-2" />
+                PDF ataskaita
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportExcel}>
+                <FileSpreadsheet className="h-4 w-4 mr-2" />
+                Excel failas
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       }
     >

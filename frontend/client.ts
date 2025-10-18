@@ -746,6 +746,8 @@ import { create as api_techReview_create_create } from "~backend/tech-review/cre
 import { createPartsFromDescription as api_techReview_create_parts_from_description_createPartsFromDescription } from "~backend/tech-review/create-parts-from-description";
 import { deleteComponentPartPhoto as api_techReview_delete_component_part_photo_deleteComponentPartPhoto } from "~backend/tech-review/delete-component-part-photo";
 import { deletePhoto as api_techReview_delete_photo_deletePhoto } from "~backend/tech-review/delete-photo";
+import { exportExcel as api_techReview_export_excel_exportExcel } from "~backend/tech-review/export-excel";
+import { exportPDF as api_techReview_export_pdf_exportPDF } from "~backend/tech-review/export-pdf";
 import { get as api_techReview_get_get } from "~backend/tech-review/get";
 import { importExcel as api_techReview_import_excel_importExcel } from "~backend/tech-review/import-excel";
 import { listComponentParts as api_techReview_list_component_parts_listComponentParts } from "~backend/tech-review/list-component-parts";
@@ -770,6 +772,8 @@ export namespace techReview {
             this.createPartsFromDescription = this.createPartsFromDescription.bind(this)
             this.deleteComponentPartPhoto = this.deleteComponentPartPhoto.bind(this)
             this.deletePhoto = this.deletePhoto.bind(this)
+            this.exportExcel = this.exportExcel.bind(this)
+            this.exportPDF = this.exportPDF.bind(this)
             this.get = this.get.bind(this)
             this.importExcel = this.importExcel.bind(this)
             this.listComponentParts = this.listComponentParts.bind(this)
@@ -832,6 +836,18 @@ export namespace techReview {
             // Now make the actual call to the API
             const resp = await this.baseClient.callTypedAPI(`/tech-reviews/photos/${encodeURIComponent(params.photoId)}`, {method: "DELETE", body: undefined})
             return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_techReview_delete_photo_deletePhoto>
+        }
+
+        public async exportExcel(params: { productId: string }): Promise<ResponseType<typeof api_techReview_export_excel_exportExcel>> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI(`/tech-reviews/${encodeURIComponent(params.productId)}/export/excel`, {method: "POST", body: undefined})
+            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_techReview_export_excel_exportExcel>
+        }
+
+        public async exportPDF(params: { productId: string }): Promise<ResponseType<typeof api_techReview_export_pdf_exportPDF>> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI(`/tech-reviews/${encodeURIComponent(params.productId)}/export/pdf`, {method: "POST", body: undefined})
+            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_techReview_export_pdf_exportPDF>
         }
 
         /**
