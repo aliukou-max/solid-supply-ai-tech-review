@@ -122,7 +122,7 @@ export function DashboardPage() {
       </div>
 
       <div>
-        <h2 className="text-2xl font-bold mb-4">Naujausi įvesti projektai</h2>
+        <h2 className="text-2xl font-bold mb-4">Projektai</h2>
         <div className="space-y-3">
           {recentProjects.map((project) => {
             const stats = projectStats[project.id] || { count: 0, typeNames: [] };
