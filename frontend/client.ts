@@ -124,7 +124,9 @@ import { incrementOccurrence as api_lessonsLearnt_increment_occurrence_increment
 import { list as api_lessonsLearnt_list_list } from "~backend/lessons-learnt/list";
 import { listByType as api_lessonsLearnt_list_by_type_listByType } from "~backend/lessons-learnt/list-by-type";
 import { searchSimilar as api_lessonsLearnt_search_similar_searchSimilar } from "~backend/lessons-learnt/search-similar";
+import { suggestAISolution as api_lessonsLearnt_suggest_ai_solution_suggestAISolution } from "~backend/lessons-learnt/suggest-ai-solution";
 import { suggestForPart as api_lessonsLearnt_suggest_for_part_suggestForPart } from "~backend/lessons-learnt/suggest-for-part";
+import { update as api_lessonsLearnt_update_update } from "~backend/lessons-learnt/update";
 
 export namespace lessonsLearnt {
 
@@ -138,7 +140,9 @@ export namespace lessonsLearnt {
             this.list = this.list.bind(this)
             this.listByType = this.listByType.bind(this)
             this.searchSimilar = this.searchSimilar.bind(this)
+            this.suggestAISolution = this.suggestAISolution.bind(this)
             this.suggestForPart = this.suggestForPart.bind(this)
+            this.update = this.update.bind(this)
         }
 
         /**
@@ -157,9 +161,14 @@ export namespace lessonsLearnt {
             await this.baseClient.callTypedAPI(`/lessons-learnt/${encodeURIComponent(params.id)}/increment`, {method: "POST", body: undefined})
         }
 
-        public async list(): Promise<ResponseType<typeof api_lessonsLearnt_list_list>> {
+        public async list(params: RequestType<typeof api_lessonsLearnt_list_list>): Promise<ResponseType<typeof api_lessonsLearnt_list_list>> {
+            // Convert our params into the objects we need for the request
+            const query = makeRecord<string, string | string[]>({
+                practiceType: params.practiceType === undefined ? undefined : String(params.practiceType),
+            })
+
             // Now make the actual call to the API
-            const resp = await this.baseClient.callTypedAPI(`/lessons-learnt`, {method: "GET", body: undefined})
+            const resp = await this.baseClient.callTypedAPI(`/lessons-learnt`, {query, method: "GET", body: undefined})
             return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_lessonsLearnt_list_list>
         }
 
@@ -178,10 +187,34 @@ export namespace lessonsLearnt {
             return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_lessonsLearnt_search_similar_searchSimilar>
         }
 
+        public async suggestAISolution(params: RequestType<typeof api_lessonsLearnt_suggest_ai_solution_suggestAISolution>): Promise<ResponseType<typeof api_lessonsLearnt_suggest_ai_solution_suggestAISolution>> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI(`/lessons-learnt/suggest-ai-solution`, {method: "POST", body: JSON.stringify(params)})
+            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_lessonsLearnt_suggest_ai_solution_suggestAISolution>
+        }
+
         public async suggestForPart(params: RequestType<typeof api_lessonsLearnt_suggest_for_part_suggestForPart>): Promise<ResponseType<typeof api_lessonsLearnt_suggest_for_part_suggestForPart>> {
             // Now make the actual call to the API
             const resp = await this.baseClient.callTypedAPI(`/lessons-learnt/suggest-for-part`, {method: "POST", body: JSON.stringify(params)})
             return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_lessonsLearnt_suggest_for_part_suggestForPart>
+        }
+
+        public async update(params: RequestType<typeof api_lessonsLearnt_update_update>): Promise<ResponseType<typeof api_lessonsLearnt_update_update>> {
+            // Construct the body with only the fields which we want encoded within the body (excluding query string or header fields)
+            const body: Record<string, any> = {
+                aiSuggestion:     params.aiSuggestion,
+                errorDescription: params.errorDescription,
+                errorId:          params.errorId,
+                practiceType:     params.practiceType,
+                prevention:       params.prevention,
+                productType:      params.productType,
+                severity:         params.severity,
+                solution:         params.solution,
+            }
+
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI(`/lessons-learnt/${encodeURIComponent(params.id)}`, {method: "PUT", body: JSON.stringify(body)})
+            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_lessonsLearnt_update_update>
         }
     }
 }

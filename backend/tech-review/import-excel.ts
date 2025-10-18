@@ -250,7 +250,41 @@ export const importExcel = api(
 
                   console.log(`✓ AI matched "${comp.name}" → "${matchingPart.partName}": ${comp.material}, ${comp.finish}`);
                 } else {
-                  warnings.push(`${row.ssCode} – AI rado "${comp.name}", bet nerasta atitinkama kortelė`);
+                  const maxSortOrder = parts.length > 0 ? Math.max(...parts.map(p => p.sortOrder)) : 0;
+                  const newSortOrder = maxSortOrder + 1;
+                  
+                  const partId = `PTP-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+                  
+                  await db.exec`
+                    INSERT INTO product_type_parts (id, product_type_id, name, sort_order, created_at)
+                    VALUES (${partId}, ${productType}, ${comp.name}, ${newSortOrder}, NOW())
+                  `;
+                  
+                  const notes = [
+                    comp.other,
+                    comp.uncertainTerms?.length ? `⚠ ${comp.uncertainTerms.join(", ")}` : null
+                  ].filter(Boolean).join(" | ");
+                  
+                  const newComponentPart = await db.queryRow<{ id: number }>`
+                    INSERT INTO component_parts (
+                      tech_review_id, product_type_part_id, part_name, sort_order,
+                      has_done, has_node, had_errors,
+                      material, finish, notes,
+                      created_at, updated_at
+                    )
+                    VALUES (
+                      ${techReview.id}, ${partId}, ${comp.name}, ${newSortOrder},
+                      false, false, false,
+                      ${comp.material || null}, ${comp.finish || null}, ${notes || null},
+                      NOW(), NOW()
+                    )
+                    RETURNING id
+                  `;
+                  
+                  parts.push({ id: partId, name: comp.name, sortOrder: newSortOrder });
+                  
+                  console.log(`✓ AI created new part "${comp.name}" with material: ${comp.material}, finish: ${comp.finish}`);
+                  warnings.push(`${row.ssCode} – AI sukūrė naują kortelę "${comp.name}"`);
                 }
 
                 if (comp.uncertainTerms?.length) {
