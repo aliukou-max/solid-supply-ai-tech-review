@@ -130,15 +130,15 @@ export function ProjectsPage() {
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="text-xs text-muted-foreground uppercase tracking-wide">
+                          <span className="text-[10px] text-muted-foreground uppercase tracking-wide">
                             {getProjectTypeLabel(project.projectType)}
                           </span>
                           <Badge variant="outline" className="text-xs">
                             {project.client}
                           </Badge>
                         </div>
-                        <h3 className="font-bold text-lg">{project.id}</h3>
-                        <p className="font-medium text-base mt-1">{project.name}</p>
+                        <h3 className="font-semibold text-base">{project.id}</h3>
+                        <p className="font-normal text-sm mt-1">{project.name}</p>
                       </div>
                       
                       <div className="flex items-center gap-2">
