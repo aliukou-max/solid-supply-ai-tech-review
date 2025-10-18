@@ -43,22 +43,42 @@ export const importExcel = api(
     let productsCreated = 0;
 
     try {
+      if (!req.fileData || req.fileData.trim().length === 0) {
+        throw new Error("Excel failas tuščias arba nerastas");
+      }
+
       const buffer = Buffer.from(req.fileData, "base64");
+      
+      if (buffer.length === 0) {
+        throw new Error("Excel failas negali būti nuskaitytas");
+      }
+
       const XLSX = await import("xlsx");
       const workbook = XLSX.read(buffer, { type: "buffer" });
+      
+      if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
+        throw new Error("Excel failas neturi lapų");
+      }
+
       const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+
+      if (!firstSheet) {
+        throw new Error("Nepavyko nuskaityti Excel lapo");
+      }
 
       const projectCodeCell = firstSheet["C8"];
       const projectNameCell = firstSheet["C9"];
       const clientNameCell = firstSheet["C10"];
 
       if (!projectCodeCell || !projectCodeCell.v) {
-        throw new Error("Projekto kodas nerastas langelyje C8");
+        throw new Error("Projekto kodas nerastas langelyje C8. Patikrinkite ar failas turi teisingą formatą.");
       }
 
       const projectCode = String(projectCodeCell.v).trim();
       const projectName = projectNameCell?.v ? String(projectNameCell.v).trim() : projectCode;
       const clientName = clientNameCell?.v ? String(clientNameCell.v).trim() : "Unknown Client";
+
+      console.log(`Importing project: ${projectCode} - ${projectName} (${clientName})`);
 
       const existingProject = await db.queryRow`
         SELECT id FROM projects WHERE id = ${projectCode}
@@ -69,6 +89,9 @@ export const importExcel = api(
           INSERT INTO projects (id, name, client, status, project_type, created_at, updated_at)
           VALUES (${projectCode}, ${projectName}, ${clientName}, 'active', 'new_development', NOW(), NOW())
         `;
+        console.log(`Created project: ${projectCode}`);
+      } else {
+        console.log(`Project ${projectCode} already exists, will add products to it`);
       }
 
       const rows: ExcelRow[] = [];
@@ -81,16 +104,22 @@ export const importExcel = api(
         const productNameCell = firstSheet[`C${rowIndex}`];
         const descriptionCell = firstSheet[`AC${rowIndex}`];
 
-        if (productNameCell?.v && descriptionCell?.v) {
+        if (productNameCell?.v) {
           rows.push({
             ssCode: String(ssCodeCell.v).trim(),
             productName: String(productNameCell.v).trim(),
-            description: String(descriptionCell.v).trim(),
+            description: descriptionCell?.v ? String(descriptionCell.v).trim() : "",
           });
         }
 
         rowIndex++;
         if (rowIndex > 1000) break;
+      }
+
+      console.log(`Found ${rows.length} products to import`);
+
+      if (rows.length === 0) {
+        throw new Error("Excel faile nerasta jokių produktų. Patikrinkite ar duomenys prasideda eilutėje 26 (stulpelis B).");
       }
 
       for (const row of rows) {
@@ -124,38 +153,45 @@ export const importExcel = api(
             continue;
           }
 
-          const components = await analyzeDescriptionWithAI(row.description, productType);
+          if (row.description && row.description.length > 0) {
+            const components = await analyzeDescriptionWithAI(row.description, productType);
 
-          for (const comp of components) {
-            const uncertainTermsNote = comp.uncertainTerms && comp.uncertainTerms.length > 0
-              ? `⚠ Neaiškūs terminai: ${comp.uncertainTerms.join(", ")}`
-              : undefined;
+            for (const comp of components) {
+              const uncertainTermsNote = comp.uncertainTerms && comp.uncertainTerms.length > 0
+                ? `⚠ Neaiškūs terminai: ${comp.uncertainTerms.join(", ")}`
+                : undefined;
 
-            await db.exec`
-              INSERT INTO components (
-                tech_review_id, name, material, finish, technical_notes,
-                created_at, updated_at
-              )
-              VALUES (
-                ${techReview.id}, ${comp.name}, ${comp.material || null}, ${comp.finish || null},
-                ${comp.other || uncertainTermsNote || null},
-                NOW(), NOW()
-              )
-            `;
+              await db.exec`
+                INSERT INTO components (
+                  tech_review_id, name, material, finish, technical_notes,
+                  created_at, updated_at
+                )
+                VALUES (
+                  ${techReview.id}, ${comp.name}, ${comp.material || null}, ${comp.finish || null},
+                  ${comp.other || uncertainTermsNote || null},
+                  NOW(), NOW()
+                )
+              `;
 
-            if (comp.uncertainTerms && comp.uncertainTerms.length > 0) {
-              warnings.push(
-                `${row.ssCode} – "${comp.name}" turi neaiškių terminų: ${comp.uncertainTerms.join(", ")}`
-              );
+              if (comp.uncertainTerms && comp.uncertainTerms.length > 0) {
+                warnings.push(
+                  `${row.ssCode} – "${comp.name}" turi neaiškių terminų: ${comp.uncertainTerms.join(", ")}`
+                );
+              }
             }
+          } else {
+            warnings.push(`${row.ssCode} – trūksta aprašymo (stulpelis AC), komponentai nesukurti`);
           }
 
           productsCreated++;
+          console.log(`Created product ${row.ssCode} (${productsCreated}/${rows.length})`);
         } catch (error) {
           console.error(`Error processing ${row.ssCode}:`, error);
           warnings.push(`Klaida apdorojant ${row.ssCode}: ${error}`);
         }
       }
+
+      console.log(`Import completed: ${productsCreated} products created with ${warnings.length} warnings`);
 
       return {
         success: true,
@@ -166,7 +202,8 @@ export const importExcel = api(
       };
     } catch (error) {
       console.error("Import error:", error);
-      throw new Error(`Failed to import Excel: ${error}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`Nepavyko importuoti Excel failo: ${errorMessage}`);
     }
   }
 );
