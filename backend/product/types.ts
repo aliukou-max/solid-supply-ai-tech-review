@@ -13,6 +13,7 @@ export interface Product {
   name: string;
   type: ProductType;
   productTypeId?: string;
+  productTypeName?: string;
   dimensions?: string;
   hasDrawing: boolean;
   drawingReference?: string;

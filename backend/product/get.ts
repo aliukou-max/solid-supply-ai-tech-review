@@ -8,12 +8,14 @@ export const get = api<{ id: string }, Product>(
   async ({ id }) => {
     const row = await db.queryRow<Product>`
       SELECT 
-        id, project_id as "projectId", ss_code as "ssCode", 
-        name, type, product_type_id as "productTypeId", dimensions, has_drawing as "hasDrawing",
-        drawing_reference as "drawingReference",
-        created_at as "createdAt", updated_at as "updatedAt"
-      FROM products
-      WHERE id = ${id}
+        p.id, p.project_id as "projectId", p.ss_code as "ssCode", 
+        p.name, p.type, p.product_type_id as "productTypeId", p.dimensions, p.has_drawing as "hasDrawing",
+        p.drawing_reference as "drawingReference",
+        pt.name as "productTypeName",
+        p.created_at as "createdAt", p.updated_at as "updatedAt"
+      FROM products p
+      LEFT JOIN product_types pt ON p.product_type_id = pt.id
+      WHERE p.id = ${id}
     `;
 
     if (!row) {

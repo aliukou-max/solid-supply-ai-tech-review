@@ -170,7 +170,7 @@ export function TechReviewPage() {
           <div>
             <div className="flex items-center gap-2">
               Tech Review – {product?.ssCode}
-              <Badge variant="outline">{product?.type}</Badge>
+              <Badge variant="outline">{product?.productTypeName || product?.type}</Badge>
               {!product?.hasDrawing && (
                 <Badge variant="destructive">🚩 Be brėžinio</Badge>
               )}
