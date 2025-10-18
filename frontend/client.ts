@@ -655,6 +655,7 @@ export namespace production_errors {
             const body: Record<string, any> = {
                 errorDescription: params.errorDescription,
                 isResolved:       params.isResolved,
+                partName:         params.partName,
                 productCode:      params.productCode,
                 projectCode:      params.projectCode,
             }

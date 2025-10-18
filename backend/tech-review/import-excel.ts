@@ -4,14 +4,14 @@ import db from "../db";
 import ExcelJS from "exceljs";
 import { analyzeDescription } from "../ai-analysis/analyze";
 import type { ParsedComponent } from "../ai-analysis/analyze";
+import { detectColumns } from "../excel-processor/detect-columns";
+import { extractAllRows } from "../excel-processor/extract-rows";
+import { determineProductTypeFromName } from "../excel-processor/detect-product-type";
+import { findValidSheet, extractProjectMetadata } from "../excel-processor/workbook-utils";
 
 const openAIKey = secret("OpenAIKey");
 
-interface ExcelRow {
-  ssCode: string;
-  productName: string;
-  description: string;
-}
+
 
 
 
@@ -62,25 +62,12 @@ export const importExcel = api(
       console.log(`📘 Naudojamas lapas: ${sheet.name}`);
       warnings.push(`📘 Naudojamas lapas: "${sheet.name}"`);
 
-      let projectCode = sheet.getCell("C8").text?.trim() || null;
-      const rawProjectName = sheet.getCell("C9").text?.trim();
-      const rawClientName = sheet.getCell("C10").text?.trim();
-
-      const projectName = rawProjectName && !rawProjectName.includes("GMT") && !rawProjectName.includes("Coordinated")
-        ? rawProjectName
-        : projectCode || "Unnamed project";
-      const clientName = rawClientName && !rawClientName.includes("GMT") && !rawClientName.includes("Coordinated")
-        ? rawClientName
-        : "";
-
-      if (!projectCode) {
-        projectCode = extractProjectCode(req.filename);
-        if (!projectCode) {
-          projectCode = "TEMP-" + Date.now();
-          warnings.push("⚠ Projekto kodas nerastas – naudotas laikinas kodas.");
-        } else {
-          warnings.push(`⚠ Projekto kodas paimtas iš failo pavadinimo: ${projectCode}`);
-        }
+      const { projectCode, projectName, clientName } = extractProjectMetadata(sheet, req.filename);
+      
+      if (projectCode.startsWith("TEMP-")) {
+        warnings.push("⚠ Projekto kodas nerastas – naudotas laikinas kodas.");
+      } else if (!sheet.getCell("C8").text?.trim()) {
+        warnings.push(`⚠ Projekto kodas paimtas iš failo pavadinimo: ${projectCode}`);
       }
 
       console.log(`📁 Projektas: ${projectCode} – ${projectName} (${clientName})`);
@@ -96,68 +83,21 @@ export const importExcel = api(
         `;
       }
 
-      const rows: ExcelRow[] = [];
-      console.log(`\n📊 EXCEL DEBUG - Testing multiple column positions for description:`);
-      for (let testRow = 26; testRow <= 28; testRow++) {
-        console.log(`\nRow ${testRow}:`);
-        console.log(`  B (SS Code): "${sheet.getCell(`B${testRow}`).text?.trim() || 'EMPTY'}"`);
-        console.log(`  C (Name): "${sheet.getCell(`C${testRow}`).text?.trim() || 'EMPTY'}"`);
-        console.log(`  AC (Desc?): "${sheet.getCell(`AC${testRow}`).text?.trim() || 'EMPTY'}"`);
-        console.log(`  AD: "${sheet.getCell(`AD${testRow}`).text?.trim() || 'EMPTY'}"`);
-        console.log(`  AE: "${sheet.getCell(`AE${testRow}`).text?.trim() || 'EMPTY'}"`);
-        console.log(`  Z: "${sheet.getCell(`Z${testRow}`).text?.trim() || 'EMPTY'}"`);
-        console.log(`  AA: "${sheet.getCell(`AA${testRow}`).text?.trim() || 'EMPTY'}"`);
-        console.log(`  AB: "${sheet.getCell(`AB${testRow}`).text?.trim() || 'EMPTY'}"`);
-      }
-
-      for (let i = 26; i < 1000; i++) {
-        const ss = sheet.getCell(`B${i}`).text?.trim();
-        if (!ss) break;
+      const columnMapping = detectColumns(sheet);
+      console.log(`📊 Column mapping: SS=${columnMapping.ssCodeColumn}, Name=${columnMapping.productNameColumn}, Desc=${columnMapping.descriptionColumn} (confidence: ${columnMapping.confidence})`);
+      warnings.push(`Detected columns - SS: ${columnMapping.ssCodeColumn}, Name: ${columnMapping.productNameColumn}, Description: ${columnMapping.descriptionColumn} (${columnMapping.confidence} confidence)`);
+      
+      const rows = extractAllRows(sheet, columnMapping);
+      
+      if (rows.length > 0) {
+        const firstRow = rows[0];
+        console.log(`\n📋 FIRST PRODUCT Row ${firstRow.rowNumber}:`);
+        console.log(`  SS Code: "${firstRow.ssCode}"`);
+        console.log(`  Name: "${firstRow.productName}"`);
+        console.log(`  Description: "${firstRow.description}"`);
+        console.log(`  Description length: ${firstRow.description?.length || 0}`);
         
-        let name = sheet.getCell(`C${i}`).text?.trim();
-        if (!name) {
-          name = sheet.getCell(`D${i}`).text?.trim();
-        }
-        if (!name) {
-          name = sheet.getCell(`E${i}`).text?.trim();
-        }
-        if (!name) {
-          name = ss;
-        }
-        
-        let desc = sheet.getCell(`AC${i}`).text?.trim() || "";
-        
-        if (!desc) {
-          desc = sheet.getCell(`AD${i}`).text?.trim() || "";
-        }
-        if (!desc) {
-          desc = sheet.getCell(`AE${i}`).text?.trim() || "";
-        }
-        if (!desc) {
-          desc = sheet.getCell(`AB${i}`).text?.trim() || "";
-        }
-        if (!desc) {
-          desc = sheet.getCell(`AA${i}`).text?.trim() || "";
-        }
-        if (!desc) {
-          desc = sheet.getCell(`Z${i}`).text?.trim() || "";
-        }
-
-        if (i === 26) {
-          console.log(`\n📋 FIRST PRODUCT Row ${i}:`);
-          console.log(`  SS Code (B): "${ss}"`);
-          console.log(`  Name (C/D/E): "${name}"`);
-          console.log(`  Description found: "${desc}"`);
-          console.log(`  Description length: ${desc?.length || 0}`);
-          
-          warnings.push(`First product: ${ss} | Name: ${name} | Desc length: ${desc?.length || 0}`);
-        }
-
-        const cleanDesc = desc || "";
-        if (i <= 28) {
-          console.log(`📝 Row ${i} parsed:`, { ssCode: ss, productName: name, description: cleanDesc ? `"${cleanDesc.slice(0, 80)}..."` : "EMPTY" });
-        }
-        rows.push({ ssCode: ss, productName: name, description: cleanDesc });
+        warnings.push(`First product: ${firstRow.ssCode} | Name: ${firstRow.productName} | Desc length: ${firstRow.description?.length || 0}`);
       }
 
       console.log(`📦 Rasta produktų: ${rows.length}`);
@@ -365,62 +305,6 @@ export const importExcel = api(
   }
 );
 
-async function findValidSheet(workbook: ExcelJS.Workbook): Promise<ExcelJS.Worksheet> {
-  const main = workbook.getWorksheet("Products information");
-  if (main && main.getCell("B26").text?.trim()) {
-    console.log(`📘 Using sheet: "Products information"`);
-    return main;
-  }
 
-  let best: ExcelJS.Worksheet | null = null;
-  let maxCount = 0;
-
-  for (const s of workbook.worksheets) {
-    let count = 0;
-    for (let i = 26; i < 100; i++) {
-      const ss = s.getCell(`B${i}`).text;
-      const name = s.getCell(`C${i}`).text;
-      if (ss && name) count++;
-    }
-    console.log(`📊 Sheet "${s.name}" has ${count} products (B+C check)`);
-    if (count > maxCount) {
-      maxCount = count;
-      best = s;
-    }
-  }
-
-  if (!best) throw new Error("Nerasta lapų su duomenimis (B ir C stulpeliai).");
-  console.log(`📘 Selected sheet: "${best.name}" with ${maxCount} products`);
-  return best;
-}
-
-function extractProjectCode(filename: string): string {
-  const match = filename.match(/[A-Z]{2,3}\d{6}/i);
-  return match ? match[0].toUpperCase() : "";
-}
-
-async function determineProductTypeFromName(productName: string, description: string): Promise<string> {
-  const combinedText = `${productName} ${description}`.toLowerCase();
-  
-  const synonyms = await db.queryAll<{ synonym: string; productTypeId: string }>`
-    SELECT s.synonym, s.product_type_id as "productTypeId"
-    FROM product_type_synonyms s
-    ORDER BY LENGTH(s.synonym) DESC
-  `;
-
-  for (const { synonym, productTypeId } of synonyms) {
-    const pattern = new RegExp(`\\b${synonym.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
-    if (pattern.test(combinedText)) {
-      console.log(`✓ Produktas "${productName}" priskirtas tipui "${productTypeId}" per sinonimą "${synonym}"`);
-      return productTypeId;
-    }
-  }
-
-  console.log(`⚠ Produktas "${productName}" nebuvo priskirtas jokiam tipui, naudojamas "Kita"`);
-  const kita = await db.queryRow<{ id: string }>`
-    SELECT id FROM product_types WHERE LOWER(name) = 'kita' OR LOWER(id) = 'kita' LIMIT 1
-  `;
-  return kita?.id || "Kita";
-}
 
 
