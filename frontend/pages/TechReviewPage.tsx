@@ -208,20 +208,24 @@ export function TechReviewPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {data?.review.generalNotes && (
-            <div className="bg-muted/50 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-2">
-                <Label className="text-sm font-medium">Aprašymas:</Label>
-                <Button variant="outline" size="sm" onClick={() => setReanalyzeOpen(true)}>
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  Redaguoti dalis AI analizei
-                </Button>
-              </div>
+          <div className="bg-muted/50 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-2">
+              <Label className="text-sm font-medium">Aprašymas:</Label>
+              <Button variant="outline" size="sm" onClick={() => setReanalyzeOpen(true)}>
+                <Sparkles className="h-4 w-4 mr-2" />
+                {data?.review.generalNotes ? "Redaguoti dalis AI analizei" : "Pridėti aprašymą ir analizuoti"}
+              </Button>
+            </div>
+            {data?.review.generalNotes ? (
               <p className="text-sm text-muted-foreground whitespace-pre-wrap">
                 {data.review.generalNotes}
               </p>
-            </div>
-          )}
+            ) : (
+              <p className="text-sm text-muted-foreground italic">
+                Aprašymas neįvestas. Paspauskite mygtuką viršuje norint pridėti aprašymą ir vykdyti AI analizę.
+              </p>
+            )}
+          </div>
 
           <Tabs 
             key={productTypeParts?.parts[0]?.name} 
