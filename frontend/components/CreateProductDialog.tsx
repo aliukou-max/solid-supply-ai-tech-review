@@ -91,22 +91,7 @@ export function CreateProductDialog({ open, onOpenChange, projectId, onSuccess }
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="type">Tipas</Label>
-            <Select onValueChange={(value: any) => setValue("type", value as ProductType)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Pasirinkite tipą" />
-              </SelectTrigger>
-              <SelectContent>
-                {PRODUCT_TYPES.map((type) => (
-                  <SelectItem key={type} value={type}>
-                    {type}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="productTypeId">Gaminio tipas (iš bibliotekos)</Label>
+            <Label htmlFor="productTypeId">Gaminio tipas</Label>
             <Select onValueChange={(value: any) => setValue("productTypeId", value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Pasirinkite gaminio tipą" />
