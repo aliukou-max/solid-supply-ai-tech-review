@@ -181,12 +181,6 @@ export function TechReviewPage() {
       }
       actions={
         <div className="flex items-center gap-2">
-          <Link to="/lessons-learnt">
-            <Button variant="outline">
-              <Lightbulb className="h-4 w-4 mr-2" />
-              Lessons Learnt
-            </Button>
-          </Link>
           {product?.drawingReference && (
             <Button variant="outline">
               <FileText className="h-4 w-4 mr-2" />
@@ -212,12 +206,6 @@ export function TechReviewPage() {
                   </TabsTrigger>
                 );
               })}
-              <TabsTrigger value="errors" className="justify-start">
-                Klaidos {openErrors.length > 0 && `(${openErrors.length})`}
-              </TabsTrigger>
-              <TabsTrigger value="lessons" className="justify-start">
-                Lessons Learnt ({lessonsData?.lessons.length || 0})
-              </TabsTrigger>
             </TabsList>
           </div>
 
@@ -246,25 +234,6 @@ export function TechReviewPage() {
                 </TabsContent>
               );
             })}
-
-            <TabsContent value="errors" className="space-y-4 mt-0">
-            <ErrorsTab
-              techReviewId={data?.review.id!}
-              errors={data?.errors || []}
-              suggestions={data?.suggestions || []}
-              productType={product?.type!}
-              projectCode={product?.projectId!}
-              productCode={product?.ssCode!}
-              onUpdate={refetch}
-            />
-          </TabsContent>
-
-          <TabsContent value="lessons" className="space-y-4 mt-0">
-            <LessonsTab
-              productType={product?.type!}
-              lessons={lessonsData?.lessons || []}
-            />
-          </TabsContent>
           </div>
         </Tabs>
       )}
