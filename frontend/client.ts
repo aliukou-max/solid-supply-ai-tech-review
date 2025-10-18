@@ -34,6 +34,7 @@ const BROWSER = typeof globalThis === "object" && ("window" in globalThis);
  */
 export class Client {
     public readonly aiAnalysis: aiAnalysis.ServiceClient
+    public readonly dashboard: dashboard.ServiceClient
     public readonly lessonsLearnt: lessonsLearnt.ServiceClient
     public readonly nodes: nodes.ServiceClient
     public readonly product: product.ServiceClient
@@ -56,6 +57,7 @@ export class Client {
         this.options = options ?? {}
         const base = new BaseClient(this.target, this.options)
         this.aiAnalysis = new aiAnalysis.ServiceClient(base)
+        this.dashboard = new dashboard.ServiceClient(base)
         this.lessonsLearnt = new lessonsLearnt.ServiceClient(base)
         this.nodes = new nodes.ServiceClient(base)
         this.product = new product.ServiceClient(base)
@@ -112,6 +114,29 @@ export namespace aiAnalysis {
             // Now make the actual call to the API
             const resp = await this.baseClient.callTypedAPI(`/ai-analysis/analyze`, {method: "POST", body: JSON.stringify(params)})
             return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_aiAnalysis_analyze_analyze>
+        }
+    }
+}
+
+/**
+ * Import the endpoint handlers to derive the types for the client.
+ */
+import { getStats as api_dashboard_get_stats_getStats } from "~backend/dashboard/get-stats";
+
+export namespace dashboard {
+
+    export class ServiceClient {
+        private baseClient: BaseClient
+
+        constructor(baseClient: BaseClient) {
+            this.baseClient = baseClient
+            this.getStats = this.getStats.bind(this)
+        }
+
+        public async getStats(): Promise<ResponseType<typeof api_dashboard_get_stats_getStats>> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI(`/dashboard/stats`, {method: "GET", body: undefined})
+            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_dashboard_get_stats_getStats>
         }
     }
 }
@@ -623,6 +648,7 @@ export namespace production_errors {
  */
 import { create as api_project_create_create } from "~backend/project/create";
 import { deleteProject as api_project_delete_deleteProject } from "~backend/project/delete";
+import { exportProject as api_project_export_excel_exportProject } from "~backend/project/export-excel";
 import { get as api_project_get_get } from "~backend/project/get";
 import { list as api_project_list_list } from "~backend/project/list";
 import { update as api_project_update_update } from "~backend/project/update";
@@ -636,6 +662,7 @@ export namespace project {
             this.baseClient = baseClient
             this.create = this.create.bind(this)
             this.deleteProject = this.deleteProject.bind(this)
+            this.exportProject = this.exportProject.bind(this)
             this.get = this.get.bind(this)
             this.list = this.list.bind(this)
             this.update = this.update.bind(this)
@@ -652,6 +679,12 @@ export namespace project {
 
         public async deleteProject(params: { id: string }): Promise<void> {
             await this.baseClient.callTypedAPI(`/projects/${encodeURIComponent(params.id)}`, {method: "DELETE", body: undefined})
+        }
+
+        public async exportProject(params: RequestType<typeof api_project_export_excel_exportProject>): Promise<ResponseType<typeof api_project_export_excel_exportProject>> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI(`/project/export-excel`, {method: "POST", body: JSON.stringify(params)})
+            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_project_export_excel_exportProject>
         }
 
         /**
@@ -695,11 +728,13 @@ import { addError as api_techReview_add_error_addError } from "~backend/tech-rev
 import { addPhotos as api_techReview_add_photos_addPhotos } from "~backend/tech-review/add-photos";
 import { bulkAssignNodes as api_techReview_bulk_assign_nodes_bulkAssignNodes } from "~backend/tech-review/bulk-assign-nodes";
 import { create as api_techReview_create_create } from "~backend/tech-review/create";
+import { createPartsFromDescription as api_techReview_create_parts_from_description_createPartsFromDescription } from "~backend/tech-review/create-parts-from-description";
 import { deleteComponentPartPhoto as api_techReview_delete_component_part_photo_deleteComponentPartPhoto } from "~backend/tech-review/delete-component-part-photo";
 import { deletePhoto as api_techReview_delete_photo_deletePhoto } from "~backend/tech-review/delete-photo";
 import { get as api_techReview_get_get } from "~backend/tech-review/get";
 import { importExcel as api_techReview_import_excel_importExcel } from "~backend/tech-review/import-excel";
 import { listComponentParts as api_techReview_list_component_parts_listComponentParts } from "~backend/tech-review/list-component-parts";
+import { previewExcel as api_techReview_preview_excel_previewExcel } from "~backend/tech-review/preview-excel";
 import { reanalyzeProduct as api_techReview_reanalyze_product_reanalyzeProduct } from "~backend/tech-review/reanalyze-product";
 import { updateComponent as api_techReview_update_component_updateComponent } from "~backend/tech-review/update-component";
 import { updateComponentPart as api_techReview_update_component_part_updateComponentPart } from "~backend/tech-review/update-component-part";
@@ -717,11 +752,13 @@ export namespace techReview {
             this.addPhotos = this.addPhotos.bind(this)
             this.bulkAssignNodes = this.bulkAssignNodes.bind(this)
             this.create = this.create.bind(this)
+            this.createPartsFromDescription = this.createPartsFromDescription.bind(this)
             this.deleteComponentPartPhoto = this.deleteComponentPartPhoto.bind(this)
             this.deletePhoto = this.deletePhoto.bind(this)
             this.get = this.get.bind(this)
             this.importExcel = this.importExcel.bind(this)
             this.listComponentParts = this.listComponentParts.bind(this)
+            this.previewExcel = this.previewExcel.bind(this)
             this.reanalyzeProduct = this.reanalyzeProduct.bind(this)
             this.updateComponent = this.updateComponent.bind(this)
             this.updateComponentPart = this.updateComponentPart.bind(this)
@@ -761,6 +798,12 @@ export namespace techReview {
             return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_techReview_create_create>
         }
 
+        public async createPartsFromDescription(params: RequestType<typeof api_techReview_create_parts_from_description_createPartsFromDescription>): Promise<ResponseType<typeof api_techReview_create_parts_from_description_createPartsFromDescription>> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI(`/tech-review/create-parts-from-description`, {method: "POST", body: JSON.stringify(params)})
+            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_techReview_create_parts_from_description_createPartsFromDescription>
+        }
+
         public async deleteComponentPartPhoto(params: RequestType<typeof api_techReview_delete_component_part_photo_deleteComponentPartPhoto>): Promise<void> {
             // Convert our params into the objects we need for the request
             const query = makeRecord<string, string | string[]>({
@@ -795,6 +838,12 @@ export namespace techReview {
             // Now make the actual call to the API
             const resp = await this.baseClient.callTypedAPI(`/tech-reviews/${encodeURIComponent(params.techReviewId)}/component-parts`, {method: "GET", body: undefined})
             return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_techReview_list_component_parts_listComponentParts>
+        }
+
+        public async previewExcel(params: RequestType<typeof api_techReview_preview_excel_previewExcel>): Promise<ResponseType<typeof api_techReview_preview_excel_previewExcel>> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI(`/tech-review/preview-excel`, {method: "POST", body: JSON.stringify(params)})
+            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_techReview_preview_excel_previewExcel>
         }
 
         public async reanalyzeProduct(params: RequestType<typeof api_techReview_reanalyze_product_reanalyzeProduct>): Promise<ResponseType<typeof api_techReview_reanalyze_product_reanalyzeProduct>> {
