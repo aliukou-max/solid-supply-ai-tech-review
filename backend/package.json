@@ -8,7 +8,8 @@
   },
   "dependencies": {
     "encore.dev": "^1.50.6",
-    "exceljs": "^4.4.0"
+    "exceljs": "^4.4.0",
+    "openai": "^^4.90.0"
   },
   "devDependencies": {
     "typescript": "^^5.8.3"
