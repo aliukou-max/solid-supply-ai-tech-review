@@ -16,7 +16,7 @@ import { ImportExcelDialog } from "@/components/ImportExcelDialog";
 import { useToast } from "@/components/ui/use-toast";
 
 interface ProjectStats {
-  products: Array<{ id: string; type: string }>;
+  products: Array<{ name: string; type: string }>;
 }
 
 export function ProjectsPage() {
@@ -47,7 +47,7 @@ export function ProjectsPage() {
       try {
         const { products } = await backend.product.listByProject({ projectId: project.id });
         stats[project.id] = { 
-          products: products.map((p: any) => ({ id: p.ssCode, type: p.type }))
+          products: products.map((p: any) => ({ name: p.name, type: p.type }))
         };
       } catch (error) {
         stats[project.id] = { products: [] };
@@ -170,9 +170,9 @@ export function ProjectsPage() {
                     <div className="space-y-2">
                       {stats.products.length > 0 ? (
                         <div className="flex flex-wrap gap-2">
-                          {stats.products.map((product) => (
-                            <Badge key={product.id} variant="secondary" className="text-xs">
-                              {product.id}
+                          {stats.products.map((product, idx) => (
+                            <Badge key={idx} variant="secondary" className="text-xs">
+                              {product.name}
                               <span className="ml-1 text-muted-foreground">({product.type})</span>
                             </Badge>
                           ))}
