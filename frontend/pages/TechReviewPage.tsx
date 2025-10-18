@@ -210,10 +210,6 @@ export function TechReviewPage() {
       }
       actions={
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => setReanalyzeOpen(true)}>
-            <Sparkles className="h-4 w-4 mr-2" />
-            AI analizė
-          </Button>
           {product?.drawingReference && (
             <Button variant="outline">
               <FileText className="h-4 w-4 mr-2" />
