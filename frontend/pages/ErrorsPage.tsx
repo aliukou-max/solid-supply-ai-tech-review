@@ -90,6 +90,10 @@ export function ErrorsPage() {
       // Read as array format to get columns by index
       const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 }) as any[][];
 
+      console.log("Excel data loaded:", jsonData);
+      console.log("First row (header):", jsonData[0]);
+      console.log("Second row (data):", jsonData[1]);
+
       if (jsonData.length === 0) {
         toast({ title: "Nėra duomenų importavimui", variant: "destructive" });
         return;
@@ -98,15 +102,20 @@ export function ErrorsPage() {
       // Skip first row (header) and process data
       const errorsToImport = jsonData
         .slice(1) // Skip header row
-        .filter((row) => row && row[2] && String(row[2]).trim()) // Only rows with column C (index 2)
+        .filter((row) => {
+          console.log("Processing row:", row);
+          return row && row.length > 0 && row[2] && String(row[2]).trim();
+        })
         .map((row) => ({
           projectCode: row[0] ? String(row[0]).trim() : undefined,  // Column A
           productCode: row[1] ? String(row[1]).trim() : undefined,  // Column B
           errorDescription: String(row[2]).trim(),                   // Column C
         }));
 
+      console.log("Errors to import:", errorsToImport);
+
       if (errorsToImport.length === 0) {
-        toast({ title: "Nėra duomenų importavimui", variant: "destructive" });
+        toast({ title: "Nėra duomenų importavimui. Patikrinkite ar C stulpelis užpildytas.", variant: "destructive" });
         return;
       }
 
@@ -114,7 +123,7 @@ export function ErrorsPage() {
       toast({ title: `Importuota klaidų: ${errorsToImport.length}` });
       refetch();
     } catch (error) {
-      console.error(error);
+      console.error("Import error:", error);
       toast({ title: "Klaida importuojant Excel", variant: "destructive" });
     }
 
