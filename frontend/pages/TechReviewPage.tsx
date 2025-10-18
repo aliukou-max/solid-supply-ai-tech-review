@@ -232,30 +232,54 @@ export function TechReviewPage() {
 
 
 
+  if (productLoading || reviewLoading) {
+    return (
+      <MainLayout title="Tech Review">
+        <div className="text-center py-12 text-muted-foreground">Kraunama...</div>
+      </MainLayout>
+    );
+  }
+
+  if (!product || !data) {
+    return (
+      <MainLayout title="Tech Review">
+        <div className="text-center py-12">
+          <p className="text-muted-foreground">Gaminys nerastas</p>
+          <Link to="/projects">
+            <Button className="mt-4">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Grįžti į projektus
+            </Button>
+          </Link>
+        </div>
+      </MainLayout>
+    );
+  }
+
   return (
     <MainLayout
       title={
         <div className="flex items-center gap-3">
-          <Link to={`/projects/${product?.projectId}`}>
+          <Link to={`/projects/${product.projectId}`}>
             <Button variant="ghost" size="icon">
               <ArrowLeft className="h-4 w-4" />
             </Button>
           </Link>
           <div>
             <div className="flex items-center gap-2">
-              Tech Review – {product?.ssCode}
-              <Badge variant="outline">{product?.productTypeName || product?.type}</Badge>
-              {!product?.hasDrawing && (
+              Tech Review – {product.ssCode}
+              <Badge variant="outline">{product.productTypeName || product.type}</Badge>
+              {!product.hasDrawing && (
                 <Badge variant="destructive">🚩 Be brėžinio</Badge>
               )}
             </div>
-            <p className="text-sm text-muted-foreground mt-1">{product?.name}</p>
+            <p className="text-sm text-muted-foreground mt-1">{product.name}</p>
           </div>
         </div>
       }
       actions={
         <div className="flex items-center gap-2">
-          {product?.drawingReference && (
+          {product.drawingReference && (
             <Button variant="outline">
               <FileText className="h-4 w-4 mr-2" />
               {product.drawingReference}
@@ -282,9 +306,7 @@ export function TechReviewPage() {
         </div>
       }
     >
-      {productLoading || reviewLoading ? (
-        <div className="text-center py-12 text-muted-foreground">Kraunama...</div>
-      ) : !productTypeParts?.parts || productTypeParts.parts.length === 0 ? (
+      {!productTypeParts?.parts || productTypeParts.parts.length === 0 ? (
         <div className="text-center py-12">
           <p className="text-muted-foreground mb-4">Šis gaminio tipas neturi apibrėžtų dalių.</p>
           <p className="text-sm text-muted-foreground">Pridėkite dalis gaminio tipo nustatymuose.</p>
