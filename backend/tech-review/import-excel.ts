@@ -100,6 +100,8 @@ export const importExcel = api(
           console.log(`  SS Code (B): "${ss}"`);
           console.log(`  Name (C): "${name}"`);
           console.log(`  Description (AC): "${desc}"`);
+          
+          warnings.push(`DEBUG AC26: "${desc || 'TUŠČIA'}" (ilgis: ${desc?.length || 0})`);
         }
 
         if (name) {
