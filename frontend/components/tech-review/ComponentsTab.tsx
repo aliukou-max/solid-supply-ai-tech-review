@@ -17,22 +17,11 @@ interface ComponentsTabProps {
 
 export function ComponentsTab({ components, onUpdate }: ComponentsTabProps) {
   const [editingComponent, setEditingComponent] = useState(null);
-  const [optimisticComponents, setOptimisticComponents] = useState(components);
-
-  useEffect(() => {
-    setOptimisticComponents(components);
-  }, [components]);
-
-  const handleOptimisticUpdate = (componentId: any, updatedData: any) => {
-    setOptimisticComponents((prev: any) =>
-      prev.map((c: any) => (c.id === componentId ? { ...c, ...updatedData } : c))
-    );
-  };
 
   return (
     <>
       <div className="grid gap-4">
-        {optimisticComponents.map((component: any) => (
+        {components.map((component: any) => (
           <Card key={component.id}>
             <CardHeader>
               <div className="flex items-start justify-between">
@@ -111,9 +100,6 @@ export function ComponentsTab({ components, onUpdate }: ComponentsTabProps) {
             setEditingComponent(null);
             onUpdate();
           }}
-          onOptimisticUpdate={(updatedData) => 
-            handleOptimisticUpdate(editingComponent.id, updatedData)
-          }
         />
       )}
     </>

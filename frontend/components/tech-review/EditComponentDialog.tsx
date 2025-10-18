@@ -180,25 +180,20 @@ export function EditComponentDialog({ component, open, onOpenChange, onSuccess, 
   const onSubmit = async (data: FormData) => {
     const updateData = { ...data, photoUrl };
     
-    if (onOptimisticUpdate) {
-      onOptimisticUpdate(updateData);
-    }
-    
-    onOpenChange(false);
     setIsLoading(true);
     
     try {
       await backend.techReview.updateComponent({ id: component.id, ...updateData });
       toast({ title: "Komponentas atnaujintas sėkmingai" });
       onSuccess();
+      onOpenChange(false);
     } catch (error) {
       console.error("Failed to update component:", error);
       toast({
         title: "Klaida",
-        description: "Nepavyko atnaujinti komponento. Atnaujinama...",
+        description: "Nepavyko atnaujinti komponento",
         variant: "destructive",
       });
-      onSuccess();
     } finally {
       setIsLoading(false);
     }
