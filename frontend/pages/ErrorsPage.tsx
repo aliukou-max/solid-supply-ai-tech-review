@@ -101,16 +101,25 @@ export function ErrorsPage() {
 
       // Skip first row (header) and process data
       const errorsToImport = jsonData
-        .slice(1) // Skip header row
+        .slice(1)
         .filter((row) => {
           console.log("Processing row:", row);
-          return row && row.length > 0 && row[2] && String(row[2]).trim();
+          if (!row || row.length === 0) return false;
+          const errorDesc = row[2];
+          if (!errorDesc) return false;
+          const trimmed = String(errorDesc).trim();
+          return trimmed.length > 0;
         })
-        .map((row) => ({
-          projectCode: row[0] ? String(row[0]).trim() : undefined,  // Column A
-          productCode: row[1] ? String(row[1]).trim() : undefined,  // Column B
-          errorDescription: String(row[2]).trim(),                   // Column C
-        }));
+        .map((row) => {
+          const projectCode = row[0] ? String(row[0]).trim() : "";
+          const productCode = row[1] ? String(row[1]).trim() : "";
+          
+          return {
+            projectCode: projectCode || undefined,
+            productCode: productCode || undefined,
+            errorDescription: String(row[2]).trim(),
+          };
+        });
 
       console.log("Errors to import:", errorsToImport);
 
