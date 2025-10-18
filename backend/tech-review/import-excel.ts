@@ -181,8 +181,8 @@ export const importExcel = api(
           `;
 
           const techReview = await db.queryRow<{ id: number }>`
-            INSERT INTO tech_reviews (product_id, status, created_at, updated_at)
-            VALUES (${productId}, 'draft', NOW(), NOW())
+            INSERT INTO tech_reviews (product_id, status, general_notes, created_at, updated_at)
+            VALUES (${productId}, 'draft', ${row.description || null}, NOW(), NOW())
             RETURNING id
           `;
 

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Plus, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Plus, AlertTriangle, Download } from "lucide-react";
 import backend from "~backend/client";
 import type { Product } from "~backend/product/types";
 import { MainLayout } from "@/components/MainLayout";
@@ -51,6 +51,36 @@ export function ProjectDetailPage() {
     }
   };
 
+  const handleExportExcel = async () => {
+    if (!projectId) return;
+
+    try {
+      toast({
+        title: "Ruošiama...",
+        description: "Generuojamas Excel failas",
+      });
+
+      const result = await backend.project.exportProject({ projectId });
+
+      const link = document.createElement('a');
+      link.href = `data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,${result.fileData}`;
+      link.download = result.filename;
+      link.click();
+
+      toast({
+        title: "Sėkmingai eksportuota",
+        description: `Failas: ${result.filename}`,
+      });
+    } catch (error) {
+      console.error("Failed to export Excel:", error);
+      toast({
+        title: "Klaida",
+        description: "Nepavyko eksportuoti į Excel",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <MainLayout
       title={
@@ -81,10 +111,16 @@ export function ProjectDetailPage() {
         </div>
       }
       actions={
-        <Button onClick={() => setCreateOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Naujas gaminys
-        </Button>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={handleExportExcel} className="border-slate-700 text-slate-300 hover:bg-slate-800">
+            <Download className="h-3.5 w-3.5 mr-1.5" />
+            Exportuoti Excel
+          </Button>
+          <Button size="sm" onClick={() => setCreateOpen(true)} className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200">
+            <Plus className="h-3.5 w-3.5 mr-1.5" />
+            Naujas gaminys
+          </Button>
+        </div>
       }
     >
       {projectLoading || productsLoading ? (
