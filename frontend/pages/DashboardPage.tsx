@@ -80,7 +80,7 @@ export function DashboardPage() {
 
       <div>
         <h2 className="text-2xl font-bold mb-4">Naujausi įvesti projektai</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="space-y-2">
           {recentProjects.map((project) => (
             <ProjectCard key={project.id} project={project} />
           ))}
