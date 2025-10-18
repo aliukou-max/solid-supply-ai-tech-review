@@ -14,7 +14,11 @@ export async function validateErrorRow(error: ErrorRow): Promise<ValidationResul
   const projectCode = parts[0];
   const productCode = parts.slice(1).join('-');
 
-  console.log(`🔍 Validacija: ${fullProductId} -> project="${projectCode}" product="${productCode}"`);
+  console.log(`🔍 Validacija eilutės ${error.rowNumber}:`);
+  console.log(`   fullProductId: "${fullProductId}"`);
+  console.log(`   projectCode: "${projectCode}"`);
+  console.log(`   productCode: "${productCode}"`);
+  console.log(`   description: "${error.description}"`);
 
   let existingError;
   try {
@@ -25,17 +29,18 @@ export async function validateErrorRow(error: ErrorRow): Promise<ValidationResul
       AND LOWER(error_description) = LOWER(${error.description})
       AND deleted_at IS NULL
     `;
-    console.log(`  ⚠️  Dublikatas rastas!`);
+    console.log(`  ⚠️  Dublikatas rastas! ID=${existingError.id}`);
     return {
       isValid: false,
       projectCode,
       productCode,
       warning: `Eilutė ${error.rowNumber}: klaida jau egzistuoja (${fullProductId})`,
     };
-  } catch {
-    console.log(`  ✅ Validi klaida`);
+  } catch (err) {
+    console.log(`  ✅ Dublikato nėra (tai gerai)`);
   }
 
+  console.log(`  ➡️  Grąžinama: isValid=true`);
   return {
     isValid: true,
     projectCode,
