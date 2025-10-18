@@ -3,23 +3,28 @@ import type { ErrorRow } from "./types";
 
 export interface ValidationResult {
   isValid: boolean;
-  productId: string;
+  projectCode: string;
+  productCode: string;
   warning?: string;
 }
 
 export async function validateErrorRow(error: ErrorRow): Promise<ValidationResult> {
-  const productId = error.productCode;
+  const fullProductId = error.productCode;
+  const parts = fullProductId.split('-');
+  const projectCode = parts[0];
+  const productCode = parts.slice(1).join('-');
 
   let product;
   try {
     product = await db.queryRow<{ id: string }>`
-      SELECT id FROM products WHERE id = ${productId}
+      SELECT id FROM products WHERE id = ${fullProductId}
     `;
   } catch {
     return {
       isValid: false,
-      productId,
-      warning: `Eilutė ${error.rowNumber}: produktas ${productId} nerastas`,
+      projectCode,
+      productCode,
+      warning: `Eilutė ${error.rowNumber}: produktas ${fullProductId} nerastas`,
     };
   }
 
@@ -27,20 +32,23 @@ export async function validateErrorRow(error: ErrorRow): Promise<ValidationResul
   try {
     existingError = await db.queryRow<{ id: string }>`
       SELECT id FROM production_errors 
-      WHERE product_id = ${productId} 
-      AND LOWER(description) = LOWER(${error.description})
+      WHERE project_code = ${projectCode}
+      AND product_code = ${productCode}
+      AND LOWER(error_description) = LOWER(${error.description})
       AND deleted_at IS NULL
     `;
     return {
       isValid: false,
-      productId,
-      warning: `Eilutė ${error.rowNumber}: klaida jau egzistuoja (${productId})`,
+      projectCode,
+      productCode,
+      warning: `Eilutė ${error.rowNumber}: klaida jau egzistuoja (${fullProductId})`,
     };
   } catch {
   }
 
   return {
     isValid: true,
-    productId,
+    projectCode,
+    productCode,
   };
 }
