@@ -264,9 +264,9 @@ export function ErrorsPage() {
                       />
                     </th>
                     <th className="p-2 text-left w-12 text-xs">Nr.</th>
-                    <th className="p-2 text-left text-xs">Projekto kodas</th>
-                    <th className="p-2 text-left text-xs">Gaminio kodas</th>
-                    <th className="p-2 text-left text-xs">Klaidos aprašymas</th>
+                    <th className="p-2 text-left text-xs">A</th>
+                    <th className="p-2 text-left text-xs">B</th>
+                    <th className="p-2 text-left text-xs">Problema</th>
                     <th className="p-2 text-left w-24 text-xs">Statusas</th>
                   </tr>
                 </thead>
