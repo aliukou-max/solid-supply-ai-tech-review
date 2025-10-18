@@ -25,9 +25,9 @@ export function TechReviewPage() {
   });
 
   const { data: productTypeParts } = useQuery({
-    queryKey: ["product-type-parts", product?.typeId],
-    queryFn: async () => backend.productTypes.listParts({ productTypeId: product?.typeId! }),
-    enabled: !!product?.typeId,
+    queryKey: ["product-type-parts", product?.productTypeId],
+    queryFn: async () => backend.product_types.listParts({ productTypeId: product?.productTypeId! }),
+    enabled: !!product?.productTypeId,
   });
 
   const { data: componentPartsData } = useQuery({

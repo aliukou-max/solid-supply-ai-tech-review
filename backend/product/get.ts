@@ -9,7 +9,7 @@ export const get = api<{ id: string }, Product>(
     const row = await db.queryRow<Product>`
       SELECT 
         id, project_id as "projectId", ss_code as "ssCode", 
-        name, type, dimensions, has_drawing as "hasDrawing",
+        name, type, product_type_id as "productTypeId", dimensions, has_drawing as "hasDrawing",
         drawing_reference as "drawingReference",
         created_at as "createdAt", updated_at as "updatedAt"
       FROM products

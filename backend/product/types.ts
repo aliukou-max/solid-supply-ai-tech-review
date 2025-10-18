@@ -12,6 +12,7 @@ export interface Product {
   ssCode: string;
   name: string;
   type: ProductType;
+  productTypeId?: string;
   dimensions?: string;
   hasDrawing: boolean;
   drawingReference?: string;
