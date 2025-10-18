@@ -48,7 +48,7 @@ export const importExcel = api(
 
       const buffer = Buffer.from(req.fileData, "base64");
       const workbook = new ExcelJS.Workbook();
-      await workbook.xlsx.load(buffer);
+      await workbook.xlsx.load(buffer as any);
 
       const sheet = await findValidSheet(workbook);
       console.log(`📘 Naudojamas lapas: ${sheet.name}`);
@@ -134,34 +134,74 @@ export const importExcel = api(
             continue;
           }
 
+          const parts = await db.queryAll<{ id: string; name: string; sortOrder: number }>`
+            SELECT id, name, sort_order AS "sortOrder"
+            FROM product_type_parts
+            WHERE product_type_id = ${productType}
+            ORDER BY sort_order, name
+          `;
+
+          for (const part of parts) {
+            await db.exec`
+              INSERT INTO component_parts (
+                tech_review_id, product_type_part_id, part_name, sort_order,
+                has_done, has_node, had_errors, created_at, updated_at
+              )
+              VALUES (
+                ${techReview.id}, ${part.id}, ${part.name}, ${part.sortOrder},
+                false, false, false, NOW(), NOW()
+              )
+            `;
+          }
+
           if (row.description) {
-            const components = await analyzeDescriptionWithAI(row.description, productType);
+            const analysisResult = await analyzeDescriptionWithAI(row.description, productType);
+            
+            const combinedNotes: string[] = [];
+            const materials: string[] = [];
+            const finishes: string[] = [];
 
-            for (const comp of components) {
-              const note = comp.uncertainTerms?.length
-                ? `⚠ Neaiškūs terminai: ${comp.uncertainTerms.join(", ")}`
-                : comp.other;
-
-              await db.exec`
-                INSERT INTO components (
-                  tech_review_id, name, material, finish, technical_notes, created_at, updated_at
-                )
-                VALUES (
-                  ${techReview.id},
-                  ${comp.name},
-                  ${comp.material || null},
-                  ${comp.finish || null},
-                  ${note || null},
-                  NOW(), NOW()
-                )
-              `;
+            for (const comp of analysisResult) {
+              if (comp.material) materials.push(comp.material);
+              if (comp.finish) finishes.push(comp.finish);
+              
+              const partNote = [
+                comp.name,
+                comp.material ? `Material: ${comp.material}` : null,
+                comp.finish ? `Finish: ${comp.finish}` : null,
+                comp.other,
+                comp.uncertainTerms?.length ? `⚠ ${comp.uncertainTerms.join(", ")}` : null
+              ].filter(Boolean).join(" | ");
+              
+              combinedNotes.push(partNote);
 
               if (comp.uncertainTerms?.length) {
                 warnings.push(`${row.ssCode} – "${comp.name}" turi neaiškių terminų: ${comp.uncertainTerms.join(", ")}`);
               }
             }
+
+            if (parts.length > 0) {
+              const firstPartId = await db.queryRow<{ id: number }>`
+                SELECT id FROM component_parts
+                WHERE tech_review_id = ${techReview.id}
+                ORDER BY sort_order, id
+                LIMIT 1
+              `;
+
+              if (firstPartId) {
+                await db.exec`
+                  UPDATE component_parts
+                  SET 
+                    material = ${materials.join(", ") || null},
+                    finish = ${finishes.join(", ") || null},
+                    notes = ${combinedNotes.join("\n\n") || null},
+                    updated_at = NOW()
+                  WHERE id = ${firstPartId.id}
+                `;
+              }
+            }
           } else {
-            warnings.push(`${row.ssCode} – trūksta aprašymo, komponentai nesukurti`);
+            warnings.push(`${row.ssCode} – trūksta aprašymo`);
           }
 
           productsCreated++;
