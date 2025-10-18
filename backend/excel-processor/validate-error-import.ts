@@ -14,20 +14,6 @@ export async function validateErrorRow(error: ErrorRow): Promise<ValidationResul
   const projectCode = parts[0];
   const productCode = parts.slice(1).join('-');
 
-  let product;
-  try {
-    product = await db.queryRow<{ id: string }>`
-      SELECT id FROM products WHERE id = ${fullProductId}
-    `;
-  } catch {
-    return {
-      isValid: false,
-      projectCode,
-      productCode,
-      warning: `Eilutė ${error.rowNumber}: produktas ${fullProductId} nerastas`,
-    };
-  }
-
   let existingError;
   try {
     existingError = await db.queryRow<{ id: string }>`
