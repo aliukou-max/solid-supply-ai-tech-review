@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Upload, X, Edit2, Trash2, Save } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Upload, X, Edit2, Trash2, Save, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,11 +8,13 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import backend from "~backend/client";
 
 interface ComponentPartsTabContentProps {
   partComponentParts: any[];
   allNodesData?: { nodes: any[] };
   allErrorsData?: { errors: any[] };
+  productType: string;
   onPhotoUpload: (componentPartId: number, files: FileList) => Promise<void>;
   onRemovePhoto: (componentPartId: number, photoUrl: string) => Promise<void>;
   onSavePart: (componentPartId: number, updates: any) => Promise<void>;
@@ -24,6 +26,7 @@ export function ComponentPartsTabContent({
   partComponentParts,
   allNodesData,
   allErrorsData,
+  productType,
   onPhotoUpload,
   onRemovePhoto,
   onSavePart,
@@ -32,6 +35,8 @@ export function ComponentPartsTabContent({
 }: ComponentPartsTabContentProps) {
   const [editingPart, setEditingPart] = useState<number | null>(null);
   const [editData, setEditData] = useState<Record<number, any>>({});
+  const [nodeRecommendations, setNodeRecommendations] = useState<Record<number, any[]>>({});
+  const [loadingRecommendations, setLoadingRecommendations] = useState<number | null>(null);
 
   const updateEditData = (componentPartId: number, field: string, value: any) => {
     setEditData(prev => ({
@@ -42,6 +47,34 @@ export function ComponentPartsTabContent({
       }
     }));
   };
+
+  const loadNodeRecommendations = async (componentPart: any) => {
+    setLoadingRecommendations(componentPart.id);
+    try {
+      const result = await backend.nodes.recommendForPart({
+        partName: componentPart.partName,
+        productType: productType,
+        material: componentPart.material,
+        finish: componentPart.finish,
+      });
+      setNodeRecommendations(prev => ({
+        ...prev,
+        [componentPart.id]: result.recommendations,
+      }));
+    } catch (error) {
+      console.error("Failed to load recommendations:", error);
+    } finally {
+      setLoadingRecommendations(null);
+    }
+  };
+
+  useEffect(() => {
+    partComponentParts.forEach(part => {
+      if (!nodeRecommendations[part.id] && !part.selectedNodeId) {
+        loadNodeRecommendations(part);
+      }
+    });
+  }, [partComponentParts.map(p => p.id).join(',')]);
 
   const getFieldValue = (componentPart: any, field: string) => {
     const editValue = editData[componentPart.id]?.[field];
@@ -188,31 +221,82 @@ export function ComponentPartsTabContent({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label htmlFor={`drawing-${componentPart.id}`} className="text-xs">Brėžinio kodas</Label>
-                <Input
-                  id={`drawing-${componentPart.id}`}
-                  value={getFieldValue(componentPart, 'drawingCode') || ''}
-                  onChange={(e) => updateEditData(componentPart.id, 'drawingCode', e.target.value)}
-                  disabled={editingPart !== componentPart.id}
-                  placeholder="Brėžinio kodas"
-                  className="h-8 text-sm"
-                />
-              </div>
-              <div className="space-y-1">
+            <div className="space-y-1">
+              <Label htmlFor={`drawing-${componentPart.id}`} className="text-xs">Brėžinio kodas</Label>
+              <Input
+                id={`drawing-${componentPart.id}`}
+                value={getFieldValue(componentPart, 'drawingCode') || ''}
+                onChange={(e) => updateEditData(componentPart.id, 'drawingCode', e.target.value)}
+                disabled={editingPart !== componentPart.id}
+                placeholder="Brėžinio kodas"
+                className="h-8 text-sm"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
                 <Label className="text-xs">Brėžinio mazgas</Label>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="w-full justify-start text-xs h-8"
-                  asChild
-                >
-                  <a href={`/nodes/by-part?name=${encodeURIComponent(componentPart.partName)}`} target="_blank" rel="noopener noreferrer">
-                    🔍 Ieškoti "{componentPart.partName}" mazgų →
-                  </a>
-                </Button>
+                {getFieldValue(componentPart, 'selectedNodeId') ? (
+                  <Badge variant="default" className="text-xs gap-1 bg-green-600">
+                    ✓ Pasirinktas
+                  </Badge>
+                ) : nodeRecommendations[componentPart.id]?.length > 0 ? (
+                  <Badge variant="secondary" className="text-xs gap-1">
+                    <Sparkles className="h-3 w-3" />
+                    {nodeRecommendations[componentPart.id].length} pasiūlymai
+                  </Badge>
+                ) : null}
               </div>
+              <Select
+                value={getFieldValue(componentPart, 'selectedNodeId') || ""}
+                onValueChange={(value) => {
+                  if (value === "search") {
+                    window.open(`/nodes/by-part?name=${encodeURIComponent(componentPart.partName)}`, '_blank');
+                    return;
+                  }
+                  updateEditData(componentPart.id, 'selectedNodeId', value || null);
+                  updateEditData(componentPart.id, 'hasNode', !!value);
+                }}
+                disabled={editingPart !== componentPart.id}
+              >
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue placeholder={loadingRecommendations === componentPart.id ? "Ieškoma..." : "Pasirinkite mazgą..."}>
+                    {getFieldValue(componentPart, 'selectedNodeId') && (
+                      <span>
+                        {nodeRecommendations[componentPart.id]?.find(r => r.node.id === getFieldValue(componentPart, 'selectedNodeId'))?.node.partName || 
+                         allNodesData?.nodes.find(n => n.id === getFieldValue(componentPart, 'selectedNodeId'))?.partName ||
+                         getFieldValue(componentPart, 'selectedNodeId')}
+                      </span>
+                    )}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {getFieldValue(componentPart, 'selectedNodeId') && (
+                    <SelectItem value="">-- Išvalyti --</SelectItem>
+                  )}
+                  {nodeRecommendations[componentPart.id]?.map((rec) => (
+                    <SelectItem key={rec.node.id} value={rec.node.id} className="py-2">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-xs bg-green-500/10 text-green-700 border-green-500/20">
+                          {Math.round(rec.matchScore)}
+                        </Badge>
+                        <div className="flex flex-col">
+                          <span className="font-medium text-sm">{rec.node.partName}</span>
+                          <span className="text-xs text-muted-foreground">{rec.node.brandName} • {rec.reason}</span>
+                        </div>
+                      </div>
+                    </SelectItem>
+                  ))}
+                  {(!nodeRecommendations[componentPart.id] || nodeRecommendations[componentPart.id]?.length === 0) && (
+                    <SelectItem value="" disabled>
+                      {loadingRecommendations === componentPart.id ? "Ieškoma pasiūlymų..." : "Nerasta pasiūlymų"}
+                    </SelectItem>
+                  )}
+                  <SelectItem value="search" className="text-blue-600 font-medium">
+                    🔍 Ieškoti daugiau mazgų bibliotekoje →
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-1">

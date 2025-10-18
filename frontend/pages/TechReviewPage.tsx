@@ -12,12 +12,14 @@ import { ErrorsTab } from "@/components/tech-review/ErrorsTab";
 import { LessonsTab } from "@/components/tech-review/LessonsTab";
 import { ComponentPartsTabContent } from "@/components/tech-review/ComponentPartsTabContent";
 import { ReanalyzeDialog } from "@/components/tech-review/ReanalyzeDialog";
+import { NodeAssignmentSummary } from "@/components/tech-review/NodeAssignmentSummary";
 
 export function TechReviewPage() {
   const { productId } = useParams<{ productId: string }>();
   const { toast } = useToast();
   const [uploadingPhoto, setUploadingPhoto] = useState<number | null>(null);
   const [reanalyzeOpen, setReanalyzeOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>("");
 
   const { data: product, isLoading: productLoading } = useQuery({
     queryKey: ["product", productId],
@@ -199,18 +201,36 @@ export function TechReviewPage() {
       {productLoading || reviewLoading ? (
         <div className="text-center py-12 text-muted-foreground">Kraunama...</div>
       ) : (
-        <Tabs key={productTypeParts?.parts[0]?.name} defaultValue={productTypeParts?.parts[0]?.name || "errors"} className="space-y-4">
-          <TabsList className="w-full justify-start h-auto flex-wrap">
-            {productTypeParts?.parts.map((part) => {
-              return (
-                <TabsTrigger key={part.id} value={part.name}>
-                  {part.name}
-                </TabsTrigger>
+        <div className="space-y-4">
+          <NodeAssignmentSummary 
+            componentParts={componentPartsData?.parts || []}
+            onNavigateToPart={(partName) => {
+              const part = productTypeParts?.parts.find(p => 
+                componentPartsData?.parts.some(cp => 
+                  cp.productTypePartId === p.id && cp.partName === partName
+                )
               );
-            })}
-          </TabsList>
+              if (part) setActiveTab(part.name);
+            }}
+          />
 
-          <div>
+          <Tabs 
+            key={productTypeParts?.parts[0]?.name} 
+            value={activeTab || productTypeParts?.parts[0]?.name || "errors"}
+            onValueChange={setActiveTab}
+            className="space-y-4"
+          >
+            <TabsList className="w-full justify-start h-auto flex-wrap">
+              {productTypeParts?.parts.map((part) => {
+                return (
+                  <TabsTrigger key={part.id} value={part.name}>
+                    {part.name}
+                  </TabsTrigger>
+                );
+              })}
+            </TabsList>
+
+            <div>
             {productTypeParts?.parts.map((part) => {
               const partComponentParts = componentPartsData?.parts.filter(
                 cp => cp.productTypePartId === part.id
@@ -226,6 +246,7 @@ export function TechReviewPage() {
                     partComponentParts={partComponentParts}
                     allNodesData={allNodesData}
                     allErrorsData={allErrorsData}
+                    productType={product?.type || ""}
                     onPhotoUpload={handlePhotoUpload}
                     onRemovePhoto={handleRemovePhoto}
                     onSavePart={handleSavePart}
@@ -235,8 +256,9 @@ export function TechReviewPage() {
                 </TabsContent>
               );
             })}
-          </div>
-        </Tabs>
+            </div>
+          </Tabs>
+        </div>
       )}
 
       {productId && (
