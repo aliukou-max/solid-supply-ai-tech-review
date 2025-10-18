@@ -1,3 +1,6 @@
+DELETE FROM component_parts;
+DELETE FROM tech_reviews;
+DELETE FROM products;
 DELETE FROM product_type_parts;
 DELETE FROM product_types;
 
