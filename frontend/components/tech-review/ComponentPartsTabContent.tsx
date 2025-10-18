@@ -159,42 +159,45 @@ export function ComponentPartsTabContent({
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor={`material-${componentPart.id}`}>Medžiaga</Label>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label htmlFor={`material-${componentPart.id}`} className="text-xs">Medžiaga</Label>
                 <Input
                   id={`material-${componentPart.id}`}
                   value={getFieldValue(componentPart, 'material') || ''}
                   onChange={(e) => updateEditData(componentPart.id, 'material', e.target.value)}
                   disabled={editingPart !== componentPart.id}
                   placeholder="Pvz.: MDF, Fanera..."
+                  className="h-8 text-sm"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor={`finish-${componentPart.id}`}>Apdaila</Label>
+              <div className="space-y-1">
+                <Label htmlFor={`finish-${componentPart.id}`} className="text-xs">Apdaila</Label>
                 <Input
                   id={`finish-${componentPart.id}`}
                   value={getFieldValue(componentPart, 'finish') || ''}
                   onChange={(e) => updateEditData(componentPart.id, 'finish', e.target.value)}
                   disabled={editingPart !== componentPart.id}
                   placeholder="Pvz.: Dažyta, Laminuota..."
+                  className="h-8 text-sm"
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor={`drawing-${componentPart.id}`}>Brėžinio kodas</Label>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label htmlFor={`drawing-${componentPart.id}`} className="text-xs">Brėžinio kodas</Label>
                 <Input
                   id={`drawing-${componentPart.id}`}
                   value={getFieldValue(componentPart, 'drawingCode') || ''}
                   onChange={(e) => updateEditData(componentPart.id, 'drawingCode', e.target.value)}
                   disabled={editingPart !== componentPart.id}
                   placeholder="Brėžinio kodas"
+                  className="h-8 text-sm"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor={`node-${componentPart.id}`}>Brėžinio mazgas</Label>
+              <div className="space-y-1">
+                <Label htmlFor={`node-${componentPart.id}`} className="text-xs">Brėžinio mazgas</Label>
                 {editingPart === componentPart.id ? (
                   <>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -213,19 +216,18 @@ export function ComponentPartsTabContent({
                             <div
                               key={node.id}
                               onClick={() => updateEditData(componentPart.id, 'selectedNodeId', isSelected ? null : node.id)}
-                              className={`cursor-pointer border rounded-lg p-3 transition-all hover:shadow-md ${
+                              className={`cursor-pointer border rounded p-2 transition-all hover:shadow-md ${
                                 isSelected ? 'border-primary bg-primary/5 ring-2 ring-primary' : 'border-border hover:border-primary/50'
                               }`}
                             >
-                              <div className="aspect-video bg-muted rounded overflow-hidden mb-2">
+                              <div className="aspect-video bg-muted rounded overflow-hidden mb-1">
                                 <iframe
                                   src={`/api/nodes/${node.id}/pdf#view=FitH`}
                                   className="w-full h-full pointer-events-none"
                                   title={node.productCode}
                                 />
                               </div>
-                              <div className="text-xs font-medium truncate">{node.productCode}</div>
-                              <div className="text-xs text-muted-foreground truncate">{node.brandName}</div>
+                              <div className="text-[10px] font-medium truncate">{node.productCode} · {node.brandName}</div>
                             </div>
                           );
                         })}
@@ -251,7 +253,7 @@ export function ComponentPartsTabContent({
                   </>
                 ) : (
                   <div className="space-y-2">
-                    <div className="h-10 px-3 py-2 rounded-md border border-input bg-muted text-sm">
+                    <div className="h-8 px-3 py-1.5 rounded-md border border-input bg-muted text-xs">
                       {componentPart.selectedNodeId 
                         ? allNodesData?.nodes?.find(n => n.id === componentPart.selectedNodeId)?.productCode || componentPart.selectedNodeId
                         : 'Nepasirinkta'}
@@ -259,12 +261,11 @@ export function ComponentPartsTabContent({
                     {componentPart.selectedNodeId && (() => {
                       const selectedNode = allNodesData?.nodes?.find(n => n.id === componentPart.selectedNodeId);
                       return selectedNode ? (
-                        <div className="border rounded-lg p-3 bg-muted/50 space-y-2">
-                          <div className="text-sm font-medium">{selectedNode.productCode} - {selectedNode.brandName}</div>
-                          <div className="text-xs text-muted-foreground">{selectedNode.description}</div>
+                        <div className="border rounded p-2 bg-muted/50 space-y-1">
+                          <div className="text-xs font-medium">{selectedNode.productCode} - {selectedNode.brandName} · {selectedNode.description}</div>
                           <iframe
                             src={`/api/nodes/${selectedNode.id}/pdf`}
-                            className="w-full h-96 border rounded"
+                            className="w-full h-80 border rounded"
                             title={`PDF: ${selectedNode.productCode}`}
                           />
                         </div>
@@ -275,32 +276,34 @@ export function ComponentPartsTabContent({
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor={`tech-desc-${componentPart.id}`}>Technologinis aprašymas</Label>
+            <div className="space-y-1">
+              <Label htmlFor={`tech-desc-${componentPart.id}`} className="text-xs">Technologinis aprašymas</Label>
               <Textarea
                 id={`tech-desc-${componentPart.id}`}
                 value={getFieldValue(componentPart, 'technologicalDescription') || ''}
                 onChange={(e) => updateEditData(componentPart.id, 'technologicalDescription', e.target.value)}
                 disabled={editingPart !== componentPart.id}
                 placeholder="Technologinis aprašymas..."
-                rows={3}
+                rows={2}
+                className="text-sm"
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor={`assembly-${componentPart.id}`}>Surinkimo technologija</Label>
+            <div className="space-y-1">
+              <Label htmlFor={`assembly-${componentPart.id}`} className="text-xs">Surinkimo technologija</Label>
               <Textarea
                 id={`assembly-${componentPart.id}`}
                 value={getFieldValue(componentPart, 'assemblyTechnology') || ''}
                 onChange={(e) => updateEditData(componentPart.id, 'assemblyTechnology', e.target.value)}
                 disabled={editingPart !== componentPart.id}
                 placeholder="Surinkimo technologija..."
-                rows={3}
+                rows={2}
+                className="text-sm"
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor={`notes-${componentPart.id}`}>Pastabos</Label>
+            <div className="space-y-1">
+              <Label htmlFor={`notes-${componentPart.id}`} className="text-xs">Pastabos</Label>
               <Textarea
                 id={`notes-${componentPart.id}`}
                 value={getFieldValue(componentPart, 'notes') || ''}
@@ -308,42 +311,43 @@ export function ComponentPartsTabContent({
                 disabled={editingPart !== componentPart.id}
                 placeholder="Pastabos..."
                 rows={2}
+                className="text-sm"
               />
             </div>
 
-            <div className="flex gap-4">
-              <div className="flex items-center space-x-2">
+            <div className="flex gap-3">
+              <div className="flex items-center space-x-1.5">
                 <Checkbox
                   id={`done-${componentPart.id}`}
                   checked={getFieldValue(componentPart, 'hasDone')}
                   onCheckedChange={(checked) => updateEditData(componentPart.id, 'hasDone', checked)}
                   disabled={editingPart !== componentPart.id}
                 />
-                <Label htmlFor={`done-${componentPart.id}`}>Atlikta</Label>
+                <Label htmlFor={`done-${componentPart.id}`} className="text-xs">Atlikta</Label>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-1.5">
                 <Checkbox
                   id={`has-node-${componentPart.id}`}
                   checked={getFieldValue(componentPart, 'hasNode')}
                   onCheckedChange={(checked) => updateEditData(componentPart.id, 'hasNode', checked)}
                   disabled={editingPart !== componentPart.id}
                 />
-                <Label htmlFor={`has-node-${componentPart.id}`}>Turi mazgą</Label>
+                <Label htmlFor={`has-node-${componentPart.id}`} className="text-xs">Turi mazgą</Label>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-1.5">
                 <Checkbox
                   id={`errors-${componentPart.id}`}
                   checked={getFieldValue(componentPart, 'hadErrors')}
                   onCheckedChange={(checked) => updateEditData(componentPart.id, 'hadErrors', checked)}
                   disabled={editingPart !== componentPart.id}
                 />
-                <Label htmlFor={`errors-${componentPart.id}`}>Turėjo klaidų</Label>
+                <Label htmlFor={`errors-${componentPart.id}`} className="text-xs">Turėjo klaidų</Label>
               </div>
             </div>
 
             {getFieldValue(componentPart, 'hadErrors') && (
-              <div className="space-y-2">
-                <Label>Susijusios klaidos</Label>
+              <div className="space-y-1">
+                <Label className="text-xs">Susijusios klaidos</Label>
                 <Select
                   value="none"
                   onValueChange={(value) => {
