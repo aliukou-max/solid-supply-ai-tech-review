@@ -74,7 +74,7 @@ export function ProjectDetailPage() {
             </div>
             {data?.products && data.products.length > 0 && (
               <div className="text-sm text-muted-foreground mt-1">
-                Gaminiai: {data.products.map(p => `${p.id} (${p.type})`).join(', ')}
+                Gaminiai: {data.products.map(p => `${p.name} (${p.type})`).join(', ')}
               </div>
             )}
           </div>

@@ -196,6 +196,7 @@ import { listPartNames as api_nodes_list_part_names_listPartNames } from "~backe
 import { listParts as api_nodes_list_parts_listParts } from "~backend/nodes/list-parts";
 import { listProducts as api_nodes_list_products_listProducts } from "~backend/nodes/list-products";
 import { recommend as api_nodes_recommend_recommend } from "~backend/nodes/recommend";
+import { recommendForPart as api_nodes_recommend_for_part_recommendForPart } from "~backend/nodes/recommend-for-part";
 import { update as api_nodes_update_update } from "~backend/nodes/update";
 
 export namespace nodes {
@@ -217,6 +218,7 @@ export namespace nodes {
             this.listParts = this.listParts.bind(this)
             this.listProducts = this.listProducts.bind(this)
             this.recommend = this.recommend.bind(this)
+            this.recommendForPart = this.recommendForPart.bind(this)
             this.update = this.update.bind(this)
         }
 
@@ -308,6 +310,12 @@ export namespace nodes {
             // Now make the actual call to the API
             const resp = await this.baseClient.callTypedAPI(`/nodes/recommend`, {method: "POST", body: JSON.stringify(params)})
             return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_nodes_recommend_recommend>
+        }
+
+        public async recommendForPart(params: RequestType<typeof api_nodes_recommend_for_part_recommendForPart>): Promise<ResponseType<typeof api_nodes_recommend_for_part_recommendForPart>> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI(`/nodes/recommend-for-part`, {method: "POST", body: JSON.stringify(params)})
+            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_nodes_recommend_for_part_recommendForPart>
         }
 
         public async update(params: RequestType<typeof api_nodes_update_update>): Promise<ResponseType<typeof api_nodes_update_update>> {
@@ -639,12 +647,14 @@ export namespace project {
  */
 import { addError as api_techReview_add_error_addError } from "~backend/tech-review/add-error";
 import { addPhotos as api_techReview_add_photos_addPhotos } from "~backend/tech-review/add-photos";
+import { bulkAssignNodes as api_techReview_bulk_assign_nodes_bulkAssignNodes } from "~backend/tech-review/bulk-assign-nodes";
 import { create as api_techReview_create_create } from "~backend/tech-review/create";
 import { deleteComponentPartPhoto as api_techReview_delete_component_part_photo_deleteComponentPartPhoto } from "~backend/tech-review/delete-component-part-photo";
 import { deletePhoto as api_techReview_delete_photo_deletePhoto } from "~backend/tech-review/delete-photo";
 import { get as api_techReview_get_get } from "~backend/tech-review/get";
 import { importExcel as api_techReview_import_excel_importExcel } from "~backend/tech-review/import-excel";
 import { listComponentParts as api_techReview_list_component_parts_listComponentParts } from "~backend/tech-review/list-component-parts";
+import { reanalyzeProduct as api_techReview_reanalyze_product_reanalyzeProduct } from "~backend/tech-review/reanalyze-product";
 import { updateComponent as api_techReview_update_component_updateComponent } from "~backend/tech-review/update-component";
 import { updateComponentPart as api_techReview_update_component_part_updateComponentPart } from "~backend/tech-review/update-component-part";
 import { uploadComponentPartPhoto as api_techReview_upload_component_part_photo_uploadComponentPartPhoto } from "~backend/tech-review/upload-component-part-photo";
@@ -659,12 +669,14 @@ export namespace techReview {
             this.baseClient = baseClient
             this.addError = this.addError.bind(this)
             this.addPhotos = this.addPhotos.bind(this)
+            this.bulkAssignNodes = this.bulkAssignNodes.bind(this)
             this.create = this.create.bind(this)
             this.deleteComponentPartPhoto = this.deleteComponentPartPhoto.bind(this)
             this.deletePhoto = this.deletePhoto.bind(this)
             this.get = this.get.bind(this)
             this.importExcel = this.importExcel.bind(this)
             this.listComponentParts = this.listComponentParts.bind(this)
+            this.reanalyzeProduct = this.reanalyzeProduct.bind(this)
             this.updateComponent = this.updateComponent.bind(this)
             this.updateComponentPart = this.updateComponentPart.bind(this)
             this.uploadComponentPartPhoto = this.uploadComponentPartPhoto.bind(this)
@@ -689,6 +701,12 @@ export namespace techReview {
             // Now make the actual call to the API
             const resp = await this.baseClient.callTypedAPI(`/tech-reviews/components/${encodeURIComponent(params.componentId)}/photos`, {method: "POST", body: JSON.stringify(body)})
             return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_techReview_add_photos_addPhotos>
+        }
+
+        public async bulkAssignNodes(params: RequestType<typeof api_techReview_bulk_assign_nodes_bulkAssignNodes>): Promise<ResponseType<typeof api_techReview_bulk_assign_nodes_bulkAssignNodes>> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI(`/tech-review/bulk-assign-nodes`, {method: "POST", body: JSON.stringify(params)})
+            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_techReview_bulk_assign_nodes_bulkAssignNodes>
         }
 
         public async create(params: RequestType<typeof api_techReview_create_create>): Promise<ResponseType<typeof api_techReview_create_create>> {
@@ -733,6 +751,12 @@ export namespace techReview {
             return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_techReview_list_component_parts_listComponentParts>
         }
 
+        public async reanalyzeProduct(params: RequestType<typeof api_techReview_reanalyze_product_reanalyzeProduct>): Promise<ResponseType<typeof api_techReview_reanalyze_product_reanalyzeProduct>> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI(`/tech-review/reanalyze-product`, {method: "POST", body: JSON.stringify(params)})
+            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_techReview_reanalyze_product_reanalyzeProduct>
+        }
+
         /**
          * Updates a component's details
          */
@@ -761,7 +785,7 @@ export namespace techReview {
                 hadErrors:                params.hadErrors,
                 hasDone:                  params.hasDone,
                 hasNode:                  params.hasNode,
-                linkedErrorIds:           params.linkedErrorIds,
+                linkedErrors:             params.linkedErrors,
                 material:                 params.material,
                 notes:                    params.notes,
                 photoUrl:                 params.photoUrl,
