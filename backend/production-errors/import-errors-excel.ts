@@ -55,9 +55,9 @@ export const importErrorsExcel = api(
         try {
           await db.exec`
             INSERT INTO production_errors (
-              project_code, product_code, error_description, created_at, updated_at
+              project_code, product_code, error_description, created_at
             ) VALUES (
-              ${validation.projectCode}, ${validation.productCode}, ${error.description}, ${now}, ${now}
+              ${validation.projectCode}, ${validation.productCode}, ${error.description}, ${now}
             )
           `;
           errorsCreated++;
