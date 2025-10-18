@@ -38,7 +38,6 @@ interface EditProductionErrorDialogProps {
 interface FormData {
   projectCode: string;
   productCode: string;
-  partName: string;
   errorDescription: string;
   isResolved: boolean;
 }
@@ -48,30 +47,19 @@ export function EditProductionErrorDialog({ error, open, onOpenChange, onSuccess
     defaultValues: {
       projectCode: error.projectCode,
       productCode: error.productCode,
-      partName: error.partName || "",
       errorDescription: error.errorDescription,
       isResolved: error.isResolved,
     },
   });
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [partName, setPartName] = useState(error.partName || "");
   const isResolved = watch("isResolved");
-
-  const { data } = useQuery({
-    queryKey: ["nodes-part-names"],
-    queryFn: async () => backend.nodes.listPartNames(),
-  });
-
-  const partNames = data?.partNames || [];
 
   useEffect(() => {
     if (open) {
-      setPartName(error.partName || "");
       reset({
         projectCode: error.projectCode,
         productCode: error.productCode,
-        partName: error.partName || "",
         errorDescription: error.errorDescription,
         isResolved: error.isResolved,
       });
@@ -85,7 +73,6 @@ export function EditProductionErrorDialog({ error, open, onOpenChange, onSuccess
         id: error.id,
         projectCode: data.projectCode,
         productCode: data.productCode,
-        partName: partName || undefined,
         errorDescription: data.errorDescription,
         isResolved: data.isResolved,
       });
@@ -125,22 +112,6 @@ export function EditProductionErrorDialog({ error, open, onOpenChange, onSuccess
                 {...register("productCode", { required: true })}
                 placeholder="pvz. SS-001"
               />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="partName">Detalė (neprivaloma)</Label>
-              <Select value={partName || "_none"} onValueChange={(val: string) => setPartName(val === "_none" ? "" : val)}>
-                <SelectTrigger className="bg-background">
-                  <SelectValue placeholder="Pasirinkite detalę..." />
-                </SelectTrigger>
-                <SelectContent className="bg-popover">
-                  <SelectItem value="_none">-</SelectItem>
-                  {partNames.map((name) => (
-                    <SelectItem key={name} value={name}>
-                      {name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="errorDescription">Klaidos aprašymas</Label>

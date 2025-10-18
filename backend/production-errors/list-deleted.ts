@@ -13,14 +13,13 @@ export const listDeleted = api<void, ListDeletedProductionErrorsResponse>(
       id: number;
       project_code: string;
       product_code: string;
-      part_name: string | null;
       error_description: string;
       is_resolved: boolean;
       created_at: Date;
       resolved_at: Date | null;
       deleted_at: Date;
     }>`
-      SELECT id, project_code, product_code, part_name, error_description, is_resolved, created_at, resolved_at, deleted_at
+      SELECT id, project_code, product_code, error_description, is_resolved, created_at, resolved_at, deleted_at
       FROM production_errors
       WHERE deleted_at IS NOT NULL
       ORDER BY deleted_at DESC
@@ -31,7 +30,6 @@ export const listDeleted = api<void, ListDeletedProductionErrorsResponse>(
         id: row.id,
         projectCode: row.project_code,
         productCode: row.product_code,
-        partName: row.part_name || undefined,
         errorDescription: row.error_description,
         isResolved: row.is_resolved,
         createdAt: row.created_at,

@@ -34,7 +34,6 @@ interface AddProductionErrorDialogProps {
 interface FormData {
   projectCode: string;
   productCode: string;
-  partName: string;
   errorDescription: string;
 }
 
@@ -42,14 +41,6 @@ export function AddProductionErrorDialog({ open, onOpenChange, onSuccess }: AddP
   const { register, handleSubmit, reset, setValue } = useForm<FormData>();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [partName, setPartName] = useState("");
-
-  const { data } = useQuery({
-    queryKey: ["nodes-part-names"],
-    queryFn: async () => backend.nodes.listPartNames(),
-  });
-
-  const partNames = data?.partNames || [];
 
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
@@ -57,12 +48,10 @@ export function AddProductionErrorDialog({ open, onOpenChange, onSuccess }: AddP
       await backend.production_errors.create({
         projectCode: data.projectCode,
         productCode: data.productCode,
-        partName: partName || undefined,
         errorDescription: data.errorDescription,
       });
       toast({ title: "Klaida pridėta!" });
       reset();
-      setPartName("");
       onSuccess();
     } catch (error) {
       console.error(error);
@@ -98,22 +87,6 @@ export function AddProductionErrorDialog({ open, onOpenChange, onSuccess }: AddP
                 {...register("productCode", { required: true })}
                 placeholder="pvz. SS-001"
               />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="partName">Detalė (neprivaloma)</Label>
-              <Select value={partName || "_none"} onValueChange={(val: string) => setPartName(val === "_none" ? "" : val)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Pasirinkite detalę..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="_none">-</SelectItem>
-                  {partNames.map((name) => (
-                    <SelectItem key={name} value={name}>
-                      {name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="errorDescription">Klaidos aprašymas</Label>
