@@ -241,245 +241,244 @@ export function ComponentPartsTabContent({
               />
             </div>
 
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs">Brėžinio mazgas</Label>
+                {getFieldValue(componentPart, 'selectedNodeId') ? (
+                  <Badge variant="default" className="text-xs gap-1 bg-green-600">
+                    ✓ Pasirinktas
+                  </Badge>
+                ) : nodeRecommendations[componentPart.id]?.length > 0 ? (
+                  <Badge variant="secondary" className="text-xs gap-1">
+                    <Sparkles className="h-3 w-3" />
+                    {nodeRecommendations[componentPart.id].length} pasiūlymai
+                  </Badge>
+                ) : null}
+              </div>
+
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs">Brėžinio mazgas</Label>
-                  {getFieldValue(componentPart, 'selectedNodeId') ? (
-                    <Badge variant="default" className="text-xs gap-1 bg-green-600">
-                      ✓ Pasirinktas
-                    </Badge>
-                  ) : nodeRecommendations[componentPart.id]?.length > 0 ? (
-                    <Badge variant="secondary" className="text-xs gap-1">
-                      <Sparkles className="h-3 w-3" />
-                      {nodeRecommendations[componentPart.id].length} pasiūlymai
-                    </Badge>
-                  ) : null}
-                </div>
-
-                <div className="space-y-2">
-                  <Select
-                    value={getFieldValue(componentPart, 'selectedNodeId') || "__none__"}
-                    onValueChange={async (value) => {
-                      if (value === "search") {
-                        setExpandedNodeView(expandedNodeView === componentPart.id ? null : componentPart.id);
-                        return;
-                      }
-                      if (value === "__clear__") {
-                        updateEditData(componentPart.id, 'selectedNodeId', null);
-                        updateEditData(componentPart.id, 'hasNode', false);
-                        updateEditData(componentPart.id, 'drawingCode', null);
-                        handleSave(componentPart.id);
-                        return;
-                      }
-                      if (value === "__none__") return;
-                      
-                      updateEditData(componentPart.id, 'selectedNodeId', value);
-                      updateEditData(componentPart.id, 'hasNode', true);
-                      
-                      const selectedNode = allNodesData?.nodes.find(n => n.id === value);
-                      if (selectedNode?.drawingFiles && selectedNode.drawingFiles.length > 0) {
-                        const firstFile = selectedNode.drawingFiles[0];
-                        setExtractingCode(true);
-                        try {
-                          const { url } = await backend.nodes.getPdfUrl({ pdfPath: firstFile.path });
-                          const text = await extractTextFromPdf(url);
-                          const code = extractProductCode(text);
-                          if (code) {
-                            updateEditData(componentPart.id, 'drawingCode', code);
-                          }
-                        } catch (error) {
-                          console.error('Failed to extract code:', error);
-                        } finally {
-                          setExtractingCode(false);
-                        }
-                      }
-                      
+                <Select
+                  value={getFieldValue(componentPart, 'selectedNodeId') || "__none__"}
+                  onValueChange={async (value) => {
+                    if (value === "search") {
+                      setExpandedNodeView(expandedNodeView === componentPart.id ? null : componentPart.id);
+                      return;
+                    }
+                    if (value === "__clear__") {
+                      updateEditData(componentPart.id, 'selectedNodeId', null);
+                      updateEditData(componentPart.id, 'hasNode', false);
+                      updateEditData(componentPart.id, 'drawingCode', null);
                       handleSave(componentPart.id);
-                    }}
-                  >
-                    <SelectTrigger className="h-8 text-xs flex-1">
-                      <SelectValue placeholder={loadingRecommendations === componentPart.id ? "Ieškoma..." : "Pasirinkite mazgą..."}>
-                        {getFieldValue(componentPart, 'selectedNodeId') && (
-                          <span>
-                            {nodeRecommendations[componentPart.id]?.find(r => r.node.id === getFieldValue(componentPart, 'selectedNodeId'))?.node.partName || 
-                             allNodesData?.nodes.find(n => n.id === getFieldValue(componentPart, 'selectedNodeId'))?.partName ||
-                             getFieldValue(componentPart, 'selectedNodeId')}
-                          </span>
-                        )}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
+                      return;
+                    }
+                    if (value === "__none__") return;
+                    
+                    updateEditData(componentPart.id, 'selectedNodeId', value);
+                    updateEditData(componentPart.id, 'hasNode', true);
+                    
+                    const selectedNode = allNodesData?.nodes.find(n => n.id === value);
+                    if (selectedNode?.drawingFiles && selectedNode.drawingFiles.length > 0) {
+                      const firstFile = selectedNode.drawingFiles[0];
+                      setExtractingCode(true);
+                      try {
+                        const { url } = await backend.nodes.getPdfUrl({ pdfPath: firstFile.path });
+                        const text = await extractTextFromPdf(url);
+                        const code = extractProductCode(text);
+                        if (code) {
+                          updateEditData(componentPart.id, 'drawingCode', code);
+                        }
+                      } catch (error) {
+                        console.error('Failed to extract code:', error);
+                      } finally {
+                        setExtractingCode(false);
+                      }
+                    }
+                    
+                    handleSave(componentPart.id);
+                  }}
+                >
+                  <SelectTrigger className="h-8 text-xs flex-1">
+                    <SelectValue placeholder={loadingRecommendations === componentPart.id ? "Ieškoma..." : "Pasirinkite mazgą..."}>
                       {getFieldValue(componentPart, 'selectedNodeId') && (
-                        <SelectItem value="__clear__">-- Išvalyti --</SelectItem>
+                        <span>
+                          {nodeRecommendations[componentPart.id]?.find(r => r.node.id === getFieldValue(componentPart, 'selectedNodeId'))?.node.partName || 
+                           allNodesData?.nodes.find(n => n.id === getFieldValue(componentPart, 'selectedNodeId'))?.partName ||
+                           getFieldValue(componentPart, 'selectedNodeId')}
+                        </span>
                       )}
-                      {nodeRecommendations[componentPart.id]?.map((rec) => (
-                        <SelectItem key={rec.node.id} value={rec.node.id} className="py-2">
-                          <div className="flex items-center gap-2">
-                            <Badge variant="outline" className="text-xs bg-green-500/10 text-green-700 border-green-500/20">
-                              {Math.round(rec.matchScore)}
-                            </Badge>
-                            <div className="flex flex-col">
-                              <span className="font-medium text-sm">{rec.node.partName}</span>
-                              <span className="text-xs text-muted-foreground">{rec.node.brandName} • {rec.reason}</span>
-                            </div>
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {getFieldValue(componentPart, 'selectedNodeId') && (
+                      <SelectItem value="__clear__">-- Išvalyti --</SelectItem>
+                    )}
+                    {nodeRecommendations[componentPart.id]?.map((rec) => (
+                      <SelectItem key={rec.node.id} value={rec.node.id} className="py-2">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-xs bg-green-500/10 text-green-700 border-green-500/20">
+                            {Math.round(rec.matchScore)}
+                          </Badge>
+                          <div className="flex flex-col">
+                            <span className="font-medium text-sm">{rec.node.partName}</span>
+                            <span className="text-xs text-muted-foreground">{rec.node.brandName} • {rec.reason}</span>
                           </div>
-                        </SelectItem>
-                      ))}
-                      {(!nodeRecommendations[componentPart.id] || nodeRecommendations[componentPart.id]?.length === 0) && (
-                        <SelectItem value="__none__" disabled>
-                          {loadingRecommendations === componentPart.id ? "Ieškoma pasiūlymų..." : "Nerasta pasiūlymų"}
-                        </SelectItem>
-                      )}
-                      <SelectItem value="search" className="text-blue-600 font-medium">
-                        🔍 {expandedNodeView === componentPart.id ? 'Paslėpti' : 'Rodyti'} visus mazgus
+                        </div>
                       </SelectItem>
-                    </SelectContent>
-                  </Select>
+                    ))}
+                    {(!nodeRecommendations[componentPart.id] || nodeRecommendations[componentPart.id]?.length === 0) && (
+                      <SelectItem value="__none__" disabled>
+                        {loadingRecommendations === componentPart.id ? "Ieškoma pasiūlymų..." : "Nerasta pasiūlymų"}
+                      </SelectItem>
+                    )}
+                    <SelectItem value="search" className="text-blue-600 font-medium">
+                      🔍 {expandedNodeView === componentPart.id ? 'Paslėpti' : 'Rodyti'} visus mazgus
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
 
-                  {getFieldValue(componentPart, 'selectedNodeId') && (() => {
-                    const selectedNode = allNodesData?.nodes.find(n => n.id === getFieldValue(componentPart, 'selectedNodeId'));
-                    return selectedNode?.drawingFiles && selectedNode.drawingFiles.length > 1 ? (
-                      <div className="space-y-1">
-                        <Label className="text-xs">Brėžiniai ({selectedNode.drawingFiles.length})</Label>
-                        <div className="flex flex-wrap gap-2">
-                          {selectedNode.drawingFiles.map((file: any, idx: number) => (
-                            <Button
-                              key={idx}
-                              variant="outline"
-                              size="sm"
-                              className="h-auto py-1 px-2 text-xs"
-                              onClick={async () => {
+                {getFieldValue(componentPart, 'selectedNodeId') && (() => {
+                  const selectedNode = allNodesData?.nodes.find(n => n.id === getFieldValue(componentPart, 'selectedNodeId'));
+                  return selectedNode?.drawingFiles && selectedNode.drawingFiles.length > 1 ? (
+                    <div className="space-y-1">
+                      <Label className="text-xs">Brėžiniai ({selectedNode.drawingFiles.length})</Label>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedNode.drawingFiles.map((file: any, idx: number) => (
+                          <Button
+                            key={idx}
+                            variant="outline"
+                            size="sm"
+                            className="h-auto py-1 px-2 text-xs"
+                            onClick={async () => {
+                              setExtractingCode(true);
+                              try {
+                                const { url } = await backend.nodes.getPdfUrl({ pdfPath: file.path });
+                                window.open(url, '_blank');
+                                const text = await extractTextFromPdf(url);
+                                const code = extractProductCode(text);
+                                if (code) {
+                                  updateEditData(componentPart.id, 'drawingCode', code);
+                                  handleSave(componentPart.id);
+                                }
+                              } catch (error) {
+                                console.error('Failed to extract code:', error);
+                              } finally {
+                                setExtractingCode(false);
+                              }
+                            }}
+                          >
+                            <ExternalLink className="h-3 w-3 mr-1" />
+                            {file.filename}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null;
+                })()}
+              </div>
+
+              {expandedNodeView === componentPart.id && (
+                <Card className="border-2 border-blue-200 dark:border-blue-800">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm flex items-center justify-between">
+                      <span>Visi mazgai - {componentPart.partName}</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setExpandedNodeView(null)}
+                        className="h-6 px-2"
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2 max-h-96 overflow-y-auto">
+                    {allNodesData?.nodes
+                      ?.filter(node => {
+                        const partName = componentPart.partName?.toLowerCase() || '';
+                        const nodePart = node.partName?.toLowerCase() || '';
+                        return nodePart.includes(partName) || partName.includes(nodePart);
+                      })
+                      .map(node => (
+                        <div key={node.id} className="flex gap-2">
+                          <Button
+                            variant={getFieldValue(componentPart, 'selectedNodeId') === node.id ? "default" : "outline"}
+                            size="sm"
+                            className="flex-1 justify-start h-auto py-2 px-3"
+                            onClick={async () => {
+                              updateEditData(componentPart.id, 'selectedNodeId', node.id);
+                              updateEditData(componentPart.id, 'hasNode', true);
+                              
+                              if (node.drawingFiles && node.drawingFiles.length > 0) {
                                 setExtractingCode(true);
                                 try {
-                                  const { url } = await backend.nodes.getPdfUrl({ pdfPath: file.path });
-                                  window.open(url, '_blank');
+                                  const firstFile = node.drawingFiles[0];
+                                  const { url } = await backend.nodes.getPdfUrl({ pdfPath: firstFile.path });
                                   const text = await extractTextFromPdf(url);
                                   const code = extractProductCode(text);
                                   if (code) {
                                     updateEditData(componentPart.id, 'drawingCode', code);
-                                    handleSave(componentPart.id);
                                   }
                                 } catch (error) {
                                   console.error('Failed to extract code:', error);
                                 } finally {
                                   setExtractingCode(false);
                                 }
-                              }}
-                            >
-                              <ExternalLink className="h-3 w-3 mr-1" />
-                              {file.filename}
-                            </Button>
-                          ))}
-                        </div>
-                      </div>
-                    ) : null;
-                  })()}
-                </div>
-
-                {expandedNodeView === componentPart.id && (
-                  <Card className="border-2 border-blue-200 dark:border-blue-800">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-sm flex items-center justify-between">
-                        <span>Visi mazgai - {componentPart.partName}</span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setExpandedNodeView(null)}
-                          className="h-6 px-2"
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-2 max-h-96 overflow-y-auto">
-                      {allNodesData?.nodes
-                        ?.filter(node => {
-                          const partName = componentPart.partName?.toLowerCase() || '';
-                          const nodePart = node.partName?.toLowerCase() || '';
-                          return nodePart.includes(partName) || partName.includes(nodePart);
-                        })
-                        .map(node => (
-                          <div key={node.id} className="flex gap-2">
-                            <Button
-                              variant={getFieldValue(componentPart, 'selectedNodeId') === node.id ? "default" : "outline"}
-                              size="sm"
-                              className="flex-1 justify-start h-auto py-2 px-3"
-                              onClick={async () => {
-                                updateEditData(componentPart.id, 'selectedNodeId', node.id);
-                                updateEditData(componentPart.id, 'hasNode', true);
-                                
-                                if (node.drawingFiles && node.drawingFiles.length > 0) {
-                                  setExtractingCode(true);
-                                  try {
-                                    const firstFile = node.drawingFiles[0];
-                                    const { url } = await backend.nodes.getPdfUrl({ pdfPath: firstFile.path });
-                                    const text = await extractTextFromPdf(url);
-                                    const code = extractProductCode(text);
-                                    if (code) {
-                                      updateEditData(componentPart.id, 'drawingCode', code);
-                                    }
-                                  } catch (error) {
-                                    console.error('Failed to extract code:', error);
-                                  } finally {
-                                    setExtractingCode(false);
-                                  }
-                                }
-                                
-                                handleSave(componentPart.id);
-                                setExpandedNodeView(null);
-                              }}
-                            >
-                              <div className="flex flex-col items-start w-full gap-1">
-                                <div className="flex items-center gap-2 w-full">
-                                  <span className="font-medium text-sm">{node.partName}</span>
-                                </div>
-                                <span className="text-xs text-muted-foreground">
-                                  {node.brandName} • {node.productName}
-                                </span>
-                                {node.drawingFiles && node.drawingFiles.length > 0 && (
-                                  <div className="flex flex-wrap gap-1 mt-1">
-                                    {node.drawingFiles.map((file: any, idx: number) => (
-                                      <Badge key={idx} variant="secondary" className="text-[10px] px-1 py-0">
-                                        {file.filename}
-                                      </Badge>
-                                    ))}
-                                  </div>
-                                )}
+                              }
+                              
+                              handleSave(componentPart.id);
+                              setExpandedNodeView(null);
+                            }}
+                          >
+                            <div className="flex flex-col items-start w-full gap-1">
+                              <div className="flex items-center gap-2 w-full">
+                                <span className="font-medium text-sm">{node.partName}</span>
                               </div>
+                              <span className="text-xs text-muted-foreground">
+                                {node.brandName} • {node.productName}
+                              </span>
+                              {node.drawingFiles && node.drawingFiles.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                  {node.drawingFiles.map((file: any, idx: number) => (
+                                    <Badge key={idx} variant="secondary" className="text-[10px] px-1 py-0">
+                                      {file.filename}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </Button>
+                          {node.drawingFiles && node.drawingFiles.length > 0 && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-auto px-2"
+                              onClick={async () => {
+                                try {
+                                  const file = node.drawingFiles[0];
+                                  const { url } = await backend.nodes.getPdfUrl({ pdfPath: file.path });
+                                  window.open(url, '_blank');
+                                } catch (error) {
+                                  console.error('Failed to load PDF:', error);
+                                }
+                              }}
+                            >
+                              <ExternalLink className="h-3 w-3" />
                             </Button>
-                            {node.drawingFiles && node.drawingFiles.length > 0 && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-auto px-2"
-                                onClick={async () => {
-                                  try {
-                                    const file = node.drawingFiles[0];
-                                    const { url } = await backend.nodes.getPdfUrl({ pdfPath: file.path });
-                                    window.open(url, '_blank');
-                                  } catch (error) {
-                                    console.error('Failed to load PDF:', error);
-                                  }
-                                }}
-                              >
-                                <ExternalLink className="h-3 w-3" />
-                              </Button>
-                            )}
-                          </div>
-                        ))}
-                      {allNodesData?.nodes?.filter(node => {
-                        const partName = componentPart.partName?.toLowerCase() || '';
-                        const nodePart = node.partName?.toLowerCase() || '';
-                        return nodePart.includes(partName) || partName.includes(nodePart);
-                      }).length === 0 && (
-                        <p className="text-xs text-muted-foreground text-center py-4">
-                          Nerasta mazgų su pavadinimu "{componentPart.partName}"
-                        </p>
-                      )}
-                    </CardContent>
-                  </Card>
-                )}
-              </div>
+                          )}
+                        </div>
+                      ))}
+                    {allNodesData?.nodes?.filter(node => {
+                      const partName = componentPart.partName?.toLowerCase() || '';
+                      const nodePart = node.partName?.toLowerCase() || '';
+                      return nodePart.includes(partName) || partName.includes(nodePart);
+                    }).length === 0 && (
+                      <p className="text-xs text-muted-foreground text-center py-4">
+                        Nerasta mazgų su pavadinimu "{componentPart.partName}"
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
             </div>
 
             <div className="space-y-1">
