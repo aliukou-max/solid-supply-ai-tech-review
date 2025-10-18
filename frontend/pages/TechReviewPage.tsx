@@ -210,6 +210,10 @@ export function TechReviewPage() {
       }
       actions={
         <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => setReanalyzeOpen(true)}>
+            <Sparkles className="h-4 w-4 mr-2" />
+            AI analizė
+          </Button>
           {product?.drawingReference && (
             <Button variant="outline">
               <FileText className="h-4 w-4 mr-2" />
@@ -241,6 +245,12 @@ export function TechReviewPage() {
                   >
                     <Sparkles className="h-4 w-4 mr-2" />
                     {creatingParts ? "Kuriama..." : "Sukurti dalis iš aprašymo"}
+                  </Button>
+                )}
+                {productTypeParts?.parts && productTypeParts.parts.length > 0 && (
+                  <Button variant="outline" size="sm" onClick={() => setReanalyzeOpen(true)}>
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Redaguoti dalis AI analizei
                   </Button>
                 )}
                 {(!data?.review.generalNotes || (!productTypeParts?.parts || productTypeParts.parts.length === 0)) && (

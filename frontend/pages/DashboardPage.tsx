@@ -96,6 +96,9 @@ export function DashboardPage() {
                 <div className="h-12 w-12 bg-red-100 rounded-lg flex items-center justify-center">
                   <AlertTriangle className="h-6 w-6 text-red-600" />
                 </div>
+                <Badge variant="destructive">
+                  {stats?.errorStats.pending || 0} neišspręstos
+                </Badge>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Klaidos</p>
