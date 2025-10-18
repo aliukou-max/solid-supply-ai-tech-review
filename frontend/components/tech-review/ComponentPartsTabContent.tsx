@@ -481,58 +481,73 @@ export function ComponentPartsTabContent({
             </div>
 
             {getFieldValue(componentPart, 'hadErrors') && (
-              <div className="space-y-1">
+              <div className="space-y-2">
                 <Label className="text-xs">Susijusios klaidos</Label>
                 <Select
-                  value="none"
+                  value="__none__"
                   onValueChange={(value) => {
-                    if (value === 'none') return;
+                    if (value === '__none__') return;
                     const currentErrors = getFieldValue(componentPart, 'linkedErrors') || [];
-                    updateEditData(componentPart.id, 'linkedErrors', [...currentErrors, parseInt(value)]);
-                    handleSave(componentPart.id);
+                    if (!currentErrors.includes(parseInt(value))) {
+                      updateEditData(componentPart.id, 'linkedErrors', [...currentErrors, parseInt(value)]);
+                      handleSave(componentPart.id);
+                    }
                   }}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="h-8 text-xs">
                     <SelectValue placeholder="Pridėti klaidą..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">-- Pasirinkite klaidą --</SelectItem>
+                    <SelectItem value="__none__">-- Pasirinkite klaidą --</SelectItem>
                     {allErrorsData?.errors
                       ?.filter(error => {
                         const partName = componentPart.partName?.toLowerCase() || '';
                         const errorPartName = error.partName?.toLowerCase() || '';
-                        const errorDesc = error.errorDescription?.toLowerCase() || '';
                         
-                        return errorPartName.includes(partName) || 
-                               partName.includes(errorPartName) ||
-                               errorDesc.includes(partName);
+                        if (!errorPartName || errorPartName.trim() === '') return false;
+                        
+                        return errorPartName === partName || 
+                               errorPartName.includes(partName) || 
+                               partName.includes(errorPartName);
+                      })
+                      ?.filter(error => {
+                        const currentErrors = getFieldValue(componentPart, 'linkedErrors') || [];
+                        return !currentErrors.includes(error.id);
                       })
                       .map(error => (
                         <SelectItem key={error.id} value={error.id.toString()}>
-                          [{error.partName || '?'}] {error.errorDescription}
+                          <div className="flex flex-col">
+                            <span className="font-medium text-xs">[{error.partName}]</span>
+                            <span className="text-xs text-muted-foreground">{error.errorDescription}</span>
+                          </div>
                         </SelectItem>
                       ))}
                     {allErrorsData?.errors?.filter(error => {
                       const partName = componentPart.partName?.toLowerCase() || '';
                       const errorPartName = error.partName?.toLowerCase() || '';
-                      const errorDesc = error.errorDescription?.toLowerCase() || '';
-                      return errorPartName.includes(partName) || 
-                             partName.includes(errorPartName) ||
-                             errorDesc.includes(partName);
+                      if (!errorPartName || errorPartName.trim() === '') return false;
+                      const currentErrors = getFieldValue(componentPart, 'linkedErrors') || [];
+                      return (errorPartName === partName || 
+                             errorPartName.includes(partName) || 
+                             partName.includes(errorPartName)) &&
+                             !currentErrors.includes(error.id);
                     }).length === 0 && (
-                      <SelectItem value="none" disabled>Nerasta klaidų šiai detalei</SelectItem>
+                      <SelectItem value="__none__" disabled>Nerasta klaidų šiai detalei</SelectItem>
                     )}
                   </SelectContent>
                 </Select>
                 {(getFieldValue(componentPart, 'linkedErrors') && getFieldValue(componentPart, 'linkedErrors').length > 0) && (
-                  <div className="flex flex-wrap gap-2 mt-2">
+                  <div className="flex flex-wrap gap-2">
                     {getFieldValue(componentPart, 'linkedErrors').map((errorId: number) => {
                       const error = allErrorsData?.errors.find(e => e.id === errorId);
                       return error ? (
-                        <Badge key={errorId} variant="secondary" className="gap-1">
-                          [{error.partName || '?'}] {error.errorDescription}
+                        <Badge key={errorId} variant="secondary" className="gap-1 text-xs">
+                          <div className="flex flex-col">
+                            <span className="font-medium">[{error.partName || '?'}]</span>
+                            <span>{error.errorDescription}</span>
+                          </div>
                           <X 
-                            className="h-3 w-3 cursor-pointer" 
+                            className="h-3 w-3 cursor-pointer ml-1" 
                             onClick={() => {
                               const currentErrors = getFieldValue(componentPart, 'linkedErrors') || [];
                               updateEditData(componentPart.id, 'linkedErrors', currentErrors.filter((id: number) => id !== errorId));
