@@ -103,9 +103,10 @@ export const importExcel = api(
         }
 
         if (name) {
-          const cleanDesc = desc && !desc.includes("GMT") && !desc.includes("Coordinated") ? desc : "";
-          if (i === 26 && !cleanDesc && desc) {
-            console.log(`⚠️ Description filtered out (contains GMT/Coordinated): "${desc}"`);
+          // Keep description even if it contains GMT/Coordinated - might be important data
+          const cleanDesc = desc || "";
+          if (i === 26) {
+            console.log(`📝 Row ${i} parsed:`, { ssCode: ss, productName: name, description: cleanDesc ? `"${cleanDesc.slice(0, 50)}..."` : "EMPTY" });
           }
           rows.push({ ssCode: ss, productName: name, description: cleanDesc });
         }
@@ -165,7 +166,9 @@ export const importExcel = api(
           }
 
           if (row.description) {
+            console.log(`🤖 Analyzing description for ${row.ssCode}: "${row.description.slice(0, 100)}..."`);
             const analysisResult = await analyzeDescriptionWithAI(row.description, productType);
+            console.log(`🤖 AI returned ${analysisResult.length} components for ${row.ssCode}`);
             
             const createdComponentParts = await db.queryAll<{ id: number; partName: string }>`
               SELECT id, part_name as "partName"
