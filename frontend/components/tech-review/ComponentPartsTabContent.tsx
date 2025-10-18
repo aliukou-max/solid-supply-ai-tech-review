@@ -195,42 +195,48 @@ export function ComponentPartsTabContent({
               </div>
               <div className="space-y-2">
                 <Label htmlFor={`node-${componentPart.id}`}>Brėžinio mazgas</Label>
-                <Select
-                  value={getFieldValue(componentPart, 'selectedNodeId') || 'none'}
-                  onValueChange={(value) => updateEditData(componentPart.id, 'selectedNodeId', value === 'none' ? null : value)}
-                  disabled={editingPart !== componentPart.id}
-                >
-                  <SelectTrigger id={`node-${componentPart.id}`}>
-                    <SelectValue placeholder="Pasirinkite mazgą..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">-- Nepasirinkta --</SelectItem>
-                    {allNodesData?.nodes
-                      ?.filter(node => {
+                {editingPart === componentPart.id ? (
+                  <Select
+                    value={getFieldValue(componentPart, 'selectedNodeId') || 'none'}
+                    onValueChange={(value) => updateEditData(componentPart.id, 'selectedNodeId', value === 'none' ? null : value)}
+                  >
+                    <SelectTrigger id={`node-${componentPart.id}`}>
+                      <SelectValue placeholder="Pasirinkite mazgą..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">-- Nepasirinkta --</SelectItem>
+                      {allNodesData?.nodes
+                        ?.filter(node => {
+                          const partName = componentPart.partName?.toLowerCase().trim() || '';
+                          const nodePart = node.partName?.toLowerCase().trim() || '';
+                          
+                          return partName === nodePart || 
+                                 nodePart.includes(partName) || 
+                                 partName.includes(nodePart);
+                        })
+                        .map(node => (
+                          <SelectItem key={node.id} value={node.id}>
+                            {node.productCode} - {node.brandName} ({node.partName})
+                          </SelectItem>
+                        ))}
+                      {(!allNodesData?.nodes || allNodesData.nodes.filter(node => {
                         const partName = componentPart.partName?.toLowerCase().trim() || '';
                         const nodePart = node.partName?.toLowerCase().trim() || '';
-                        
-                        // Exact match or contains
                         return partName === nodePart || 
                                nodePart.includes(partName) || 
                                partName.includes(nodePart);
-                      })
-                      .map(node => (
-                        <SelectItem key={node.id} value={node.id}>
-                          {node.productCode} - {node.brandName} ({node.partName})
-                        </SelectItem>
-                      ))}
-                    {(!allNodesData?.nodes || allNodesData.nodes.filter(node => {
-                      const partName = componentPart.partName?.toLowerCase().trim() || '';
-                      const nodePart = node.partName?.toLowerCase().trim() || '';
-                      return partName === nodePart || 
-                             nodePart.includes(partName) || 
-                             partName.includes(nodePart);
-                    }).length === 0) && (
-                      <SelectItem value="none" disabled>Nerasta mazgų "{componentPart.partName}"</SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
+                      }).length === 0) && (
+                        <SelectItem value="none" disabled>Nerasta mazgų "{componentPart.partName}"</SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <div className="h-10 px-3 py-2 rounded-md border border-input bg-muted text-sm">
+                    {componentPart.selectedNodeId 
+                      ? allNodesData?.nodes?.find(n => n.id === componentPart.selectedNodeId)?.productCode || componentPart.selectedNodeId
+                      : 'Nepasirinkta'}
+                  </div>
+                )}
               </div>
             </div>
 
