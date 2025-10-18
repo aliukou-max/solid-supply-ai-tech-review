@@ -72,8 +72,9 @@ export const importExcel = api(
       const clientName = sheet.getCell("C10").text?.trim() || "Unknown Client";
 
       // Backup: extract project code from filename if C8 is empty
+      // Format: 2-3 letters + 6 digits (e.g., MKZ110237, AB123456)
       if (!projectCode) {
-        const match = req.filename.match(/(MKZ\d{6}|AB\d{6}|[A-Z]{2,3}\d{5,7})/i);
+        const match = req.filename.match(/[A-Z]{2,3}\d{6}/i);
         projectCode = match ? match[0].toUpperCase() : `TEMP-${Date.now()}`;
         console.warn(`⚠ Projekto kodas nerastas C8 langelyje. Naudojamas iš failo pavadinimo: ${projectCode}`);
       }
