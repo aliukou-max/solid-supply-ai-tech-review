@@ -154,7 +154,7 @@ export function ReanalyzeDialog({ open, onOpenChange, productId, productTypeId, 
             </Button>
             <Button
               onClick={handleSave}
-              disabled={!description.trim() || isSaving || selectedCount === 0}
+              disabled={isSaving || selectedCount === 0}
             >
               <Save className="h-4 w-4 mr-2" />
               {isSaving ? "Saugoma..." : "Išsaugoti"}
