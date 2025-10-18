@@ -1,12 +1,16 @@
+import React from "react";
+const useState = (React as any).useState;
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { Box, Tag, ArrowRight } from "lucide-react";
+import { Box, Tag, ArrowRight, Settings } from "lucide-react";
 import backend from "~backend/client";
 import { MainLayout } from "@/components/MainLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { ProductTypesDialog } from "@/components/ProductTypesDialog";
 
 export function NodesPage() {
+  const [productTypesOpen, setProductTypesOpen] = useState(false);
   const { data: productsData } = useQuery({
     queryKey: ["nodes-products"],
     queryFn: async () => backend.nodes.listProducts(),
@@ -24,7 +28,15 @@ export function NodesPage() {
   const totalBrandNodes = brands.reduce((sum, b) => sum + b.count, 0);
 
   return (
-    <MainLayout title="Mazgų biblioteka">
+    <MainLayout 
+      title="Mazgų biblioteka"
+      actions={
+        <Button variant="outline" onClick={() => setProductTypesOpen(true)}>
+          <Settings className="h-4 w-4 mr-2" />
+          Gaminių tipai
+        </Button>
+      }
+    >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl">
         <Link to="/nodes/by-product" className="block">
           <Card className="p-8 hover:bg-accent/50 transition-colors cursor-pointer h-full">
@@ -86,6 +98,11 @@ export function NodesPage() {
           </Card>
         </Link>
       </div>
+
+      <ProductTypesDialog 
+        open={productTypesOpen}
+        onOpenChange={setProductTypesOpen}
+      />
     </MainLayout>
   );
 }
