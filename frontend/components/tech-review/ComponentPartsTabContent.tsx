@@ -37,6 +37,8 @@ export function ComponentPartsTabContent({
   const [nodeRecommendations, setNodeRecommendations] = useState<Record<number, any[]>>({});
   const [loadingRecommendations, setLoadingRecommendations] = useState<number | null>(null);
   const [expandedNodeView, setExpandedNodeView] = useState<number | null>(null);
+  const [selectedPdfForExtraction, setSelectedPdfForExtraction] = useState<{partId: number, pdfPath: string} | null>(null);
+  const [extractingCode, setExtractingCode] = useState(false);
 
 
   const updateEditData = (componentPartId: number, field: string, value: any) => {
@@ -80,6 +82,44 @@ export function ComponentPartsTabContent({
   const getFieldValue = (componentPart: any, field: string) => {
     const editValue = editData[componentPart.id]?.[field];
     return editValue !== undefined ? editValue : componentPart[field];
+  };
+
+  const extractTextFromPdf = async (url: string): Promise<string> => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            const arrayBuffer = e.target?.result as ArrayBuffer;
+            const uint8Array = new Uint8Array(arrayBuffer);
+            let text = '';
+            
+            for (let i = 0; i < uint8Array.length; i++) {
+              const char = String.fromCharCode(uint8Array[i]);
+              if (char.match(/[A-Z0-9\s\-_]/)) {
+                text += char;
+              }
+            }
+            
+            resolve(text);
+          } catch (error) {
+            console.error('PDF text extraction error:', error);
+            resolve('');
+          }
+        };
+        reader.readAsArrayBuffer(blob);
+      });
+    } catch (error) {
+      console.error('Failed to fetch PDF:', error);
+      return '';
+    }
+  };
+
+  const extractProductCode = (text: string): string | null => {
+    const fCodeMatch = text.match(/F\d{5,6}/);
+    return fCodeMatch ? fCodeMatch[0] : null;
   };
 
   const handleSave = async (componentPartId: number) => {
@@ -187,7 +227,10 @@ export function ComponentPartsTabContent({
             </div>
 
             <div className="space-y-1">
-              <Label htmlFor={`drawing-${componentPart.id}`} className="text-xs">Brėžinio kodas</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor={`drawing-${componentPart.id}`} className="text-xs">Brėžinio kodas</Label>
+                {extractingCode && <Badge variant="outline" className="text-xs">Ištraukiama...</Badge>}
+              </div>
               <Input
                 id={`drawing-${componentPart.id}`}
                 value={getFieldValue(componentPart, 'drawingCode') || ''}
@@ -198,25 +241,25 @@ export function ComponentPartsTabContent({
               />
             </div>
 
-            <div className="space-y-1">
-              <div className="flex items-center justify-between">
-                <Label className="text-xs">Brėžinio mazgas</Label>
-                {getFieldValue(componentPart, 'selectedNodeId') ? (
-                  <Badge variant="default" className="text-xs gap-1 bg-green-600">
-                    ✓ Pasirinktas
-                  </Badge>
-                ) : nodeRecommendations[componentPart.id]?.length > 0 ? (
-                  <Badge variant="secondary" className="text-xs gap-1">
-                    <Sparkles className="h-3 w-3" />
-                    {nodeRecommendations[componentPart.id].length} pasiūlymai
-                  </Badge>
-                ) : null}
-              </div>
               <div className="space-y-2">
-                <div className="flex gap-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs">Brėžinio mazgas</Label>
+                  {getFieldValue(componentPart, 'selectedNodeId') ? (
+                    <Badge variant="default" className="text-xs gap-1 bg-green-600">
+                      ✓ Pasirinktas
+                    </Badge>
+                  ) : nodeRecommendations[componentPart.id]?.length > 0 ? (
+                    <Badge variant="secondary" className="text-xs gap-1">
+                      <Sparkles className="h-3 w-3" />
+                      {nodeRecommendations[componentPart.id].length} pasiūlymai
+                    </Badge>
+                  ) : null}
+                </div>
+
+                <div className="space-y-2">
                   <Select
                     value={getFieldValue(componentPart, 'selectedNodeId') || "__none__"}
-                    onValueChange={(value) => {
+                    onValueChange={async (value) => {
                       if (value === "search") {
                         setExpandedNodeView(expandedNodeView === componentPart.id ? null : componentPart.id);
                         return;
@@ -224,12 +267,33 @@ export function ComponentPartsTabContent({
                       if (value === "__clear__") {
                         updateEditData(componentPart.id, 'selectedNodeId', null);
                         updateEditData(componentPart.id, 'hasNode', false);
+                        updateEditData(componentPart.id, 'drawingCode', null);
                         handleSave(componentPart.id);
                         return;
                       }
                       if (value === "__none__") return;
+                      
                       updateEditData(componentPart.id, 'selectedNodeId', value);
                       updateEditData(componentPart.id, 'hasNode', true);
+                      
+                      const selectedNode = allNodesData?.nodes.find(n => n.id === value);
+                      if (selectedNode?.drawingFiles && selectedNode.drawingFiles.length > 0) {
+                        const firstFile = selectedNode.drawingFiles[0];
+                        setExtractingCode(true);
+                        try {
+                          const { url } = await backend.nodes.getPdfUrl({ pdfPath: firstFile.path });
+                          const text = await extractTextFromPdf(url);
+                          const code = extractProductCode(text);
+                          if (code) {
+                            updateEditData(componentPart.id, 'drawingCode', code);
+                          }
+                        } catch (error) {
+                          console.error('Failed to extract code:', error);
+                        } finally {
+                          setExtractingCode(false);
+                        }
+                      }
+                      
                       handleSave(componentPart.id);
                     }}
                   >
@@ -271,6 +335,45 @@ export function ComponentPartsTabContent({
                       </SelectItem>
                     </SelectContent>
                   </Select>
+
+                  {getFieldValue(componentPart, 'selectedNodeId') && (() => {
+                    const selectedNode = allNodesData?.nodes.find(n => n.id === getFieldValue(componentPart, 'selectedNodeId'));
+                    return selectedNode?.drawingFiles && selectedNode.drawingFiles.length > 1 ? (
+                      <div className="space-y-1">
+                        <Label className="text-xs">Brėžiniai ({selectedNode.drawingFiles.length})</Label>
+                        <div className="flex flex-wrap gap-2">
+                          {selectedNode.drawingFiles.map((file: any, idx: number) => (
+                            <Button
+                              key={idx}
+                              variant="outline"
+                              size="sm"
+                              className="h-auto py-1 px-2 text-xs"
+                              onClick={async () => {
+                                setExtractingCode(true);
+                                try {
+                                  const { url } = await backend.nodes.getPdfUrl({ pdfPath: file.path });
+                                  window.open(url, '_blank');
+                                  const text = await extractTextFromPdf(url);
+                                  const code = extractProductCode(text);
+                                  if (code) {
+                                    updateEditData(componentPart.id, 'drawingCode', code);
+                                    handleSave(componentPart.id);
+                                  }
+                                } catch (error) {
+                                  console.error('Failed to extract code:', error);
+                                } finally {
+                                  setExtractingCode(false);
+                                }
+                              }}
+                            >
+                              <ExternalLink className="h-3 w-3 mr-1" />
+                              {file.filename}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null;
+                  })()}
                 </div>
 
                 {expandedNodeView === componentPart.id && (
@@ -301,9 +404,27 @@ export function ComponentPartsTabContent({
                               variant={getFieldValue(componentPart, 'selectedNodeId') === node.id ? "default" : "outline"}
                               size="sm"
                               className="flex-1 justify-start h-auto py-2 px-3"
-                              onClick={() => {
+                              onClick={async () => {
                                 updateEditData(componentPart.id, 'selectedNodeId', node.id);
                                 updateEditData(componentPart.id, 'hasNode', true);
+                                
+                                if (node.drawingFiles && node.drawingFiles.length > 0) {
+                                  setExtractingCode(true);
+                                  try {
+                                    const firstFile = node.drawingFiles[0];
+                                    const { url } = await backend.nodes.getPdfUrl({ pdfPath: firstFile.path });
+                                    const text = await extractTextFromPdf(url);
+                                    const code = extractProductCode(text);
+                                    if (code) {
+                                      updateEditData(componentPart.id, 'drawingCode', code);
+                                    }
+                                  } catch (error) {
+                                    console.error('Failed to extract code:', error);
+                                  } finally {
+                                    setExtractingCode(false);
+                                  }
+                                }
+                                
                                 handleSave(componentPart.id);
                                 setExpandedNodeView(null);
                               }}
