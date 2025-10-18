@@ -53,7 +53,15 @@ export const importExcel = api(
         throw new Error("Excel failas negali būti nuskaitytas");
       }
 
-      const XLSX = await import("xlsx");
+      // Use dynamic import with proper error handling
+      let XLSX;
+      try {
+        XLSX = await import("xlsx");
+      } catch (error) {
+        console.error("Failed to load xlsx package:", error);
+        throw new Error("Excel biblioteka nepasiekiama. Prašome susisiekti su administratoriumi.");
+      }
+
       const workbook = XLSX.read(buffer, { type: "buffer" });
       
       if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
