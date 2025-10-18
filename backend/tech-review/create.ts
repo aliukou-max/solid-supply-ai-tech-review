@@ -38,10 +38,12 @@ export const create = api<CreateTechReviewParams, TechReview>(
       for (const part of parts) {
         await db.exec`
           INSERT INTO component_parts (
-            tech_review_id, product_type_part_id, part_name, sort_order, created_at, updated_at
+            tech_review_id, product_type_part_id, part_name, sort_order, 
+            has_done, has_node, had_errors, created_at, updated_at
           )
           VALUES (
-            ${techReviewId}, ${part.id}, ${part.name}, ${part.sortOrder}, ${now}, ${now}
+            ${techReviewId}, ${part.id}, ${part.name}, ${part.sortOrder},
+            false, false, false, ${now}, ${now}
           )
         `;
       }
