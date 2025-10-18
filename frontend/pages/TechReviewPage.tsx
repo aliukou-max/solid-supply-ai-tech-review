@@ -334,49 +334,76 @@ export function TechReviewPage() {
 
           <Tabs 
             key={productTypeParts?.parts[0]?.name} 
-            value={activeTab || productTypeParts?.parts[0]?.name || "errors"}
+            value={activeTab || (() => {
+              const partsWithDone = componentPartsData?.parts.filter(cp => cp.hasDone) || [];
+              if (partsWithDone.length === 0) return "history";
+              
+              const firstDonePart = partsWithDone[0];
+              const productTypePart = productTypeParts?.parts.find(p => p.id === firstDonePart.productTypePartId);
+              return productTypePart?.name || "history";
+            })()}
             onValueChange={setActiveTab}
             className="space-y-4"
           >
             <TabsList className="w-full justify-start h-auto flex-wrap">
-              {productTypeParts?.parts.map((part) => {
-                return (
-                  <TabsTrigger key={part.id} value={part.name}>
-                    {part.name}
-                  </TabsTrigger>
-                );
-              })}
+              {(() => {
+                const uniquePartNames = new Set<string>();
+                return componentPartsData?.parts
+                  .filter(cp => cp.hasDone)
+                  .map(cp => {
+                    const productTypePart = productTypeParts?.parts.find(p => p.id === cp.productTypePartId);
+                    if (!productTypePart || uniquePartNames.has(productTypePart.name)) return null;
+                    uniquePartNames.add(productTypePart.name);
+                    
+                    return (
+                      <TabsTrigger key={productTypePart.id} value={productTypePart.name}>
+                        {productTypePart.name}
+                      </TabsTrigger>
+                    );
+                  })
+                  .filter(Boolean);
+              })()}
               <TabsTrigger value="history">
                 History
               </TabsTrigger>
             </TabsList>
 
             <div>
-            {productTypeParts?.parts.map((part) => {
-              const partComponentParts = componentPartsData?.parts.filter(
-                cp => cp.productTypePartId === part.id
-              ) || [];
+            {(() => {
+              const uniquePartNames = new Set<string>();
+              return componentPartsData?.parts
+                .filter(cp => cp.hasDone)
+                .map(cp => {
+                  const productTypePart = productTypeParts?.parts.find(p => p.id === cp.productTypePartId);
+                  if (!productTypePart || uniquePartNames.has(productTypePart.name)) return null;
+                  uniquePartNames.add(productTypePart.name);
+                  
+                  const partComponentParts = componentPartsData?.parts.filter(
+                    p => p.productTypePartId === productTypePart.id && p.hasDone
+                  ) || [];
 
-              return (
-                <TabsContent key={part.id} value={part.name} className="space-y-4 mt-0">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-2xl font-bold">{part.name}</h2>
-                  </div>
+                  return (
+                    <TabsContent key={productTypePart.id} value={productTypePart.name} className="space-y-4 mt-0">
+                      <div className="flex items-center justify-between">
+                        <h2 className="text-2xl font-bold">{productTypePart.name}</h2>
+                      </div>
 
-                  <ComponentPartsTabContent
-                    partComponentParts={partComponentParts}
-                    allNodesData={allNodesData}
-                    allErrorsData={allErrorsData}
-                    productType={product?.type || ""}
-                    onPhotoUpload={handlePhotoUpload}
-                    onRemovePhoto={handleRemovePhoto}
-                    onSavePart={handleSavePart}
-                    onDeletePart={handleDeletePart}
-                    uploadingPhoto={uploadingPhoto}
-                  />
-                </TabsContent>
-              );
-            })}
+                      <ComponentPartsTabContent
+                        partComponentParts={partComponentParts}
+                        allNodesData={allNodesData}
+                        allErrorsData={allErrorsData}
+                        productType={product?.type || ""}
+                        onPhotoUpload={handlePhotoUpload}
+                        onRemovePhoto={handleRemovePhoto}
+                        onSavePart={handleSavePart}
+                        onDeletePart={handleDeletePart}
+                        uploadingPhoto={uploadingPhoto}
+                      />
+                    </TabsContent>
+                  );
+                })
+                .filter(Boolean);
+            })()}
             
             <TabsContent value="history" className="space-y-4 mt-0">
               {data?.review.id && <AuditHistoryTab techReviewId={data.review.id} />}
