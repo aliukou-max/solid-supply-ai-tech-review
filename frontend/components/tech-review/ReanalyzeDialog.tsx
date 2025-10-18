@@ -20,6 +20,7 @@ interface ReanalyzeDialogProps {
 export function ReanalyzeDialog({ open, onOpenChange, productId, productTypeId, productDescription, onSuccess }: ReanalyzeDialogProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [availableParts, setAvailableParts] = useState<Array<{ id: string; name: string; selected: boolean }>>([]);
+  const [description, setDescription] = useState(productDescription || "");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -40,6 +41,10 @@ export function ReanalyzeDialog({ open, onOpenChange, productId, productTypeId, 
 
     loadParts();
   }, [open, productTypeId]);
+
+  useEffect(() => {
+    setDescription(productDescription || "");
+  }, [productDescription]);
 
   const togglePart = (partId: string) => {
     setAvailableParts(prev => prev.map(p => 
@@ -68,7 +73,7 @@ export function ReanalyzeDialog({ open, onOpenChange, productId, productTypeId, 
     try {
       await backend.techReview.reanalyzeProduct({
         productId,
-        description: productDescription || "",
+        description: description,
         selectedPartIds,
       });
 
@@ -108,6 +113,17 @@ export function ReanalyzeDialog({ open, onOpenChange, productId, productTypeId, 
         </DialogHeader>
 
         <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="description">Aprašymas (pasirinkite kurias dalis įtraukti)</Label>
+            <Textarea
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Įveskite gaminio aprašymą..."
+              className="min-h-[120px]"
+              disabled={isSaving}
+            />
+          </div>
 
           {availableParts.length > 0 && (
             <div className="space-y-2 border rounded-lg p-4">

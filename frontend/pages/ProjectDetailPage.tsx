@@ -18,6 +18,7 @@ export function ProjectDetailPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
   const [selectPartsProduct, setSelectPartsProduct] = useState<Product | null>(null);
+  const [productDescription, setProductDescription] = useState<string>("");
   const { toast } = useToast();
 
   const { data: project, isLoading: projectLoading } = useQuery({
@@ -143,7 +144,17 @@ export function ProjectDetailPage() {
               product={product}
               onEdit={() => setEditProduct(product)}
               onDelete={() => handleDeleteProduct(product)}
-              onSelectParts={() => setSelectPartsProduct(product)}
+              onSelectParts={async () => {
+                try {
+                  const review = await backend.techReview.get({ productId: product.id });
+                  setProductDescription(review.review.generalNotes || "");
+                  setSelectPartsProduct(product);
+                } catch (error) {
+                  console.error("Failed to load tech review:", error);
+                  setProductDescription("");
+                  setSelectPartsProduct(product);
+                }
+              }}
             />
           ))}
         </div>
@@ -177,8 +188,10 @@ export function ProjectDetailPage() {
           onOpenChange={(open) => !open && setSelectPartsProduct(null)}
           productId={selectPartsProduct.id}
           productTypeId={selectPartsProduct.productTypeId || ""}
+          productDescription={productDescription}
           onSuccess={() => {
             setSelectPartsProduct(null);
+            setProductDescription("");
             refetch();
           }}
         />
