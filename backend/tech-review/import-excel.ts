@@ -2,6 +2,8 @@ import { api } from "encore.dev/api";
 import { secret } from "encore.dev/config";
 import db from "../db";
 import ExcelJS from "exceljs";
+import { analyzeDescription } from "../ai-analysis/analyze";
+import type { ParsedComponent } from "../ai-analysis/analyze";
 
 const openAIKey = secret("OpenAIKey");
 
@@ -11,13 +13,7 @@ interface ExcelRow {
   description: string;
 }
 
-interface ParsedComponent {
-  name: string;
-  material?: string;
-  finish?: string;
-  other?: string;
-  uncertainTerms?: string[];
-}
+
 
 interface ImportExcelRequest {
   fileData: string;
@@ -218,9 +214,9 @@ export const importExcel = api(
             };
 
             try {
-              const analysisResult = await analyzeDescriptionWithAI(row.description, productType);
-              debugInfo.componentsFound = analysisResult.components?.length || 0;
-              debugInfo.aiResponse = analysisResult.rawResponse;
+              const components = await analyzeDescription(row.description, productType);
+              debugInfo.componentsFound = components?.length || 0;
+              debugInfo.aiResponse = `Found ${components.length} components`;
               
               console.log(`🤖 AI returned ${debugInfo.componentsFound} components for ${row.ssCode}`);
               
@@ -230,7 +226,7 @@ export const importExcel = api(
                 WHERE tech_review_id = ${techReview.id}
               `;
 
-              for (const comp of analysisResult.components || []) {
+              for (const comp of components || []) {
                 const matchingPart = createdComponentParts.find(p => 
                   p.partName.toLowerCase().includes(comp.name.toLowerCase()) ||
                   comp.name.toLowerCase().includes(p.partName.toLowerCase())
@@ -263,6 +259,7 @@ export const importExcel = api(
               }
             } catch (aiError) {
               debugInfo.error = aiError instanceof Error ? aiError.message : String(aiError);
+              console.error(`🚨 AI analysis failed for ${row.ssCode}:`, aiError);
               warnings.push(`${row.ssCode} – AI analizės klaida: ${debugInfo.error}`);
             }
 
@@ -373,134 +370,4 @@ async function determineProductTypeFromName(productName: string): Promise<string
   return kita?.id || "Kita";
 }
 
-interface AIAnalysisResult {
-  components: ParsedComponent[];
-  rawResponse?: string;
-}
 
-async function analyzeDescriptionWithAI(description: string, productType: string): Promise<AIAnalysisResult> {
-  const apiKey = openAIKey();
-  
-  if (!apiKey) {
-    console.error("OpenAI API key not configured");
-    return { 
-      components: createFallbackComponent(description, "OpenAI API key missing - configure in Settings"),
-      rawResponse: "NO_API_KEY"
-    };
-  }
-  
-  if (!description || description.trim().length === 0) {
-    console.log("Empty description provided to AI");
-    return {
-      components: [],
-      rawResponse: "EMPTY_DESCRIPTION"
-    };
-  }
-
-  const prompt = `
-You are an expert in furniture and retail fixture engineering.
-Parse the following technical description into structured component data.
-
-Product Type: ${productType}
-Description: ${description}
-
-For each distinct component, extract:
-- "name" (e.g. Carcass, Header, Shelves, Back panel, Wall cladding)
-- "material" (MDF, marble, HPL, steel, acrylic, etc.)
-- "finish" (brushed, polished, satin, painted, etc.)
-- "other" (any technical details like thickness, LED, dimensions, grain direction)
-If something is unclear or ambiguous, include it in "uncertainTerms".
-
-Also detect dimensions like "2815 x 582mm H2002mm" and include them in "other".
-
-Respond ONLY with valid JSON array format:
-[
-  {
-    "name": "component name",
-    "material": "material name or null",
-    "finish": "finish description or null", 
-    "other": "other technical details or null",
-    "uncertainTerms": ["list", "of", "unclear", "terms"] or null
-  }
-]
-
-If the description is too vague or empty, return an empty array: []
-`;
-
-  try {
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${openAIKey()}`,
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0.3,
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("OpenAI API klaida:", response.status, errorText);
-      return { 
-        components: createFallbackComponent(description, `API error ${response.status}: ${errorText.slice(0, 100)}`),
-        rawResponse: `ERROR_${response.status}: ${errorText.slice(0, 200)}`
-      };
-    }
-
-    const data = (await response.json()) as {
-      choices?: Array<{ message?: { content?: string } }>;
-    };
-    const content = data.choices?.[0]?.message?.content;
-
-    if (!content) {
-      console.error("OpenAI grąžino tuščią atsakymą");
-      return { 
-        components: createFallbackComponent(description, "Empty AI response"),
-        rawResponse: "EMPTY_AI_RESPONSE"
-      };
-    }
-
-    try {
-      const parsed = JSON.parse(content);
-      if (!Array.isArray(parsed)) {
-        console.error("AI response not an array:", content.slice(0, 200));
-        return { 
-          components: createFallbackComponent(description, "Invalid JSON structure"),
-          rawResponse: content
-        };
-      }
-      return {
-        components: parsed,
-        rawResponse: content
-      };
-    } catch (parseError) {
-      console.error("JSON parse error:", parseError, "Content:", content.slice(0, 200));
-      return { 
-        components: createFallbackComponent(description, "JSON parse failed"),
-        rawResponse: content
-      };
-    }
-  } catch (error) {
-    console.error("AI analizės klaida:", error);
-    return { 
-      components: createFallbackComponent(description, `Network error: ${error}`),
-      rawResponse: `NETWORK_ERROR: ${error}`
-    };
-  }
-}
-
-function createFallbackComponent(description: string, reason?: string): ParsedComponent[] {
-  console.log("Fallback triggered for description:", description.slice(0, 100), "Reason:", reason);
-  return [
-    {
-      name: "Main component",
-      material: undefined,
-      finish: undefined,
-      other: description.slice(0, 400),
-      uncertainTerms: reason ? [`AI failed: ${reason}`] : ["AI analysis failed – manual review required"],
-    },
-  ];
-}
