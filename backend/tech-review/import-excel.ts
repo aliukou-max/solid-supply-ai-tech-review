@@ -157,47 +157,41 @@ export const importExcel = api(
           if (row.description) {
             const analysisResult = await analyzeDescriptionWithAI(row.description, productType);
             
-            const combinedNotes: string[] = [];
-            const materials: string[] = [];
-            const finishes: string[] = [];
+            const createdComponentParts = await db.queryAll<{ id: number; partName: string }>`
+              SELECT id, part_name as "partName"
+              FROM component_parts
+              WHERE tech_review_id = ${techReview.id}
+            `;
 
             for (const comp of analysisResult) {
-              if (comp.material) materials.push(comp.material);
-              if (comp.finish) finishes.push(comp.finish);
-              
-              const partNote = [
-                comp.name,
-                comp.material ? `Material: ${comp.material}` : null,
-                comp.finish ? `Finish: ${comp.finish}` : null,
-                comp.other,
-                comp.uncertainTerms?.length ? `⚠ ${comp.uncertainTerms.join(", ")}` : null
-              ].filter(Boolean).join(" | ");
-              
-              combinedNotes.push(partNote);
+              const matchingPart = createdComponentParts.find(p => 
+                p.partName.toLowerCase().includes(comp.name.toLowerCase()) ||
+                comp.name.toLowerCase().includes(p.partName.toLowerCase())
+              );
 
-              if (comp.uncertainTerms?.length) {
-                warnings.push(`${row.ssCode} – "${comp.name}" turi neaiškių terminų: ${comp.uncertainTerms.join(", ")}`);
-              }
-            }
+              if (matchingPart) {
+                const notes = [
+                  comp.other,
+                  comp.uncertainTerms?.length ? `⚠ ${comp.uncertainTerms.join(", ")}` : null
+                ].filter(Boolean).join(" | ");
 
-            if (parts.length > 0) {
-              const firstPartId = await db.queryRow<{ id: number }>`
-                SELECT id FROM component_parts
-                WHERE tech_review_id = ${techReview.id}
-                ORDER BY sort_order, id
-                LIMIT 1
-              `;
-
-              if (firstPartId) {
                 await db.exec`
                   UPDATE component_parts
                   SET 
-                    material = ${materials.join(", ") || null},
-                    finish = ${finishes.join(", ") || null},
-                    notes = ${combinedNotes.join("\n\n") || null},
+                    material = ${comp.material || null},
+                    finish = ${comp.finish || null},
+                    notes = ${notes || null},
                     updated_at = NOW()
-                  WHERE id = ${firstPartId.id}
+                  WHERE id = ${matchingPart.id}
                 `;
+
+                console.log(`✓ AI matched "${comp.name}" → "${matchingPart.partName}": ${comp.material}, ${comp.finish}`);
+              } else {
+                warnings.push(`${row.ssCode} – AI rado "${comp.name}", bet nerasta atitinkama kortelė`);
+              }
+
+              if (comp.uncertainTerms?.length) {
+                warnings.push(`${row.ssCode} – "${comp.name}" turi neaiškių terminų: ${comp.uncertainTerms.join(", ")}`);
               }
             }
           } else {
