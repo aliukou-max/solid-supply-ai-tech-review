@@ -1,51 +1,42 @@
 import { Link } from "react-router-dom";
-import { Box, AlertTriangle, FileText } from "lucide-react";
+import { Box, Edit2 } from "lucide-react";
 import type { Product } from "~backend/product/types";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 interface ProductCardProps {
   product: Product;
+  onEdit?: () => void;
 }
 
-export function ProductCard({ product }: ProductCardProps) {
+export function ProductCard({ product, onEdit }: ProductCardProps) {
   return (
-    <Link to={`/tech-review/${product.id}`}>
-      <Card className="hover:shadow-md transition-shadow cursor-pointer">
-        <CardHeader>
+    <Card className="hover:shadow-md transition-shadow cursor-pointer relative">
+      <Link to={`/tech-review/${product.id}`}>
+        <CardHeader className="pb-3">
           <div className="flex items-start justify-between">
-            <div className="flex items-center gap-2">
-              <Box className="h-5 w-5 text-primary" />
-              <CardTitle className="text-lg">{product.ssCode}</CardTitle>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary">{product.type}</Badge>
-              {!product.hasDrawing && (
-                <Badge variant="destructive" className="gap-1">
-                  <AlertTriangle className="h-3 w-3" />
-                  Be brėžinio
-                </Badge>
-              )}
+            <div>
+              <h3 className="font-semibold text-base mb-1">{product.ssCode}</h3>
+              <Badge variant="secondary" className="text-xs mb-2">{product.type}</Badge>
+              <p className="text-sm">{product.name}</p>
             </div>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            <p className="font-medium">{product.name}</p>
-            {product.dimensions && (
-              <p className="text-sm text-muted-foreground">
-                Matmenys: {product.dimensions}
-              </p>
-            )}
-            {product.drawingReference && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <FileText className="h-3 w-3" />
-                {product.drawingReference}
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-    </Link>
+      </Link>
+      {onEdit && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={(e) => {
+            e.preventDefault();
+            onEdit();
+          }}
+          className="absolute top-3 right-3"
+        >
+          <Edit2 className="h-4 w-4" />
+        </Button>
+      )}
+    </Card>
   );
 }
