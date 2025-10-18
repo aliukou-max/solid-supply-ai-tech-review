@@ -1,6 +1,4 @@
-import React from "react";
-
-const useState = (React as any).useState;
+import React, { useState } from "react";
 import { Upload, FileSpreadsheet, AlertCircle, CheckCircle2 } from "lucide-react";
 import backend from "~backend/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -55,46 +53,51 @@ export function ImportExcelDialog({ open, onOpenChange, onSuccess }: ImportExcel
     setWarnings([]);
     setImportResult(null);
 
+    toast({
+      title: "Vyksta importas...",
+      description: "Prašome palaukti",
+      duration: 1500,
+    });
+
     try {
       const reader = new FileReader();
       
       await new Promise<void>((resolve, reject) => {
-        reader.onload = async () => {
-          try {
-            const base64 = (reader.result as string).split(',')[1];
-            
-            const result = await backend.techReview.importExcel({
-              fileData: base64,
-              filename: file.name,
-            });
+        reader.onload = () => {
+          const base64 = (reader.result as string).split(',')[1];
+          
+          backend.techReview.importExcel({
+            fileData: base64,
+            filename: file.name,
+          })
+            .then(result => {
+              setImportResult({
+                projectId: result.projectId,
+                projectName: result.projectName,
+                productsCreated: result.productsCreated,
+              });
 
-            setImportResult({
-              projectId: result.projectId,
-              projectName: result.projectName,
-              productsCreated: result.productsCreated,
-            });
+              if (result.warnings && result.warnings.length > 0) {
+                setWarnings(result.warnings);
+              }
 
-            if (result.warnings && result.warnings.length > 0) {
-              setWarnings(result.warnings);
-            }
+              toast({
+                title: "Importuota sėkmingai",
+                description: `Projektas "${result.projectName}" sukurtas su ${result.productsCreated} produktais`,
+              });
 
-            toast({
-              title: "Importuota sėkmingai",
-              description: `Projektas "${result.projectName}" sukurtas su ${result.productsCreated} produktais`,
-            });
+              if (!result.warnings || result.warnings.length === 0) {
+                setTimeout(() => {
+                  setFile(null);
+                  setImportResult(null);
+                  onSuccess();
+                  onOpenChange(false);
+                }, 2000);
+              }
 
-            if (result.warnings.length === 0) {
-              setTimeout(() => {
-                setFile(null);
-                setImportResult(null);
-                onSuccess();
-              }, 2000);
-            }
-            
-            resolve();
-          } catch (error) {
-            reject(error);
-          }
+              resolve();
+            })
+            .catch(reject);
         };
         reader.onerror = reject;
         reader.readAsDataURL(file);
@@ -116,9 +119,6 @@ export function ImportExcelDialog({ open, onOpenChange, onSuccess }: ImportExcel
     setFile(null);
     setImportResult(null);
     onOpenChange(false);
-    if (importResult) {
-      onSuccess();
-    }
   };
 
   return (
