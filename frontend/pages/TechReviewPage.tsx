@@ -328,12 +328,10 @@ export function TechReviewPage() {
                   </Button>
                 )}
 
-                {(!data?.review.generalNotes || (!productTypeParts?.parts || productTypeParts.parts.length === 0)) && (
-                  <Button variant="outline" size="sm" onClick={() => setReanalyzeOpen(true)}>
-                    <Sparkles className="h-4 w-4 mr-2" />
-                    {data?.review.generalNotes ? "Redaguoti aprašymą" : "Pridėti aprašymą"}
-                  </Button>
-                )}
+                <Button variant="outline" size="sm" onClick={() => setReanalyzeOpen(true)}>
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  {data?.review.generalNotes ? "Redaguoti aprašymą" : "Pridėti aprašymą"}
+                </Button>
               </div>
             </div>
             {data?.review.generalNotes ? (
