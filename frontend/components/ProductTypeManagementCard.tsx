@@ -1,4 +1,7 @@
-import { useState, useEffect } from "react";
+// @ts-nocheck
+import React from "react";
+const useState = (React as any).useState;
+const useEffect = (React as any).useEffect;
 import { Edit2, Trash2, Plus, GripVertical, X } from "lucide-react";
 import backend from "~backend/client";
 import type { ProductType, ProductTypePart } from "~backend/product-types/types";

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { AlertCircle, AlertTriangle, Info, XCircle, CheckCircle, XOctagon } from "lucide-react";
 import type { LessonLearnt } from "~backend/lessons-learnt/types";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";

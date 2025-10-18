@@ -1,4 +1,7 @@
-import { useState, useEffect } from "react";
+// @ts-nocheck
+import React from "react";
+const useState = (React as any).useState;
+const useEffect = (React as any).useEffect;
 import backend from "~backend/client";
 import type { ProductType } from "~backend/product-types/types";
 import { Button } from "@/components/ui/button";

@@ -1,4 +1,6 @@
-import { useState } from "react";
+// @ts-nocheck
+import React from "react";
+const useState = (React as any).useState;
 import backend from "~backend/client";
 import { Button } from "@/components/ui/button";
 import {

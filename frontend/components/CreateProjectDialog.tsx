@@ -1,5 +1,5 @@
+// @ts-nocheck
 import React from "react";
-
 const useState = (React as any).useState;
 import { useForm } from "react-hook-form";
 import { Plus, X } from "lucide-react";

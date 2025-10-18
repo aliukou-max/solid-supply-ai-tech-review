@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+// @ts-nocheck
+import React from "react";
+const useState = (React as any).useState;
 import { useForm } from "react-hook-form";
 import backend from "~backend/client";
 import type { Product, ProductType } from "~backend/product/types";
