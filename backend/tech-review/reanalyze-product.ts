@@ -85,6 +85,12 @@ export const reanalyzeProduct = api(
             `;
           }
         }
+
+        await db.exec`
+          UPDATE tech_reviews
+          SET general_notes = NULL, updated_at = NOW()
+          WHERE id = ${techReview.id}
+        `;
       }
 
       return {
