@@ -123,9 +123,11 @@ export const importExcel = api(
             continue;
           }
 
+          const productType = await determineProductTypeFromName(row.productName);
+
           await db.exec`
-            INSERT INTO products (id, project_id, ss_code, name, type, has_drawing, created_at, updated_at)
-            VALUES (${productId}, ${projectCode}, ${row.ssCode}, ${row.productName}, 'Auto', false, NOW(), NOW())
+            INSERT INTO products (id, project_id, ss_code, name, type, product_type_id, has_drawing, created_at, updated_at)
+            VALUES (${productId}, ${projectCode}, ${row.ssCode}, ${row.productName}, ${productType}, ${productType}, false, NOW(), NOW())
           `;
 
           const techReview = await db.queryRow<{ id: number }>`
@@ -249,6 +251,51 @@ Return valid JSON array only.
     console.error("AI analizės klaida:", error);
     return createFallbackComponent(description);
   }
+}
+
+async function determineProductTypeFromName(productName: string): Promise<string> {
+  const name = productName.toLowerCase();
+
+  const allTypes = await db.queryAll<{ id: string; name: string }>`
+    SELECT id, name FROM product_types ORDER BY name
+  `;
+
+  for (const type of allTypes) {
+    const typeName = type.name.toLowerCase();
+    const typeWords = typeName.split(/\s+/);
+    
+    for (const word of typeWords) {
+      if (word.length > 3 && name.includes(word)) {
+        console.log(`✓ Produktas "${productName}" priskirtas tipui "${type.name}"`);
+        return type.id;
+      }
+    }
+  }
+
+  if (name.includes("backwall") || name.includes("back wall") || name.includes("wall")) {
+    const backwall = allTypes.find(t => t.name.toLowerCase().includes("backwall"));
+    if (backwall) return backwall.id;
+  }
+  if (name.includes("shelf") || name.includes("shelv") || name.includes("lentyna")) {
+    const shelf = allTypes.find(t => t.name.toLowerCase().includes("lentyna") || t.name.toLowerCase().includes("shelf"));
+    if (shelf) return shelf.id;
+  }
+  if (name.includes("vitrina") || name.includes("showcase") || name.includes("cabinet") || name.includes("counter")) {
+    const vitrina = allTypes.find(t => t.name.toLowerCase().includes("vitrina") || t.name.toLowerCase().includes("cabinet"));
+    if (vitrina) return vitrina.id;
+  }
+  if (name.includes("table") || name.includes("stalas") || name.includes("island") || name.includes("desk")) {
+    const table = allTypes.find(t => t.name.toLowerCase().includes("stalas") || t.name.toLowerCase().includes("table"));
+    if (table) return table.id;
+  }
+  if (name.includes("lightbox") || name.includes("light box")) {
+    const lightbox = allTypes.find(t => t.name.toLowerCase().includes("lightbox"));
+    if (lightbox) return lightbox.id;
+  }
+
+  console.log(`⚠ Produktas "${productName}" nebuvo priskirtas jokiam tipui, naudojamas "Kita"`);
+  const kita = allTypes.find(t => t.name.toLowerCase() === "kita");
+  return kita?.id || "Kita";
 }
 
 function createFallbackComponent(description: string): ParsedComponent[] {
