@@ -31,7 +31,7 @@ export const importErrorsExcel = api(
 
       const buffer = Buffer.from(req.fileData, "base64");
       const workbook = new ExcelJS.Workbook();
-      await workbook.xlsx.load(buffer.buffer);
+      await workbook.xlsx.load(buffer);
 
       const sheet = workbook.worksheets[0];
       if (!sheet) throw new Error("Excel faile nėra lapų");
@@ -40,21 +40,26 @@ export const importErrorsExcel = api(
       console.log(`📊 Excel DEBUG - pirmos 5 eilutės:`);
       
       for (let testRow = 1; testRow <= 5; testRow++) {
-        const a = sheet.getCell(`A${testRow}`).text?.trim();
-        const b = sheet.getCell(`B${testRow}`).text?.trim();
-        const c = sheet.getCell(`C${testRow}`).text?.trim();
+        const a = String(sheet.getCell(`A${testRow}`).value ?? "").trim();
+        const b = String(sheet.getCell(`B${testRow}`).value ?? "").trim();
+        const c = String(sheet.getCell(`C${testRow}`).value ?? "").trim();
         console.log(`  Eilutė ${testRow}: A="${a || 'EMPTY'}" | B="${b || 'EMPTY'}" | C="${c ? c.substring(0, 50) : 'EMPTY'}..."`);
       }
 
       let currentProjectCode: string | null = null;
 
-      for (let i = 1; i <= 10000; i++) {
-        const cellA = sheet.getCell(`A${i}`).text?.trim();
-        const cellB = sheet.getCell(`B${i}`).text?.trim();
-        const cellC = sheet.getCell(`C${i}`).text?.trim();
+      for (let i = 1; i <= sheet.rowCount; i++) {
+        const cellA = String(sheet.getCell(`A${i}`).value ?? "").trim();
+        const cellB = String(sheet.getCell(`B${i}`).value ?? "").trim();
+        const cellC = String(sheet.getCell(`C${i}`).value ?? "").trim();
 
         if (i <= 10) {
           console.log(`📝 Row ${i}: A="${cellA || 'EMPTY'}" | B="${cellB || 'EMPTY'}" | C="${cellC ? cellC.substring(0, 40) : 'EMPTY'}"`);
+        }
+
+        if (i === 1 && cellA.toLowerCase().includes("projekt")) {
+          console.log(`⏭ Praleista antraštė`);
+          continue;
         }
 
         if (!cellA && !cellB && !cellC) {
@@ -82,9 +87,14 @@ export const importErrorsExcel = api(
         const productId = `${currentProjectCode}-${cellB}`;
         console.log(`  🔍 Tikrinama: ${productId}`);
 
-        const product = await db.queryRow<{ id: string }>`
-          SELECT id FROM products WHERE id = ${productId}
-        `;
+        let product;
+        try {
+          product = await db.queryRow<{ id: string }>`
+            SELECT id FROM products WHERE id = ${productId}
+          `;
+        } catch (err) {
+          product = null;
+        }
 
         if (!product) {
           warnings.push(`Eilutė ${i}: Produktas ${productId} nerastas, klaida praleista`);
