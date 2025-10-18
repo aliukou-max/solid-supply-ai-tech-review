@@ -121,10 +121,10 @@ export function ErrorsPage() {
       }
 
       const errorsToImport = jsonData
-        .filter((row) => row[projectKey] && row[productKey] && row[errorKey])
+        .filter((row) => row[errorKey] && String(row[errorKey]).trim())
         .map((row) => ({
-          projectCode: String(row[projectKey]).trim(),
-          productCode: String(row[productKey]).trim(),
+          projectCode: row[projectKey] ? String(row[projectKey]).trim() : "",
+          productCode: row[productKey] ? String(row[productKey]).trim() : "",
           errorDescription: String(row[errorKey]).trim(),
         }));
 

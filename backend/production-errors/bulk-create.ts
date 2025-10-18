@@ -24,7 +24,7 @@ export const bulkCreate = api<BulkCreateProductionErrorsRequest, BulkCreateProdu
     for (const error of req.errors) {
       const result = await db.queryRow<{ id: number }>`
         INSERT INTO production_errors (project_code, product_code, error_description, is_resolved, created_at)
-        VALUES (${error.projectCode}, ${error.productCode}, ${error.errorDescription}, FALSE, ${now})
+        VALUES (${error.projectCode || ""}, ${error.productCode || ""}, ${error.errorDescription}, FALSE, ${now})
         RETURNING id
       `;
 
