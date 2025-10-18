@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { Sparkles, AlertCircle } from "lucide-react";
+import { Save } from "lucide-react";
 import backend from "~backend/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/components/ui/use-toast";
 
 interface ReanalyzeDialogProps {
@@ -20,8 +19,7 @@ interface ReanalyzeDialogProps {
 
 export function ReanalyzeDialog({ open, onOpenChange, productId, productTypeId, productDescription, onSuccess }: ReanalyzeDialogProps) {
   const [description, setDescription] = useState("");
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const [availableParts, setAvailableParts] = useState<Array<{ id: string; name: string; selected: boolean }>>([]);
   const { toast } = useToast();
 
@@ -59,7 +57,7 @@ export function ReanalyzeDialog({ open, onOpenChange, productId, productTypeId, 
     setAvailableParts(prev => prev.map(p => ({ ...p, selected: !allSelected })));
   };
 
-  const handleAnalyze = async () => {
+  const handleSave = async () => {
     if (!description.trim()) {
       toast({
         title: "Klaida",
@@ -79,41 +77,36 @@ export function ReanalyzeDialog({ open, onOpenChange, productId, productTypeId, 
       return;
     }
 
-    setIsAnalyzing(true);
-    setResult(null);
+    setIsSaving(true);
 
     try {
-      const response = await backend.techReview.reanalyzeProduct({
+      await backend.techReview.reanalyzeProduct({
         productId,
         description,
         selectedPartIds,
       });
 
-      setResult(response);
-
       toast({
-        title: "AI analizė baigta",
-        description: `Atnaujinta ${response.componentsUpdated} komponentų`,
+        title: "Išsaugota",
+        description: "Aprašymas išsaugotas",
       });
 
-      if (response.componentsUpdated > 0) {
-        onSuccess();
-      }
+      onSuccess();
+      handleClose();
     } catch (error) {
-      console.error("Failed to reanalyze:", error);
+      console.error("Failed to save:", error);
       toast({
         title: "Klaida",
-        description: "Nepavyko atlikti AI analizės",
+        description: "Nepavyko išsaugoti",
         variant: "destructive",
       });
     } finally {
-      setIsAnalyzing(false);
+      setIsSaving(false);
     }
   };
 
   const handleClose = () => {
     setDescription("");
-    setResult(null);
     onOpenChange(false);
   };
 
@@ -124,8 +117,8 @@ export function ReanalyzeDialog({ open, onOpenChange, productId, productTypeId, 
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-purple-600" />
-            AI analizė
+            <Save className="h-5 w-5" />
+            Redaguoti aprašymą
           </DialogTitle>
         </DialogHeader>
 
@@ -137,25 +130,22 @@ export function ReanalyzeDialog({ open, onOpenChange, productId, productTypeId, 
               value={description}
               onChange={(e: any) => setDescription(e.target.value)}
               placeholder="Įklijuokite gaminio aprašymą iš Excel failo arba įveskite rankiniu būdu..."
-              rows={6}
+              rows={10}
               className="font-mono text-sm"
-              disabled={isAnalyzing}
+              disabled={isSaving}
             />
-            <p className="text-xs text-muted-foreground">
-              AI išanalizuos aprašymą ir automatiškai užpildys komponentų medžiagas, apdailas ir kitas detales.
-            </p>
           </div>
 
           {availableParts.length > 0 && (
             <div className="space-y-2 border rounded-lg p-4">
               <div className="flex items-center justify-between mb-2">
-                <Label>Pasirinkite kurias dalis analizuoti ({selectedCount}/{availableParts.length})</Label>
+                <Label>Pasirinkite kurias dalis įtraukti ({selectedCount}/{availableParts.length})</Label>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   onClick={toggleAll}
-                  disabled={isAnalyzing}
+                  disabled={isSaving}
                 >
                   {availableParts.every(p => p.selected) ? "Atžymėti visas" : "Pažymėti visas"}
                 </Button>
@@ -167,7 +157,7 @@ export function ReanalyzeDialog({ open, onOpenChange, productId, productTypeId, 
                       id={`part-${part.id}`}
                       checked={part.selected}
                       onCheckedChange={() => togglePart(part.id)}
-                      disabled={isAnalyzing}
+                      disabled={isSaving}
                     />
                     <label
                       htmlFor={`part-${part.id}`}
@@ -181,90 +171,21 @@ export function ReanalyzeDialog({ open, onOpenChange, productId, productTypeId, 
             </div>
           )}
 
-          {result && (
-            <div className="space-y-3">
-              <Alert className={result.componentsUpdated > 0 ? "border-green-500 bg-green-50" : "border-amber-500 bg-amber-50"}>
-                <AlertDescription>
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      {result.componentsUpdated > 0 ? (
-                        <span className="text-green-600 font-medium">
-                          ✓ Atnaujinta {result.componentsUpdated} komponentų
-                        </span>
-                      ) : (
-                        <span className="text-amber-600 font-medium">
-                          ⚠ Komponentai neatnaujinti
-                        </span>
-                      )}
-                    </div>
-                    
-                    {result.components && result.components.length > 0 && (
-                      <div className="mt-3">
-                        <p className="text-xs font-medium mb-2">Rasti komponentai:</p>
-                        <div className="space-y-2">
-                          {result.components.map((comp: any, idx: number) => (
-                            <div key={idx} className="bg-white rounded p-2 text-xs border">
-                              <div className="font-medium">{comp.name}</div>
-                              {comp.material && <div>Medžiaga: {comp.material}</div>}
-                              {comp.finish && <div>Apdaila: {comp.finish}</div>}
-                              {comp.other && <div className="text-muted-foreground">{comp.other}</div>}
-                              {comp.uncertainTerms && comp.uncertainTerms.length > 0 && (
-                                <div className="text-amber-600">⚠ {comp.uncertainTerms.join(", ")}</div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {result.warnings && result.warnings.length > 0 && (
-                      <div className="mt-3">
-                        <p className="text-xs font-medium mb-1">Perspėjimai:</p>
-                        <div className="space-y-1">
-                          {result.warnings.map((warning: string, idx: number) => (
-                            <p key={idx} className="text-xs text-amber-900">
-                              • {warning}
-                            </p>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {result.aiResponse && (
-                      <details className="mt-3">
-                        <summary className="cursor-pointer text-xs text-muted-foreground hover:text-foreground">
-                          Rodyti AI atsakymą
-                        </summary>
-                        <div className="bg-white rounded p-2 mt-2 max-h-60 overflow-y-auto border">
-                          <pre className="text-xs whitespace-pre-wrap font-mono">
-                            {result.aiResponse}
-                          </pre>
-                        </div>
-                      </details>
-                    )}
-                  </div>
-                </AlertDescription>
-              </Alert>
-            </div>
-          )}
-
           <div className="flex justify-end gap-2 pt-4">
             <Button
               type="button"
               variant="outline"
               onClick={handleClose}
             >
-              {result ? "Uždaryti" : "Atšaukti"}
+              Atšaukti
             </Button>
-            {!result && (
-              <Button
-                onClick={handleAnalyze}
-                disabled={!description.trim() || isAnalyzing || selectedCount === 0}
-              >
-                <Sparkles className="h-4 w-4 mr-2" />
-                {isAnalyzing ? "Analizuojama..." : "Analizuoti su AI"}
-              </Button>
-            )}
+            <Button
+              onClick={handleSave}
+              disabled={!description.trim() || isSaving || selectedCount === 0}
+            >
+              <Save className="h-4 w-4 mr-2" />
+              {isSaving ? "Saugoma..." : "Išsaugoti"}
+            </Button>
           </div>
         </div>
       </DialogContent>
