@@ -86,50 +86,23 @@ export function ErrorsPage() {
       const arrayBuffer = await file.arrayBuffer();
       const workbook = XLSX.read(arrayBuffer, { type: "array" });
       const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-      const jsonData = XLSX.utils.sheet_to_json(firstSheet, { defval: "" }) as Record<string, any>[];
+      
+      // Read as array format to get columns by index
+      const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 }) as any[][];
 
       if (jsonData.length === 0) {
         toast({ title: "Nėra duomenų importavimui", variant: "destructive" });
         return;
       }
 
-      const keys = Object.keys(jsonData[0]);
-      const projectKey = keys.find(k => 
-        k.toLowerCase().includes("projekt") || 
-        k.toLowerCase().includes("project") ||
-        k.toLowerCase().includes("proj") ||
-        k.trim().toLowerCase() === "a"
-      );
-      const productKey = keys.find(k => 
-        k.toLowerCase().includes("gamin") || 
-        k.toLowerCase().includes("product") ||
-        k.toLowerCase().includes("prod") ||
-        k.trim().toLowerCase() === "b"
-      );
-      const errorKey = keys.find(k => 
-        k.toLowerCase().includes("klaid") || 
-        k.toLowerCase().includes("error") ||
-        k.toLowerCase().includes("apra") ||
-        k.toLowerCase().includes("description") ||
-        k.toLowerCase().includes("problem") ||
-        k.trim().toLowerCase() === "c"
-      );
-
-      if (!errorKey) {
-        toast({ 
-          title: "Nerasta klaidos aprašymo kolona", 
-          description: "Excel failas turi turėti bent: Klaidos aprašymas",
-          variant: "destructive" 
-        });
-        return;
-      }
-
+      // Skip first row (header) and process data
       const errorsToImport = jsonData
-        .filter((row) => row[errorKey] && String(row[errorKey]).trim())
+        .slice(1) // Skip header row
+        .filter((row) => row && row[2] && String(row[2]).trim()) // Only rows with column C (index 2)
         .map((row) => ({
-          projectCode: projectKey && row[projectKey] ? String(row[projectKey]).trim() : undefined,
-          productCode: productKey && row[productKey] ? String(row[productKey]).trim() : undefined,
-          errorDescription: String(row[errorKey]).trim(),
+          projectCode: row[0] ? String(row[0]).trim() : undefined,  // Column A
+          productCode: row[1] ? String(row[1]).trim() : undefined,  // Column B
+          errorDescription: String(row[2]).trim(),                   // Column C
         }));
 
       if (errorsToImport.length === 0) {
