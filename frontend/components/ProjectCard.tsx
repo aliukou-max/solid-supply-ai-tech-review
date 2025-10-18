@@ -15,7 +15,7 @@ interface ProjectCardProps {
 }
 
 export function ProjectCard({ project, onEdit }: ProjectCardProps) {
-  const [productStats, setProductStats] = useState<{count: number, types: string[]}>({ count: 0, types: [] });
+  const [productStats, setProductStats] = useState<{count: number, typeNames: string[]}>({ count: 0, typeNames: [] });
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -25,8 +25,17 @@ export function ProjectCard({ project, onEdit }: ProjectCardProps) {
   const loadProductStats = async () => {
     try {
       const { products } = await backend.product.listByProject({ projectId: project.id });
-      const uniqueTypes = [...new Set(products.map((p: any) => p.type))];
-      setProductStats({ count: products.length, types: uniqueTypes });
+      const typeMap = new Map<string, number>();
+      
+      products.forEach((p: any) => {
+        const typeName = p.productTypeName || p.type;
+        typeMap.set(typeName, (typeMap.get(typeName) || 0) + 1);
+      });
+      
+      const typeNames = Array.from(typeMap.entries())
+        .map(([name, count]) => count > 1 ? `${name} (${count})` : name);
+      
+      setProductStats({ count: products.length, typeNames });
     } catch (error) {
       console.error("Failed to load product stats:", error);
     } finally {
@@ -35,21 +44,20 @@ export function ProjectCard({ project, onEdit }: ProjectCardProps) {
   };
 
   const projectTypeLabel = project.projectType === 'recurring' ? 'Recurring' : 'New Development';
-  const projectTypeBadgeColor = project.projectType === 'recurring' ? 'bg-blue-500' : 'bg-amber-600';
 
   return (
     <Link to={`/projects/${project.id}`}>
-      <Card className="hover:shadow-md transition-shadow cursor-pointer relative">
-        <CardHeader className="pb-3">
+      <Card className="hover:shadow-md transition-shadow cursor-pointer">
+        <CardHeader className="pb-2">
           <div className="flex items-start justify-between">
-            <div className="flex items-start gap-3 flex-1">
-              <div className={`w-2 h-2 rounded-full ${projectTypeBadgeColor} mt-2`} />
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <h3 className="font-bold text-lg">{project.id}</h3>
-                </div>
-                <p className="font-medium text-base">{project.name}</p>
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="font-bold text-lg">{project.id}</h3>
+                <Badge variant="outline" className="text-xs">
+                  {projectTypeLabel}
+                </Badge>
               </div>
+              <p className="text-sm font-medium text-muted-foreground">{project.name}</p>
             </div>
             <Button
               variant="ghost"
@@ -58,40 +66,36 @@ export function ProjectCard({ project, onEdit }: ProjectCardProps) {
                 e.preventDefault();
                 onEdit();
               }}
-              className="absolute top-3 right-3"
             >
-              {/* @ts-ignore */}
               <Edit2 className="h-4 w-4" />
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="pt-2">
           <div className="flex items-center justify-between">
-            <Badge variant="outline" className="text-xs">
-              {projectTypeLabel}
-            </Badge>
-            <Badge variant={project.status === 'active' ? 'default' : 'secondary'}>
-              {project.status}
-            </Badge>
-          </div>
-          
-          {!isLoading && productStats.count > 0 && (
-            <div className="space-y-1">
-              <p className="text-xs text-muted-foreground">
-                {productStats.count} {productStats.count === 1 ? 'gaminys' : 'gaminiai'}
-              </p>
-              {productStats.types.length > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  Tipai: {productStats.types.join(', ')}
-                </p>
+            <div className="flex items-center gap-3 text-xs">
+              {!isLoading && productStats.count > 0 && (
+                <>
+                  <span className="text-muted-foreground">
+                    {productStats.count} {productStats.count === 1 ? 'gaminys' : 'gaminiai'}
+                  </span>
+                  {productStats.typeNames.length > 0 && (
+                    <span className="text-muted-foreground">
+                      {productStats.typeNames.join(', ')}
+                    </span>
+                  )}
+                </>
               )}
             </div>
-          )}
-
-          <div className="flex items-center gap-2 text-xs text-muted-foreground pt-2 border-t">
-            {/* @ts-ignore */}
-            <Calendar className="h-3 w-3" />
-            {new Date(project.createdAt).toLocaleDateString("lt-LT")}
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Calendar className="h-3 w-3" />
+                {new Date(project.createdAt).toLocaleDateString("lt-LT")}
+              </div>
+              <Badge variant={project.status === 'active' ? 'default' : 'secondary'} className="text-xs">
+                {project.status}
+              </Badge>
+            </div>
           </div>
         </CardContent>
       </Card>

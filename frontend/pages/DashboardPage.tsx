@@ -80,7 +80,7 @@ export function DashboardPage() {
 
       <div>
         <h2 className="text-2xl font-bold mb-4">Naujausi įvesti projektai</h2>
-        <div className="space-y-2">
+        <div className="space-y-3">
           {recentProjects.map((project) => (
             <ProjectCard key={project.id} project={project} />
           ))}
