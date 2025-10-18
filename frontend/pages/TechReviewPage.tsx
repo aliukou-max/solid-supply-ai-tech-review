@@ -199,52 +199,55 @@ export function TechReviewPage() {
       {productLoading || reviewLoading ? (
         <div className="text-center py-12 text-muted-foreground">Kraunama...</div>
       ) : (
-        <Tabs key={productTypeParts?.parts[0]?.name} defaultValue={productTypeParts?.parts[0]?.name || "errors"} className="space-y-4">
-          <TabsList>
+        <Tabs key={productTypeParts?.parts[0]?.name} defaultValue={productTypeParts?.parts[0]?.name || "errors"} className="flex gap-6">
+          <div className="w-64 flex-shrink-0">
+            <TabsList className="flex flex-col h-auto w-full items-stretch">
+              {productTypeParts?.parts.map((part) => {
+                const partCount = componentPartsData?.parts.filter(
+                  cp => cp.productTypePartId === part.id
+                ).length || 0;
+                return (
+                  <TabsTrigger key={part.id} value={part.name} className="justify-start">
+                    {part.name} ({partCount})
+                  </TabsTrigger>
+                );
+              })}
+              <TabsTrigger value="errors" className="justify-start">
+                Klaidos {openErrors.length > 0 && `(${openErrors.length})`}
+              </TabsTrigger>
+              <TabsTrigger value="lessons" className="justify-start">
+                Lessons Learnt ({lessonsData?.lessons.length || 0})
+              </TabsTrigger>
+            </TabsList>
+          </div>
+
+          <div className="flex-1 min-w-0">
             {productTypeParts?.parts.map((part) => {
-              const partCount = componentPartsData?.parts.filter(
+              const partComponentParts = componentPartsData?.parts.filter(
                 cp => cp.productTypePartId === part.id
-              ).length || 0;
+              ) || [];
+
               return (
-                <TabsTrigger key={part.id} value={part.name}>
-                  {part.name} ({partCount})
-                </TabsTrigger>
+                <TabsContent key={part.id} value={part.name} className="space-y-4 mt-0">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-2xl font-bold">{part.name}</h2>
+                  </div>
+
+                  <ComponentPartsTabContent
+                    partComponentParts={partComponentParts}
+                    allNodesData={allNodesData}
+                    allErrorsData={allErrorsData}
+                    onPhotoUpload={handlePhotoUpload}
+                    onRemovePhoto={handleRemovePhoto}
+                    onSavePart={handleSavePart}
+                    onDeletePart={handleDeletePart}
+                    uploadingPhoto={uploadingPhoto}
+                  />
+                </TabsContent>
               );
             })}
-            <TabsTrigger value="errors">
-              Klaidos {openErrors.length > 0 && `(${openErrors.length})`}
-            </TabsTrigger>
-            <TabsTrigger value="lessons">
-              Lessons Learnt ({lessonsData?.lessons.length || 0})
-            </TabsTrigger>
-          </TabsList>
 
-          {productTypeParts?.parts.map((part) => {
-            const partComponentParts = componentPartsData?.parts.filter(
-              cp => cp.productTypePartId === part.id
-            ) || [];
-
-            return (
-              <TabsContent key={part.id} value={part.name} className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-2xl font-bold">{part.name}</h2>
-                </div>
-
-                <ComponentPartsTabContent
-                  partComponentParts={partComponentParts}
-                  allNodesData={allNodesData}
-                  allErrorsData={allErrorsData}
-                  onPhotoUpload={handlePhotoUpload}
-                  onRemovePhoto={handleRemovePhoto}
-                  onSavePart={handleSavePart}
-                  onDeletePart={handleDeletePart}
-                  uploadingPhoto={uploadingPhoto}
-                />
-              </TabsContent>
-            );
-          })}
-
-          <TabsContent value="errors" className="space-y-4">
+            <TabsContent value="errors" className="space-y-4 mt-0">
             <ErrorsTab
               techReviewId={data?.review.id!}
               errors={data?.errors || []}
@@ -256,12 +259,13 @@ export function TechReviewPage() {
             />
           </TabsContent>
 
-          <TabsContent value="lessons" className="space-y-4">
+          <TabsContent value="lessons" className="space-y-4 mt-0">
             <LessonsTab
               productType={product?.type!}
               lessons={lessonsData?.lessons || []}
             />
           </TabsContent>
+          </div>
         </Tabs>
       )}
     </MainLayout>
