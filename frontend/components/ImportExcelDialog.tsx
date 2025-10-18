@@ -1,22 +1,26 @@
 import React from "react";
 
 const useState = (React as any).useState;
-import { Upload, FileSpreadsheet } from "lucide-react";
+import { Upload, FileSpreadsheet, AlertCircle } from "lucide-react";
+import backend from "~backend/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface ImportExcelDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  projectId: string;
   onSuccess: () => void;
 }
 
-export function ImportExcelDialog({ open, onOpenChange, onSuccess }: ImportExcelDialogProps) {
+export function ImportExcelDialog({ open, onOpenChange, projectId, onSuccess }: ImportExcelDialogProps) {
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [warnings, setWarnings] = useState<string[]>([]);
   const { toast } = useToast();
 
   const handleFileChange = (e: any) => {
@@ -25,6 +29,7 @@ export function ImportExcelDialog({ open, onOpenChange, onSuccess }: ImportExcel
       const fileExtension = selectedFile.name.split('.').pop()?.toLowerCase();
       if (fileExtension === 'xlsx' || fileExtension === 'xls') {
         setFile(selectedFile);
+        setWarnings([]);
       } else {
         toast({
           title: "Klaida",
@@ -46,15 +51,44 @@ export function ImportExcelDialog({ open, onOpenChange, onSuccess }: ImportExcel
     }
 
     setIsUploading(true);
+    setWarnings([]);
 
     try {
-      toast({
-        title: "Informacija",
-        description: "Excel importas dar neįgyvendintas. Paaiškinkite kur Excel faile randasi informacija.",
-      });
+      const reader = new FileReader();
       
-      setFile(null);
-      onSuccess();
+      await new Promise<void>((resolve, reject) => {
+        reader.onload = async () => {
+          try {
+            const base64 = (reader.result as string).split(',')[1];
+            
+            const result = await backend.techReview.importExcel({
+              projectId,
+              fileData: base64,
+              filename: file.name,
+            });
+
+            if (result.warnings && result.warnings.length > 0) {
+              setWarnings(result.warnings);
+            }
+
+            toast({
+              title: "Importuota sėkmingai",
+              description: `Sukurta ${result.productsCreated} produktų${result.warnings.length > 0 ? ` su ${result.warnings.length} perspėjimais` : ""}`,
+            });
+
+            if (result.warnings.length === 0) {
+              setFile(null);
+              onSuccess();
+            }
+            
+            resolve();
+          } catch (error) {
+            reject(error);
+          }
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
     } catch (error) {
       console.error("Failed to import Excel:", error);
       toast({
@@ -69,10 +103,9 @@ export function ImportExcelDialog({ open, onOpenChange, onSuccess }: ImportExcel
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            {/* @ts-ignore */}
             <FileSpreadsheet className="h-5 w-5" />
             Import Estimation Excel
           </DialogTitle>
@@ -95,30 +128,53 @@ export function ImportExcelDialog({ open, onOpenChange, onSuccess }: ImportExcel
             )}
           </div>
 
-          <div className="bg-muted/50 rounded-md p-3 text-sm space-y-1">
-            <p className="font-medium">Excel failas turėtų turėti:</p>
+          <div className="bg-muted/50 rounded-md p-3 text-sm space-y-2">
+            <p className="font-medium">Excel failo struktūra:</p>
             <ul className="list-disc list-inside text-muted-foreground space-y-1">
-              <li>Projekto kodą</li>
-              <li>Projekto pavadinimą</li>
-              <li>Gaminių kodus</li>
-              <li>Gaminių tipus ir kiekius</li>
-              <li>Aprašymą</li>
+              <li><strong>B stulpelis:</strong> SS kodas (nuo B26)</li>
+              <li><strong>C stulpelis:</strong> Gaminio pavadinimas</li>
+              <li><strong>AC stulpelis:</strong> Detalus aprašymas</li>
+              <li><strong>C8 langelis:</strong> Projekto kodas</li>
             </ul>
+            <p className="text-xs text-muted-foreground pt-2">
+              Sistema automatiškai nuskaitys visas eilutes nuo B26 iki tuščios eilutės ir AI išanalizuos aprašymus į komponentus su medžiagomis ir apdaila.
+            </p>
           </div>
+
+          {warnings.length > 0 && (
+            <Alert variant="default" className="border-amber-500 bg-amber-50 dark:bg-amber-950/20">
+              <AlertCircle className="h-4 w-4 text-amber-600" />
+              <AlertDescription>
+                <div className="space-y-1">
+                  <p className="font-medium text-sm mb-2">Perspėjimai ({warnings.length}):</p>
+                  <div className="max-h-40 overflow-y-auto space-y-1">
+                    {warnings.map((warning, idx) => (
+                      <p key={idx} className="text-xs text-amber-900 dark:text-amber-100">
+                        • {warning}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
 
           <div className="flex justify-end gap-2 pt-4">
             <Button 
               type="button" 
               variant="outline" 
-              onClick={() => onOpenChange(false)}
+              onClick={() => {
+                setWarnings([]);
+                setFile(null);
+                onOpenChange(false);
+              }}
             >
-              Atšaukti
+              {warnings.length > 0 ? "Uždaryti" : "Atšaukti"}
             </Button>
             <Button 
               onClick={handleUpload} 
               disabled={!file || isUploading}
             >
-              {/* @ts-ignore */}
               <Upload className="h-4 w-4 mr-2" />
               {isUploading ? "Importuojama..." : "Importuoti"}
             </Button>

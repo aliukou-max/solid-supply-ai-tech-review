@@ -24,6 +24,7 @@ export function ProjectsPage() {
   const navigate = useNavigate();
   const [createOpen, setCreateOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [selectedProjectForImport, setSelectedProjectForImport] = useState<string | null>(null);
   const [editProject, setEditProject] = useState<Project | null>(null);
   const [projectStats, setProjectStats] = useState<Record<string, ProjectStats>>({});
   const { toast } = useToast();
@@ -98,7 +99,18 @@ export function ProjectsPage() {
             <Plus className="h-4 w-4 mr-2" />
             Pridėti projektą
           </Button>
-          <Button variant="outline" onClick={() => setImportOpen(true)}>
+          <Button variant="outline" onClick={() => {
+            if (data?.projects && data.projects.length > 0) {
+              setSelectedProjectForImport(data.projects[0].id);
+              setImportOpen(true);
+            } else {
+              toast({
+                title: "Klaida",
+                description: "Pirmiausia sukurkite projektą",
+                variant: "destructive",
+              });
+            }
+          }}>
             {/* @ts-ignore */}
             <FileSpreadsheet className="h-4 w-4 mr-2" />
             Importuoti Excel
@@ -212,9 +224,14 @@ export function ProjectsPage() {
 
       <ImportExcelDialog
         open={importOpen}
-        onOpenChange={setImportOpen}
+        onOpenChange={(open) => {
+          setImportOpen(open);
+          if (!open) setSelectedProjectForImport(null);
+        }}
+        projectId={selectedProjectForImport || ""}
         onSuccess={() => {
           setImportOpen(false);
+          setSelectedProjectForImport(null);
           refetch();
         }}
       />
