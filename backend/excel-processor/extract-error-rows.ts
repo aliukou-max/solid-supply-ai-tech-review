@@ -18,6 +18,16 @@ export function extractErrorRows(sheet: ExcelJS.Worksheet): ErrorRow[] {
       return;
     }
 
+    // Jei A, B, C visi užpildyti - tai klaida su projekto kodu toje pačioje eilutėje
+    if (cellA && cellB && cellC) {
+      errors.push({
+        productCode: `${cellA}-${cellB}`,
+        description: cellC,
+        rowNumber,
+      });
+      return;
+    }
+
     if (cellA && !cellB && !cellC) {
       currentProjectCode = cellA;
       return;
