@@ -39,6 +39,7 @@ export const importErrorsExcel = api(
       if (!sheet) throw new Error("Excel faile nėra lapų");
 
       const errorRows = extractErrorRows(sheet);
+      console.log(`\n📦 Ištraukta eilučių iš Excel: ${errorRows.length}\n`);
 
       for (const error of errorRows) {
         const validation = await validateErrorRow(error);
@@ -46,6 +47,7 @@ export const importErrorsExcel = api(
         if (!validation.isValid) {
           skipped++;
           if (validation.warning) {
+            console.log(`  ❌ Praleista: ${validation.warning}`);
             warnings.push(validation.warning);
           }
           continue;
@@ -60,12 +62,16 @@ export const importErrorsExcel = api(
               ${validation.projectCode}, ${validation.productCode}, ${error.description}, ${now}
             )
           `;
+          console.log(`  ✅ Įrašyta: ${validation.projectCode}-${validation.productCode}`);
           errorsCreated++;
         } catch (err) {
           skipped++;
+          console.log(`  ❌ Klaida įrašant: ${err}`);
           warnings.push(`Eilutė ${error.rowNumber}: nepavyko įrašyti klaidos (${err})`);
         }
       }
+
+      console.log(`\n📊 Rezultatai: sukurta=${errorsCreated}, praleista=${skipped}\n`);
 
       return { success: true, errorsCreated, skipped, warnings };
     } catch (error) {
