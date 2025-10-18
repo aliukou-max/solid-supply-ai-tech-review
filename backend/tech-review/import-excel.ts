@@ -52,6 +52,7 @@ export const importExcel = api(
 
       const sheet = await findValidSheet(workbook);
       console.log(`📘 Naudojamas lapas: ${sheet.name}`);
+      warnings.push(`📘 Naudojamas lapas: "${sheet.name}"`);
 
       let projectCode = sheet.getCell("C8").text?.trim() || null;
       const rawProjectName = sheet.getCell("C9").text?.trim();
@@ -231,7 +232,10 @@ export const importExcel = api(
 
 async function findValidSheet(workbook: ExcelJS.Workbook): Promise<ExcelJS.Worksheet> {
   const main = workbook.getWorksheet("Products information");
-  if (main && main.getCell("B26").text?.trim()) return main;
+  if (main && main.getCell("B26").text?.trim()) {
+    console.log(`📘 Using sheet: "Products information"`);
+    return main;
+  }
 
   let best: ExcelJS.Worksheet | null = null;
   let maxCount = 0;
@@ -240,16 +244,18 @@ async function findValidSheet(workbook: ExcelJS.Workbook): Promise<ExcelJS.Works
     let count = 0;
     for (let i = 26; i < 100; i++) {
       const ss = s.getCell(`B${i}`).text;
-      const desc = s.getCell(`AC${i}`).text;
-      if (ss && desc) count++;
+      const name = s.getCell(`C${i}`).text;
+      if (ss && name) count++;
     }
+    console.log(`📊 Sheet "${s.name}" has ${count} products (B+C check)`);
     if (count > maxCount) {
       maxCount = count;
       best = s;
     }
   }
 
-  if (!best) throw new Error("Nerasta lapų su duomenimis.");
+  if (!best) throw new Error("Nerasta lapų su duomenimis (B ir C stulpeliai).");
+  console.log(`📘 Selected sheet: "${best.name}" with ${maxCount} products`);
   return best;
 }
 
