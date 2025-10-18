@@ -112,7 +112,19 @@ export const importExcel = api(
 
       for (let i = 26; i < 1000; i++) {
         const ss = sheet.getCell(`B${i}`).text?.trim();
-        const name = sheet.getCell(`C${i}`).text?.trim();
+        if (!ss) break;
+        
+        let name = sheet.getCell(`C${i}`).text?.trim();
+        if (!name) {
+          name = sheet.getCell(`D${i}`).text?.trim();
+        }
+        if (!name) {
+          name = sheet.getCell(`E${i}`).text?.trim();
+        }
+        if (!name) {
+          name = ss;
+        }
+        
         let desc = sheet.getCell(`AC${i}`).text?.trim() || "";
         
         if (!desc) {
@@ -131,29 +143,31 @@ export const importExcel = api(
           desc = sheet.getCell(`Z${i}`).text?.trim() || "";
         }
 
-        if (!ss) break;
-
         if (i === 26) {
           console.log(`\n📋 FIRST PRODUCT Row ${i}:`);
           console.log(`  SS Code (B): "${ss}"`);
-          console.log(`  Name (C): "${name}"`);
+          console.log(`  Name (C/D/E): "${name}"`);
           console.log(`  Description found: "${desc}"`);
           console.log(`  Description length: ${desc?.length || 0}`);
           
           warnings.push(`First product: ${ss} | Name: ${name} | Desc length: ${desc?.length || 0}`);
         }
 
-        if (name) {
-          const cleanDesc = desc || "";
-          if (i <= 28) {
-            console.log(`📝 Row ${i} parsed:`, { ssCode: ss, productName: name, description: cleanDesc ? `"${cleanDesc.slice(0, 80)}..."` : "EMPTY" });
-          }
-          rows.push({ ssCode: ss, productName: name, description: cleanDesc });
+        const cleanDesc = desc || "";
+        if (i <= 28) {
+          console.log(`📝 Row ${i} parsed:`, { ssCode: ss, productName: name, description: cleanDesc ? `"${cleanDesc.slice(0, 80)}..."` : "EMPTY" });
         }
+        rows.push({ ssCode: ss, productName: name, description: cleanDesc });
       }
 
       console.log(`📦 Rasta produktų: ${rows.length}`);
-      if (rows.length === 0) throw new Error("Excel faile nerasta produktų nuo B26 eilutės.");
+      if (rows.length === 0) {
+        const debugInfo = [];
+        for (let i = 26; i <= 30; i++) {
+          debugInfo.push(`Row ${i}: B="${sheet.getCell(`B${i}`).text?.trim() || 'EMPTY'}", C="${sheet.getCell(`C${i}`).text?.trim() || 'EMPTY'}"`);
+        }
+        throw new Error(`Nėra duomenų importavimui. Patikrinkite ar C stulpelis užpildytas.\n\nDebug info:\n${debugInfo.join('\n')}`);
+      }
 
       for (const row of rows) {
         try {
