@@ -1,19 +1,22 @@
-import React from "react";
-
-const useState = (React as any).useState;
+import React, { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Plus, AlertTriangle } from "lucide-react";
 import backend from "~backend/client";
+import type { Product } from "~backend/product/types";
 import { MainLayout } from "@/components/MainLayout";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/ProductCard";
 import { CreateProductDialog } from "@/components/CreateProductDialog";
+import { EditProductDialog } from "@/components/EditProductDialog";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/components/ui/use-toast";
 
 export function ProjectDetailPage() {
   const { projectId } = useParams<{ projectId: string }>();
   const [createOpen, setCreateOpen] = useState(false);
+  const [editProduct, setEditProduct] = useState<Product | null>(null);
+  const { toast } = useToast();
 
   const { data: project, isLoading: projectLoading } = useQuery({
     queryKey: ["project", projectId],
@@ -28,6 +31,25 @@ export function ProjectDetailPage() {
   });
 
   const productsWithoutDrawing = data?.products.filter(p => !p.hasDrawing) || [];
+
+  const handleDeleteProduct = async (product: Product) => {
+    if (!confirm(`Ar tikrai norite ištrinti gaminį ${product.ssCode}?`)) {
+      return;
+    }
+
+    try {
+      await backend.product.deleteProduct({ id: product.id });
+      toast({ title: "Gaminys ištrintas" });
+      refetch();
+    } catch (error) {
+      console.error("Failed to delete product:", error);
+      toast({
+        title: "Klaida",
+        description: "Nepavyko ištrinti gaminio",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <MainLayout
@@ -78,7 +100,12 @@ export function ProjectDetailPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {data?.products.map((product) => (
-            <ProductCard key={product.id} product={product} />
+            <ProductCard 
+              key={product.id} 
+              product={product}
+              onEdit={() => setEditProduct(product)}
+              onDelete={() => handleDeleteProduct(product)}
+            />
           ))}
         </div>
       )}
@@ -92,6 +119,18 @@ export function ProjectDetailPage() {
           refetch();
         }}
       />
+
+      {editProduct && (
+        <EditProductDialog
+          open={!!editProduct}
+          onOpenChange={(open) => !open && setEditProduct(null)}
+          product={editProduct}
+          onSuccess={() => {
+            setEditProduct(null);
+            refetch();
+          }}
+        />
+      )}
     </MainLayout>
   );
 }

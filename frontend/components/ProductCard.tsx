@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Box, Edit2, Flag } from "lucide-react";
+import { Box, Edit2, Flag, Trash2 } from "lucide-react";
 import type { Product } from "~backend/product/types";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,9 +10,10 @@ import backend from "~backend/client";
 interface ProductCardProps {
   product: Product;
   onEdit?: () => void;
+  onDelete?: () => void;
 }
 
-export function ProductCard({ product, onEdit }: ProductCardProps) {
+export function ProductCard({ product, onEdit, onDelete }: ProductCardProps) {
   const { data: componentPartsData } = useQuery({
     queryKey: ["component-parts-check", product.id],
     queryFn: async () => {
@@ -27,7 +28,7 @@ export function ProductCard({ product, onEdit }: ProductCardProps) {
   );
 
   return (
-    <Card className="hover:shadow-md transition-shadow cursor-pointer relative">
+    <Card className="hover:shadow-md transition-shadow cursor-pointer relative group">
       {hasIncomplete && (
         <div className="absolute -top-2 -right-2 z-10">
           <Flag className="h-6 w-6 text-red-500 fill-red-500" />
@@ -44,18 +45,37 @@ export function ProductCard({ product, onEdit }: ProductCardProps) {
           </div>
         </CardHeader>
       </Link>
-      {onEdit && (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={(e) => {
-            e.preventDefault();
-            onEdit();
-          }}
-          className="absolute top-3 right-3"
-        >
-          <Edit2 className="h-4 w-4" />
-        </Button>
+      {(onEdit || onDelete) && (
+        <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          {onEdit && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e: any) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onEdit();
+              }}
+              className="h-8 w-8 p-0"
+            >
+              <Edit2 className="h-4 w-4" />
+            </Button>
+          )}
+          {onDelete && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e: any) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onDelete();
+              }}
+              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
       )}
     </Card>
   );
