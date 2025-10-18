@@ -24,6 +24,12 @@ export function TechReviewPage() {
     enabled: !!productId,
   });
 
+  const { data: productTypeParts } = useQuery({
+    queryKey: ["product-type-parts", product?.typeId],
+    queryFn: async () => backend.productTypes.listParts({ productTypeId: product?.typeId! }),
+    enabled: !!product?.typeId,
+  });
+
   const { data: componentPartsData } = useQuery({
     queryKey: ["component-parts", data?.review.id],
     queryFn: async () => backend.techReview.listComponentParts({ techReviewId: data?.review.id! }),
@@ -38,10 +44,11 @@ export function TechReviewPage() {
 
   const openErrors = data?.errors.filter(e => e.status === "open") || [];
 
-  const currentTab = location.pathname.split('/').pop() || 'parts';
+  const pathParts = location.pathname.split('/');
+  const currentTab = pathParts[pathParts.length - 1] === productId ? (productTypeParts?.parts[0]?.name || 'parts') : decodeURIComponent(pathParts[pathParts.length - 1]);
 
   const handleTabChange = (value: string) => {
-    navigate(`/tech-review/${productId}/${value}`);
+    navigate(`/tech-review/${productId}/${encodeURIComponent(value)}`);
   };
 
   return (
@@ -88,12 +95,16 @@ export function TechReviewPage() {
         <div className="space-y-4">
           <Tabs value={currentTab} onValueChange={handleTabChange}>
             <TabsList>
-              <TabsTrigger value="parts">
-                Detalės ({componentPartsData?.parts.length || 0})
-              </TabsTrigger>
-              <TabsTrigger value="components">
-                Mazgai ({data?.components.length || 0})
-              </TabsTrigger>
+              {productTypeParts?.parts.map((part) => {
+                const partCount = componentPartsData?.parts.filter(
+                  cp => cp.productTypePartId === part.id
+                ).length || 0;
+                return (
+                  <TabsTrigger key={part.id} value={part.name}>
+                    {part.name} ({partCount})
+                  </TabsTrigger>
+                );
+              })}
               <TabsTrigger value="errors">
                 Klaidos {openErrors.length > 0 && `(${openErrors.length})`}
               </TabsTrigger>

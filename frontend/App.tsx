@@ -4,8 +4,7 @@ import { DashboardPage } from "./pages/DashboardPage";
 import { ProjectsPage } from "./pages/ProjectsPage";
 import { ProjectDetailPage } from "./pages/ProjectDetailPage";
 import { TechReviewPage } from "./pages/TechReviewPage";
-import { TechReviewPartsPage } from "./pages/TechReviewPartsPage";
-import { TechReviewComponentsPage } from "./pages/TechReviewComponentsPage";
+import { TechReviewPartPage } from "./pages/TechReviewPartPage";
 import { TechReviewErrorsPage } from "./pages/TechReviewErrorsPage";
 import { TechReviewLessonsPage } from "./pages/TechReviewLessonsPage";
 import { LessonsLearntPage } from "./pages/LessonsLearntPage";
@@ -29,9 +28,7 @@ function AppContent() {
           <Route path="/projects/new" element={<ProjectsPage />} />
           <Route path="/projects/:projectId" element={<ProjectDetailPage />} />
           <Route path="/tech-review/:productId" element={<TechReviewPage />}>
-            <Route index element={<Navigate to="parts" replace />} />
-            <Route path="parts" element={<TechReviewPartsPage />} />
-            <Route path="components" element={<TechReviewComponentsPage />} />
+            <Route path=":partName" element={<TechReviewPartPage />} />
             <Route path="errors" element={<TechReviewErrorsPage />} />
             <Route path="lessons" element={<TechReviewLessonsPage />} />
           </Route>
