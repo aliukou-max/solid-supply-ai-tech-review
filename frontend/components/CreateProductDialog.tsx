@@ -1,7 +1,9 @@
 import React from "react";
 
 const useState = (React as any).useState;
+const useEffect = (React as any).useEffect;
 import { useForm } from "react-hook-form";
+import { useQuery } from "@tanstack/react-query";
 import backend from "~backend/client";
 import type { ProductType } from "~backend/product/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -23,6 +25,7 @@ interface FormData {
   ssCode: string;
   name: string;
   type: ProductType;
+  productTypeId: string;
   dimensions: string;
   hasDrawing: boolean;
   drawingReference: string;
@@ -36,6 +39,12 @@ export function CreateProductDialog({ open, onOpenChange, projectId, onSuccess }
   });
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+
+  const { data: productTypesData } = useQuery({
+    queryKey: ["product-types"],
+    queryFn: async () => backend.product_types.list(),
+    enabled: open,
+  });
 
   const hasDrawing = watch("hasDrawing");
 
@@ -91,6 +100,21 @@ export function CreateProductDialog({ open, onOpenChange, projectId, onSuccess }
                 {PRODUCT_TYPES.map((type) => (
                   <SelectItem key={type} value={type}>
                     {type}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="productTypeId">Gaminio tipas (iš bibliotekos)</Label>
+            <Select onValueChange={(value: any) => setValue("productTypeId", value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Pasirinkite gaminio tipą" />
+              </SelectTrigger>
+              <SelectContent>
+                {productTypesData?.productTypes.map((pt) => (
+                  <SelectItem key={pt.id} value={pt.id}>
+                    {pt.name}
                   </SelectItem>
                 ))}
               </SelectContent>

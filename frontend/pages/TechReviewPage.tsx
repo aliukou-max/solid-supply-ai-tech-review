@@ -6,6 +6,7 @@ import { MainLayout } from "@/components/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ComponentsTab } from "@/components/tech-review/ComponentsTab";
+import { ComponentPartsTab } from "@/components/tech-review/ComponentPartsTab";
 import { ErrorsTab } from "@/components/tech-review/ErrorsTab";
 import { LessonsTab } from "@/components/tech-review/LessonsTab";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +25,12 @@ export function TechReviewPage() {
     queryKey: ["tech-review", productId],
     queryFn: async () => backend.techReview.get({ productId: productId! }),
     enabled: !!productId,
+  });
+
+  const { data: componentPartsData } = useQuery({
+    queryKey: ["component-parts", data?.review.id],
+    queryFn: async () => backend.techReview.listComponentParts({ techReviewId: data?.review.id! }),
+    enabled: !!data?.review.id,
   });
 
   const { data: lessonsData } = useQuery({
@@ -75,10 +82,13 @@ export function TechReviewPage() {
       {productLoading || reviewLoading ? (
         <div className="text-center py-12 text-muted-foreground">Kraunama...</div>
       ) : (
-        <Tabs defaultValue="components" className="space-y-4">
+        <Tabs defaultValue="parts" className="space-y-4">
           <TabsList>
+            <TabsTrigger value="parts">
+              Detalės ({componentPartsData?.parts.length || 0})
+            </TabsTrigger>
             <TabsTrigger value="components">
-              Mazgai ir detalės ({data?.components.length || 0})
+              Mazgai ({data?.components.length || 0})
             </TabsTrigger>
             <TabsTrigger value="errors">
               Klaidos {openErrors.length > 0 && `(${openErrors.length})`}
@@ -87,6 +97,14 @@ export function TechReviewPage() {
               Lessons Learnt ({lessonsData?.lessons.length || 0})
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="parts" className="space-y-4">
+            <ComponentPartsTab
+              techReviewId={data?.review.id!}
+              productId={productId!}
+              onUpdate={refetch}
+            />
+          </TabsContent>
 
           <TabsContent value="components" className="space-y-4">
             <NodeRecommendations productId={productId!} />

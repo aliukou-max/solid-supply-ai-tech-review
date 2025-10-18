@@ -8,6 +8,7 @@ interface CreateProductParams {
   ssCode: string;
   name: string;
   type: ProductType;
+  productTypeId?: string;
   dimensions?: string;
   hasDrawing?: boolean;
   drawingReference?: string;
@@ -23,18 +24,21 @@ export const create = api<CreateProductParams, Product>(
 
     await db.exec`
       INSERT INTO products (
-        id, project_id, ss_code, name, type, dimensions, 
+        id, project_id, ss_code, name, type, product_type_id, dimensions, 
         has_drawing, drawing_reference, created_at, updated_at
       )
       VALUES (
         ${id}, ${params.projectId}, ${params.ssCode}, ${params.name}, 
-        ${params.type}, ${params.dimensions}, ${hasDrawing}, 
+        ${params.type}, ${params.productTypeId}, ${params.dimensions}, ${hasDrawing}, 
         ${params.drawingReference}, ${now}, ${now}
       )
     `;
 
-    // Automatically create tech review card
-    await techReview.create({ productId: id, productType: params.type });
+    await techReview.create({ 
+      productId: id, 
+      productType: params.type,
+      productTypeId: params.productTypeId 
+    });
 
     return {
       id,
