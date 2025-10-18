@@ -97,18 +97,22 @@ export function ErrorsPage() {
       const projectKey = keys.find(k => 
         k.toLowerCase().includes("projekt") || 
         k.toLowerCase().includes("project") ||
-        k.toLowerCase().includes("proj")
+        k.toLowerCase().includes("proj") ||
+        k.trim().toLowerCase() === "a"
       );
       const productKey = keys.find(k => 
         k.toLowerCase().includes("gamin") || 
         k.toLowerCase().includes("product") ||
-        k.toLowerCase().includes("prod")
+        k.toLowerCase().includes("prod") ||
+        k.trim().toLowerCase() === "b"
       );
       const errorKey = keys.find(k => 
         k.toLowerCase().includes("klaid") || 
         k.toLowerCase().includes("error") ||
         k.toLowerCase().includes("apra") ||
-        k.toLowerCase().includes("description")
+        k.toLowerCase().includes("description") ||
+        k.toLowerCase().includes("problem") ||
+        k.trim().toLowerCase() === "c"
       );
 
       if (!errorKey) {
