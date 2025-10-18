@@ -205,11 +205,13 @@ export const exportProject = api(
 
           for (const photo of photos) {
             try {
-              const fileName = photo.photoUrl.split('/').pop() || photo.fileName;
+              const fileName = photo.photoUrl.split('/').pop() || 'photo.jpg';
               const imageData = await componentPhotos.download(fileName);
+              const ext = (fileName.split('.').pop() || 'jpg').toLowerCase();
+              const extension = ext === 'jpg' ? 'jpeg' : (ext === 'png' || ext === 'gif' ? ext : 'jpeg') as 'jpeg' | 'png' | 'gif';
               const imageId = workbook.addImage({
-                buffer: imageData,
-                extension: fileName.split('.').pop() || 'jpg',
+                buffer: Buffer.from(imageData).buffer,
+                extension,
               });
 
               sheet.addImage(imageId, {
@@ -231,7 +233,7 @@ export const exportProject = api(
     }
 
     const buffer = await workbook.xlsx.writeBuffer();
-    const base64 = buffer.toString('base64');
+    const base64 = Buffer.from(buffer).toString('base64');
 
     return {
       fileData: base64,

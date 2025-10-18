@@ -50,9 +50,8 @@ export const previewExcel = api(
       if (!req.fileData) throw new Error("Excel file is empty or not found");
 
       const buffer = Buffer.from(req.fileData, "base64");
-      const data = new Uint8Array(buffer);
       const workbook = new ExcelJS.Workbook();
-      await workbook.xlsx.load(data);
+      await workbook.xlsx.load(buffer.buffer);
 
       const sheet = await findValidSheet(workbook);
       warnings.push(`Using sheet: "${sheet.name}"`);

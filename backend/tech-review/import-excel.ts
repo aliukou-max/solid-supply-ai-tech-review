@@ -55,9 +55,8 @@ export const importExcel = api(
       if (!req.fileData) throw new Error("Excel failas tuščias arba nerastas");
 
       const buffer = Buffer.from(req.fileData, "base64");
-      const data = new Uint8Array(buffer);
       const workbook = new ExcelJS.Workbook();
-      await workbook.xlsx.load(data);
+      await workbook.xlsx.load(buffer.buffer);
 
       const sheet = await findValidSheet(workbook);
       console.log(`📘 Naudojamas lapas: ${sheet.name}`);
