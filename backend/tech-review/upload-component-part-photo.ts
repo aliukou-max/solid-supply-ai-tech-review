@@ -1,5 +1,6 @@
 import { api } from "encore.dev/api";
 import { Bucket } from "encore.dev/storage/objects";
+import db from "../db";
 
 const componentPartPhotos = new Bucket("component-part-photos", {
   public: true,
@@ -29,6 +30,19 @@ export const uploadComponentPartPhoto = api(
     });
     
     const url = componentPartPhotos.publicUrl(objectName);
+    
+    const maxOrder = await db.queryRow<{ maxOrder: number | null }>`
+      SELECT MAX(display_order) as "maxOrder"
+      FROM component_part_photos
+      WHERE component_part_id = ${req.partId}
+    `;
+    
+    const displayOrder = (maxOrder?.maxOrder ?? -1) + 1;
+    
+    await db.exec`
+      INSERT INTO component_part_photos (component_part_id, photo_url, display_order, created_at)
+      VALUES (${req.partId}, ${url}, ${displayOrder}, NOW())
+    `;
     
     return { url };
   }

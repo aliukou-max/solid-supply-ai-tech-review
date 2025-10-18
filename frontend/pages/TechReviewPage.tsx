@@ -1,6 +1,6 @@
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, FileText, Lightbulb, Upload, X } from "lucide-react";
+import { ArrowLeft, FileText, Lightbulb, Upload, X, Edit2, Trash2, Save } from "lucide-react";
 import backend from "~backend/client";
 import { MainLayout } from "@/components/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,8 @@ export function TechReviewPage() {
   const { productId } = useParams<{ productId: string }>();
   const { toast } = useToast();
   const [uploadingPhoto, setUploadingPhoto] = useState<number | null>(null);
-  const [componentPhotos, setComponentPhotos] = useState<Record<number, string[]>>({});
+  const [editingPart, setEditingPart] = useState<number | null>(null);
+  const [editData, setEditData] = useState<Record<number, any>>({});
 
   const { data: product, isLoading: productLoading } = useQuery({
     queryKey: ["product", productId],
@@ -68,7 +69,6 @@ export function TechReviewPage() {
   const handlePhotoUpload = async (componentPartId: number, files: FileList) => {
     try {
       setUploadingPhoto(componentPartId);
-      const uploadedUrls: string[] = [];
 
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
@@ -78,13 +78,12 @@ export function TechReviewPage() {
           reader.onload = async () => {
             try {
               const base64 = (reader.result as string).split(',')[1];
-              const result = await backend.techReview.uploadComponentPartPhoto({
+              await backend.techReview.uploadComponentPartPhoto({
                 partId: componentPartId,
                 filename: file.name,
                 contentType: file.type,
                 fileData: base64,
               });
-              uploadedUrls.push(result.url);
               resolve();
             } catch (error) {
               reject(error);
@@ -94,11 +93,6 @@ export function TechReviewPage() {
           reader.readAsDataURL(file);
         });
       }
-
-      setComponentPhotos(prev => ({
-        ...prev,
-        [componentPartId]: [...(prev[componentPartId] || []), ...uploadedUrls]
-      }));
 
       toast({ title: `${files.length} nuotrauka(-os) įkelta(-os)` });
       refetchParts();
@@ -110,25 +104,77 @@ export function TechReviewPage() {
     }
   };
 
-  const handleRemovePhoto = (componentPartId: number, photoUrl: string) => {
-    setComponentPhotos(prev => ({
-      ...prev,
-      [componentPartId]: (prev[componentPartId] || []).filter(url => url !== photoUrl)
-    }));
+  const handleRemovePhoto = async (componentPartId: number, photoUrl: string) => {
+    try {
+      await backend.techReview.deleteComponentPartPhoto({
+        partId: componentPartId,
+        photoUrl: photoUrl,
+      });
+      toast({ title: "Nuotrauka ištrinta" });
+      refetchParts();
+    } catch (error) {
+      console.error(error);
+      toast({ title: "Klaida trinant nuotrauką", variant: "destructive" });
+    }
   };
 
-  const handleUpdatePart = async (componentPartId: number, updates: any) => {
+  const handleSavePart = async (componentPartId: number) => {
     try {
+      const updates = editData[componentPartId] || {};
       await backend.techReview.updateComponentPart({
         id: componentPartId,
         ...updates,
       });
       toast({ title: "Išsaugota" });
+      setEditingPart(null);
+      setEditData(prev => ({ ...prev, [componentPartId]: {} }));
       refetchParts();
     } catch (error) {
       console.error(error);
       toast({ title: "Klaida išsaugant", variant: "destructive" });
     }
+  };
+
+  const handleDeletePart = async (componentPartId: number) => {
+    if (!confirm("Ar tikrai norite ištrinti šį įrašą?")) return;
+    try {
+      await backend.techReview.updateComponentPart({
+        id: componentPartId,
+        hasDone: false,
+        hasNode: false,
+        hadErrors: false,
+        material: null,
+        finish: null,
+        drawingCode: null,
+        selectedNodeId: null,
+        technologicalDescription: null,
+        assemblyTechnology: null,
+        notes: null,
+        linkedErrors: [],
+      });
+      toast({ title: "Ištrinta" });
+      setEditingPart(null);
+      setEditData(prev => ({ ...prev, [componentPartId]: {} }));
+      refetchParts();
+    } catch (error) {
+      console.error(error);
+      toast({ title: "Klaida ištrinant", variant: "destructive" });
+    }
+  };
+
+  const updateEditData = (componentPartId: number, field: string, value: any) => {
+    setEditData(prev => ({
+      ...prev,
+      [componentPartId]: {
+        ...(prev[componentPartId] || {}),
+        [field]: value
+      }
+    }));
+  };
+
+  const getFieldValue = (componentPart: any, field: string) => {
+    const editValue = editData[componentPart.id]?.[field];
+    return editValue !== undefined ? editValue : componentPart[field];
   };
 
   return (
@@ -217,37 +263,76 @@ export function TechReviewPage() {
                           <CardTitle className="flex items-center justify-between">
                             <span>{componentPart.partName}</span>
                             <div className="flex gap-2">
-                              <label className="cursor-pointer">
-                                <Input
-                                  type="file"
-                                  accept="image/*"
-                                  multiple
-                                  className="hidden"
-                                  onChange={(e) => {
-                                    const files = e.target.files;
-                                    if (files && files.length > 0) handlePhotoUpload(componentPart.id, files);
-                                  }}
-                                  disabled={uploadingPhoto === componentPart.id}
-                                />
-                                <Button 
-                                  variant="outline" 
-                                  size="sm" 
-                                  disabled={uploadingPhoto === componentPart.id} 
-                                  asChild
-                                >
-                                  <span>
-                                    <Upload className="h-4 w-4 mr-2" />
-                                    {uploadingPhoto === componentPart.id ? "Keliama..." : "Įkelti nuotrauką"}
-                                  </span>
-                                </Button>
-                              </label>
+                              {editingPart === componentPart.id ? (
+                                <>
+                                  <Button 
+                                    variant="default" 
+                                    size="sm"
+                                    onClick={() => handleSavePart(componentPart.id)}
+                                  >
+                                    <Save className="h-4 w-4 mr-2" />
+                                    Išsaugoti
+                                  </Button>
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => {
+                                      setEditingPart(null);
+                                      setEditData(prev => ({ ...prev, [componentPart.id]: {} }));
+                                    }}
+                                  >
+                                    Atšaukti
+                                  </Button>
+                                </>
+                              ) : (
+                                <>
+                                  <label className="cursor-pointer">
+                                    <Input
+                                      type="file"
+                                      accept="image/*"
+                                      multiple
+                                      className="hidden"
+                                      onChange={(e) => {
+                                        const files = e.target.files;
+                                        if (files && files.length > 0) handlePhotoUpload(componentPart.id, files);
+                                      }}
+                                      disabled={uploadingPhoto === componentPart.id}
+                                    />
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm" 
+                                      disabled={uploadingPhoto === componentPart.id} 
+                                      asChild
+                                    >
+                                      <span>
+                                        <Upload className="h-4 w-4 mr-2" />
+                                        {uploadingPhoto === componentPart.id ? "Keliama..." : "Įkelti nuotrauką"}
+                                      </span>
+                                    </Button>
+                                  </label>
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => setEditingPart(componentPart.id)}
+                                  >
+                                    <Edit2 className="h-4 w-4" />
+                                  </Button>
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => handleDeletePart(componentPart.id)}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </>
+                              )}
                             </div>
                           </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                          {(componentPhotos[componentPart.id]?.length > 0 || componentPart.photoUrl) && (
+                          {componentPart.photos && componentPart.photos.length > 0 && (
                             <div className="grid grid-cols-3 gap-2">
-                              {componentPhotos[componentPart.id]?.map((photoUrl, idx) => (
+                              {componentPart.photos.map((photoUrl, idx) => (
                                 <div key={idx} className="relative h-32 rounded-lg overflow-hidden bg-muted group">
                                   <img src={photoUrl} alt={`${componentPart.partName} ${idx + 1}`} className="w-full h-full object-cover" />
                                   <Button
@@ -260,11 +345,6 @@ export function TechReviewPage() {
                                   </Button>
                                 </div>
                               ))}
-                              {componentPart.photoUrl && !componentPhotos[componentPart.id]?.includes(componentPart.photoUrl) && (
-                                <div className="relative h-32 rounded-lg overflow-hidden bg-muted">
-                                  <img src={componentPart.photoUrl} alt={componentPart.partName} className="w-full h-full object-cover" />
-                                </div>
-                              )}
                             </div>
                           )}
 
@@ -273,8 +353,9 @@ export function TechReviewPage() {
                               <Label htmlFor={`material-${componentPart.id}`}>Medžiaga</Label>
                               <Input
                                 id={`material-${componentPart.id}`}
-                                defaultValue={componentPart.material || ''}
-                                onBlur={(e) => handleUpdatePart(componentPart.id, { material: e.target.value })}
+                                value={getFieldValue(componentPart, 'material') || ''}
+                                onChange={(e) => updateEditData(componentPart.id, 'material', e.target.value)}
+                                disabled={editingPart !== componentPart.id}
                                 placeholder="Pvz.: MDF, Fanera..."
                               />
                             </div>
@@ -282,8 +363,9 @@ export function TechReviewPage() {
                               <Label htmlFor={`finish-${componentPart.id}`}>Apdaila</Label>
                               <Input
                                 id={`finish-${componentPart.id}`}
-                                defaultValue={componentPart.finish || ''}
-                                onBlur={(e) => handleUpdatePart(componentPart.id, { finish: e.target.value })}
+                                value={getFieldValue(componentPart, 'finish') || ''}
+                                onChange={(e) => updateEditData(componentPart.id, 'finish', e.target.value)}
+                                disabled={editingPart !== componentPart.id}
                                 placeholder="Pvz.: Dažyta, Laminuota..."
                               />
                             </div>
@@ -294,16 +376,18 @@ export function TechReviewPage() {
                               <Label htmlFor={`drawing-${componentPart.id}`}>Brėžinio kodas</Label>
                               <Input
                                 id={`drawing-${componentPart.id}`}
-                                defaultValue={componentPart.drawingCode || ''}
-                                onBlur={(e) => handleUpdatePart(componentPart.id, { drawingCode: e.target.value })}
+                                value={getFieldValue(componentPart, 'drawingCode') || ''}
+                                onChange={(e) => updateEditData(componentPart.id, 'drawingCode', e.target.value)}
+                                disabled={editingPart !== componentPart.id}
                                 placeholder="Brėžinio kodas"
                               />
                             </div>
                             <div className="space-y-2">
                               <Label htmlFor={`node-${componentPart.id}`}>Brėžinio mazgas</Label>
                               <Select
-                                value={componentPart.selectedNodeId || 'none'}
-                                onValueChange={(value) => handleUpdatePart(componentPart.id, { selectedNodeId: value === 'none' ? null : value })}
+                                value={getFieldValue(componentPart, 'selectedNodeId') || 'none'}
+                                onValueChange={(value) => updateEditData(componentPart.id, 'selectedNodeId', value === 'none' ? null : value)}
+                                disabled={editingPart !== componentPart.id}
                               >
                                 <SelectTrigger id={`node-${componentPart.id}`}>
                                   <SelectValue placeholder="Pasirinkite mazgą..." />
@@ -326,8 +410,9 @@ export function TechReviewPage() {
                             <Label htmlFor={`tech-desc-${componentPart.id}`}>Technologinis aprašymas</Label>
                             <Textarea
                               id={`tech-desc-${componentPart.id}`}
-                              defaultValue={componentPart.technologicalDescription || ''}
-                              onBlur={(e) => handleUpdatePart(componentPart.id, { technologicalDescription: e.target.value })}
+                              value={getFieldValue(componentPart, 'technologicalDescription') || ''}
+                              onChange={(e) => updateEditData(componentPart.id, 'technologicalDescription', e.target.value)}
+                              disabled={editingPart !== componentPart.id}
                               placeholder="Technologinis aprašymas..."
                               rows={3}
                             />
@@ -337,8 +422,9 @@ export function TechReviewPage() {
                             <Label htmlFor={`assembly-${componentPart.id}`}>Surinkimo technologija</Label>
                             <Textarea
                               id={`assembly-${componentPart.id}`}
-                              defaultValue={componentPart.assemblyTechnology || ''}
-                              onBlur={(e) => handleUpdatePart(componentPart.id, { assemblyTechnology: e.target.value })}
+                              value={getFieldValue(componentPart, 'assemblyTechnology') || ''}
+                              onChange={(e) => updateEditData(componentPart.id, 'assemblyTechnology', e.target.value)}
+                              disabled={editingPart !== componentPart.id}
                               placeholder="Surinkimo technologija..."
                               rows={3}
                             />
@@ -348,8 +434,9 @@ export function TechReviewPage() {
                             <Label htmlFor={`notes-${componentPart.id}`}>Pastabos</Label>
                             <Textarea
                               id={`notes-${componentPart.id}`}
-                              defaultValue={componentPart.notes || ''}
-                              onBlur={(e) => handleUpdatePart(componentPart.id, { notes: e.target.value })}
+                              value={getFieldValue(componentPart, 'notes') || ''}
+                              onChange={(e) => updateEditData(componentPart.id, 'notes', e.target.value)}
+                              disabled={editingPart !== componentPart.id}
                               placeholder="Pastabos..."
                               rows={2}
                             />
@@ -359,41 +446,43 @@ export function TechReviewPage() {
                             <div className="flex items-center space-x-2">
                               <Checkbox
                                 id={`done-${componentPart.id}`}
-                                checked={componentPart.hasDone}
-                                onCheckedChange={(checked) => handleUpdatePart(componentPart.id, { hasDone: checked })}
+                                checked={getFieldValue(componentPart, 'hasDone')}
+                                onCheckedChange={(checked) => updateEditData(componentPart.id, 'hasDone', checked)}
+                                disabled={editingPart !== componentPart.id}
                               />
                               <Label htmlFor={`done-${componentPart.id}`}>Atlikta</Label>
                             </div>
                             <div className="flex items-center space-x-2">
                               <Checkbox
                                 id={`has-node-${componentPart.id}`}
-                                checked={componentPart.hasNode}
-                                onCheckedChange={(checked) => handleUpdatePart(componentPart.id, { hasNode: checked })}
+                                checked={getFieldValue(componentPart, 'hasNode')}
+                                onCheckedChange={(checked) => updateEditData(componentPart.id, 'hasNode', checked)}
+                                disabled={editingPart !== componentPart.id}
                               />
                               <Label htmlFor={`has-node-${componentPart.id}`}>Turi mazgą</Label>
                             </div>
                             <div className="flex items-center space-x-2">
                               <Checkbox
                                 id={`errors-${componentPart.id}`}
-                                checked={componentPart.hadErrors}
-                                onCheckedChange={(checked) => handleUpdatePart(componentPart.id, { hadErrors: checked })}
+                                checked={getFieldValue(componentPart, 'hadErrors')}
+                                onCheckedChange={(checked) => updateEditData(componentPart.id, 'hadErrors', checked)}
+                                disabled={editingPart !== componentPart.id}
                               />
                               <Label htmlFor={`errors-${componentPart.id}`}>Turėjo klaidų</Label>
                             </div>
                           </div>
 
-                          {componentPart.hadErrors && (
+                          {getFieldValue(componentPart, 'hadErrors') && (
                             <div className="space-y-2">
                               <Label>Susijusios klaidos</Label>
                               <Select
                                 value="none"
                                 onValueChange={(value) => {
                                   if (value === 'none') return;
-                                  const currentErrors = componentPart.linkedErrors || [];
-                                  handleUpdatePart(componentPart.id, { 
-                                    linkedErrors: [...currentErrors, parseInt(value)] 
-                                  });
+                                  const currentErrors = getFieldValue(componentPart, 'linkedErrors') || [];
+                                  updateEditData(componentPart.id, 'linkedErrors', [...currentErrors, parseInt(value)]);
                                 }}
+                                disabled={editingPart !== componentPart.id}
                               >
                                 <SelectTrigger>
                                   <SelectValue placeholder="Pridėti klaidą..." />
@@ -415,9 +504,9 @@ export function TechReviewPage() {
                                     ))}
                                 </SelectContent>
                               </Select>
-                              {(componentPart.linkedErrors && componentPart.linkedErrors.length > 0) && (
+                              {(getFieldValue(componentPart, 'linkedErrors') && getFieldValue(componentPart, 'linkedErrors').length > 0) && (
                                 <div className="flex flex-wrap gap-2 mt-2">
-                                  {componentPart.linkedErrors.map(errorId => {
+                                  {getFieldValue(componentPart, 'linkedErrors').map((errorId: number) => {
                                     const error = allErrorsData?.errors.find(e => e.id === errorId);
                                     return error ? (
                                       <Badge key={errorId} variant="secondary" className="gap-1">
@@ -425,9 +514,9 @@ export function TechReviewPage() {
                                         <X 
                                           className="h-3 w-3 cursor-pointer" 
                                           onClick={() => {
-                                            handleUpdatePart(componentPart.id, {
-                                              linkedErrors: (componentPart.linkedErrors || []).filter(id => id !== errorId)
-                                            });
+                                            if (editingPart !== componentPart.id) return;
+                                            const currentErrors = getFieldValue(componentPart, 'linkedErrors') || [];
+                                            updateEditData(componentPart.id, 'linkedErrors', currentErrors.filter((id: number) => id !== errorId));
                                           }}
                                         />
                                       </Badge>

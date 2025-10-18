@@ -46,6 +46,14 @@ export const listComponentParts = api(
         WHERE component_part_id = ${part.id}
       `;
       part.linkedErrors = errorLinks.map(e => e.productionErrorId);
+
+      const photos = await db.queryAll<{ photoUrl: string }>`
+        SELECT photo_url AS "photoUrl"
+        FROM component_part_photos
+        WHERE component_part_id = ${part.id}
+        ORDER BY display_order
+      `;
+      part.photos = photos.map(p => p.photoUrl);
     }
     
     return { parts };

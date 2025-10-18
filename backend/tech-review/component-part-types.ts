@@ -4,6 +4,7 @@ export interface ComponentPart {
   productTypePartId: string;
   partName: string;
   photoUrl?: string;
+  photos?: string[];
   hasDone: boolean;
   hasNode: boolean;
   hadErrors: boolean;
