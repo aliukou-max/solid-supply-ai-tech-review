@@ -8,7 +8,6 @@ interface ExcelRow {
   ssCode: string;
   productName: string;
   description: string;
-  projectCode: string;
 }
 
 interface ParsedComponent {
@@ -20,13 +19,14 @@ interface ParsedComponent {
 }
 
 interface ImportExcelRequest {
-  projectId: string;
   fileData: string;
   filename: string;
 }
 
 interface ImportExcelResponse {
   success: boolean;
+  projectId: string;
+  projectName: string;
   productsCreated: number;
   warnings: string[];
 }
@@ -43,6 +43,29 @@ export const importExcel = api(
       const workbook = XLSX.read(buffer, { type: "buffer" });
       const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
 
+      const projectCodeCell = firstSheet["C8"];
+      const projectNameCell = firstSheet["C9"];
+      const clientNameCell = firstSheet["C10"];
+
+      if (!projectCodeCell || !projectCodeCell.v) {
+        throw new Error("Projekto kodas nerastas langelyje C8");
+      }
+
+      const projectCode = String(projectCodeCell.v).trim();
+      const projectName = projectNameCell?.v ? String(projectNameCell.v).trim() : projectCode;
+      const clientName = clientNameCell?.v ? String(clientNameCell.v).trim() : "Unknown Client";
+
+      const existingProject = await db.queryRow`
+        SELECT id FROM projects WHERE id = ${projectCode}
+      `;
+
+      if (!existingProject) {
+        await db.exec`
+          INSERT INTO projects (id, name, client, status, project_type, created_at, updated_at)
+          VALUES (${projectCode}, ${projectName}, ${clientName}, 'active', 'new_development', NOW(), NOW())
+        `;
+      }
+
       const rows: ExcelRow[] = [];
       let rowIndex = 26;
 
@@ -52,14 +75,12 @@ export const importExcel = api(
 
         const productNameCell = firstSheet[`C${rowIndex}`];
         const descriptionCell = firstSheet[`AC${rowIndex}`];
-        const projectCodeCell = firstSheet[`C8`];
 
         if (productNameCell?.v && descriptionCell?.v) {
           rows.push({
-            ssCode: String(ssCodeCell.v),
-            productName: String(productNameCell.v),
-            description: String(descriptionCell.v),
-            projectCode: projectCodeCell?.v ? String(projectCodeCell.v) : req.projectId,
+            ssCode: String(ssCodeCell.v).trim(),
+            productName: String(productNameCell.v).trim(),
+            description: String(descriptionCell.v).trim(),
           });
         }
 
@@ -69,7 +90,7 @@ export const importExcel = api(
 
       for (const row of rows) {
         try {
-          const productId = `${row.projectCode}-${row.ssCode}`;
+          const productId = `${projectCode}-${row.ssCode}`;
 
           const existingProduct = await db.queryRow`
             SELECT id FROM products WHERE id = ${productId}
@@ -84,7 +105,7 @@ export const importExcel = api(
 
           await db.exec`
             INSERT INTO products (id, project_id, ss_code, name, type, has_drawing, created_at, updated_at)
-            VALUES (${productId}, ${req.projectId}, ${row.ssCode}, ${row.productName}, ${productType}, false, NOW(), NOW())
+            VALUES (${productId}, ${projectCode}, ${row.ssCode}, ${row.productName}, ${productType}, false, NOW(), NOW())
           `;
 
           const techReview = await db.queryRow<{ id: number }>`
@@ -133,6 +154,8 @@ export const importExcel = api(
 
       return {
         success: true,
+        projectId: projectCode,
+        projectName,
         productsCreated,
         warnings,
       };

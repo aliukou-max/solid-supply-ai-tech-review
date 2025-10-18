@@ -1,7 +1,7 @@
 import React from "react";
 
 const useState = (React as any).useState;
-import { Upload, FileSpreadsheet, AlertCircle } from "lucide-react";
+import { Upload, FileSpreadsheet, AlertCircle, CheckCircle2 } from "lucide-react";
 import backend from "~backend/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -13,14 +13,14 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 interface ImportExcelDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  projectId: string;
   onSuccess: () => void;
 }
 
-export function ImportExcelDialog({ open, onOpenChange, projectId, onSuccess }: ImportExcelDialogProps) {
+export function ImportExcelDialog({ open, onOpenChange, onSuccess }: ImportExcelDialogProps) {
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [warnings, setWarnings] = useState<string[]>([]);
+  const [importResult, setImportResult] = useState<{ projectId: string; projectName: string; productsCreated: number } | null>(null);
   const { toast } = useToast();
 
   const handleFileChange = (e: any) => {
@@ -30,6 +30,7 @@ export function ImportExcelDialog({ open, onOpenChange, projectId, onSuccess }: 
       if (fileExtension === 'xlsx' || fileExtension === 'xls') {
         setFile(selectedFile);
         setWarnings([]);
+        setImportResult(null);
       } else {
         toast({
           title: "Klaida",
@@ -52,6 +53,7 @@ export function ImportExcelDialog({ open, onOpenChange, projectId, onSuccess }: 
 
     setIsUploading(true);
     setWarnings([]);
+    setImportResult(null);
 
     try {
       const reader = new FileReader();
@@ -62,9 +64,14 @@ export function ImportExcelDialog({ open, onOpenChange, projectId, onSuccess }: 
             const base64 = (reader.result as string).split(',')[1];
             
             const result = await backend.techReview.importExcel({
-              projectId,
               fileData: base64,
               filename: file.name,
+            });
+
+            setImportResult({
+              projectId: result.projectId,
+              projectName: result.projectName,
+              productsCreated: result.productsCreated,
             });
 
             if (result.warnings && result.warnings.length > 0) {
@@ -73,12 +80,15 @@ export function ImportExcelDialog({ open, onOpenChange, projectId, onSuccess }: 
 
             toast({
               title: "Importuota sėkmingai",
-              description: `Sukurta ${result.productsCreated} produktų${result.warnings.length > 0 ? ` su ${result.warnings.length} perspėjimais` : ""}`,
+              description: `Projektas "${result.projectName}" sukurtas su ${result.productsCreated} produktais`,
             });
 
             if (result.warnings.length === 0) {
-              setFile(null);
-              onSuccess();
+              setTimeout(() => {
+                setFile(null);
+                setImportResult(null);
+                onSuccess();
+              }, 2000);
             }
             
             resolve();
@@ -93,11 +103,21 @@ export function ImportExcelDialog({ open, onOpenChange, projectId, onSuccess }: 
       console.error("Failed to import Excel:", error);
       toast({
         title: "Klaida",
-        description: "Nepavyko importuoti Excel failo",
+        description: `Nepavyko importuoti Excel failo: ${error}`,
         variant: "destructive",
       });
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const handleClose = () => {
+    setWarnings([]);
+    setFile(null);
+    setImportResult(null);
+    onOpenChange(false);
+    if (importResult) {
+      onSuccess();
     }
   };
 
@@ -120,6 +140,7 @@ export function ImportExcelDialog({ open, onOpenChange, projectId, onSuccess }: 
               accept=".xlsx,.xls"
               onChange={handleFileChange}
               className="cursor-pointer"
+              disabled={isUploading || !!importResult}
             />
             {file && (
               <p className="text-sm text-muted-foreground">
@@ -129,24 +150,47 @@ export function ImportExcelDialog({ open, onOpenChange, projectId, onSuccess }: 
           </div>
 
           <div className="bg-muted/50 rounded-md p-3 text-sm space-y-2">
-            <p className="font-medium">Excel failo struktūra:</p>
+            <p className="font-medium">Sistema automatiškai nuskaitys:</p>
             <ul className="list-disc list-inside text-muted-foreground space-y-1">
-              <li><strong>B stulpelis:</strong> SS kodas (nuo B26)</li>
-              <li><strong>C stulpelis:</strong> Gaminio pavadinimas</li>
-              <li><strong>AC stulpelis:</strong> Detalus aprašymas</li>
-              <li><strong>C8 langelis:</strong> Projekto kodas</li>
+              <li><strong>C8:</strong> Projekto kodas</li>
+              <li><strong>C9:</strong> Projekto pavadinimas</li>
+              <li><strong>C10:</strong> Kliento pavadinimas</li>
+              <li><strong>B26+:</strong> SS kodai</li>
+              <li><strong>C26+:</strong> Gaminių pavadinimai</li>
+              <li><strong>AC26+:</strong> Aprašymai (AI išanalizuos į komponentus)</li>
             </ul>
             <p className="text-xs text-muted-foreground pt-2">
-              Sistema automatiškai nuskaitys visas eilutes nuo B26 iki tuščios eilutės ir AI išanalizuos aprašymus į komponentus su medžiagomis ir apdaila.
+              ✨ Sistema automatiškai sukurs projektą, produktus ir tech review korteles su AI išanalizuotais komponentais
             </p>
           </div>
+
+          {importResult && (
+            <Alert className="border-green-500 bg-green-50 dark:bg-green-950/20">
+              <CheckCircle2 className="h-4 w-4 text-green-600" />
+              <AlertDescription>
+                <div className="space-y-1">
+                  <p className="font-medium text-sm text-green-900 dark:text-green-100">
+                    Sėkmingai importuota!
+                  </p>
+                  <p className="text-xs text-green-800 dark:text-green-200">
+                    Projektas: <strong>{importResult.projectName}</strong> ({importResult.projectId})
+                  </p>
+                  <p className="text-xs text-green-800 dark:text-green-200">
+                    Sukurta produktų: <strong>{importResult.productsCreated}</strong>
+                  </p>
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
 
           {warnings.length > 0 && (
             <Alert variant="default" className="border-amber-500 bg-amber-50 dark:bg-amber-950/20">
               <AlertCircle className="h-4 w-4 text-amber-600" />
               <AlertDescription>
                 <div className="space-y-1">
-                  <p className="font-medium text-sm mb-2">Perspėjimai ({warnings.length}):</p>
+                  <p className="font-medium text-sm mb-2 text-amber-900 dark:text-amber-100">
+                    Perspėjimai ({warnings.length}):
+                  </p>
                   <div className="max-h-40 overflow-y-auto space-y-1">
                     {warnings.map((warning, idx) => (
                       <p key={idx} className="text-xs text-amber-900 dark:text-amber-100">
@@ -163,21 +207,19 @@ export function ImportExcelDialog({ open, onOpenChange, projectId, onSuccess }: 
             <Button 
               type="button" 
               variant="outline" 
-              onClick={() => {
-                setWarnings([]);
-                setFile(null);
-                onOpenChange(false);
-              }}
+              onClick={handleClose}
             >
-              {warnings.length > 0 ? "Uždaryti" : "Atšaukti"}
+              {importResult || warnings.length > 0 ? "Uždaryti" : "Atšaukti"}
             </Button>
-            <Button 
-              onClick={handleUpload} 
-              disabled={!file || isUploading}
-            >
-              <Upload className="h-4 w-4 mr-2" />
-              {isUploading ? "Importuojama..." : "Importuoti"}
-            </Button>
+            {!importResult && (
+              <Button 
+                onClick={handleUpload} 
+                disabled={!file || isUploading}
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                {isUploading ? "Importuojama..." : "Importuoti"}
+              </Button>
+            )}
           </div>
         </div>
       </DialogContent>
