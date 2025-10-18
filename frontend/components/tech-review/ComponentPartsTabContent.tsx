@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Upload, X, Edit2, Trash2, Save, Sparkles } from "lucide-react";
+import { Upload, X, Edit2, Trash2, Save, Sparkles, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -36,6 +36,7 @@ export function ComponentPartsTabContent({
   const [editData, setEditData] = useState<Record<number, any>>({});
   const [nodeRecommendations, setNodeRecommendations] = useState<Record<number, any[]>>({});
   const [loadingRecommendations, setLoadingRecommendations] = useState<number | null>(null);
+  const [expandedNodeView, setExpandedNodeView] = useState<number | null>(null);
 
   const updateEditData = (componentPartId: number, field: string, value: any) => {
     setEditData(prev => ({
@@ -210,62 +211,128 @@ export function ComponentPartsTabContent({
                   </Badge>
                 ) : null}
               </div>
-              <Select
-                value={getFieldValue(componentPart, 'selectedNodeId') || "__none__"}
-                onValueChange={(value) => {
-                  if (value === "search") {
-                    window.open(`/nodes/by-part?name=${encodeURIComponent(componentPart.partName)}`, '_blank');
-                    return;
-                  }
-                  if (value === "__clear__") {
-                    updateEditData(componentPart.id, 'selectedNodeId', null);
-                    updateEditData(componentPart.id, 'hasNode', false);
-                    return;
-                  }
-                  if (value === "__none__") return;
-                  updateEditData(componentPart.id, 'selectedNodeId', value);
-                  updateEditData(componentPart.id, 'hasNode', true);
-                  handleSave(componentPart.id);
-                }}
-              >
-                <SelectTrigger className="h-8 text-xs">
-                  <SelectValue placeholder={loadingRecommendations === componentPart.id ? "Ieškoma..." : "Pasirinkite mazgą..."}>
-                    {getFieldValue(componentPart, 'selectedNodeId') && (
-                      <span>
-                        {nodeRecommendations[componentPart.id]?.find(r => r.node.id === getFieldValue(componentPart, 'selectedNodeId'))?.node.partName || 
-                         allNodesData?.nodes.find(n => n.id === getFieldValue(componentPart, 'selectedNodeId'))?.partName ||
-                         getFieldValue(componentPart, 'selectedNodeId')}
-                      </span>
-                    )}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {getFieldValue(componentPart, 'selectedNodeId') && (
-                    <SelectItem value="__clear__">-- Išvalyti --</SelectItem>
-                  )}
-                  {nodeRecommendations[componentPart.id]?.map((rec) => (
-                    <SelectItem key={rec.node.id} value={rec.node.id} className="py-2">
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="text-xs bg-green-500/10 text-green-700 border-green-500/20">
-                          {Math.round(rec.matchScore)}
-                        </Badge>
-                        <div className="flex flex-col">
-                          <span className="font-medium text-sm">{rec.node.partName}</span>
-                          <span className="text-xs text-muted-foreground">{rec.node.brandName} • {rec.reason}</span>
-                        </div>
-                      </div>
-                    </SelectItem>
-                  ))}
-                  {(!nodeRecommendations[componentPart.id] || nodeRecommendations[componentPart.id]?.length === 0) && (
-                    <SelectItem value="__none__" disabled>
-                      {loadingRecommendations === componentPart.id ? "Ieškoma pasiūlymų..." : "Nerasta pasiūlymų"}
-                    </SelectItem>
-                  )}
-                  <SelectItem value="search" className="text-blue-600 font-medium">
-                    🔍 Ieškoti daugiau mazgų bibliotekoje →
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <Select
+                    value={getFieldValue(componentPart, 'selectedNodeId') || "__none__"}
+                    onValueChange={(value) => {
+                      if (value === "search") {
+                        setExpandedNodeView(expandedNodeView === componentPart.id ? null : componentPart.id);
+                        return;
+                      }
+                      if (value === "__clear__") {
+                        updateEditData(componentPart.id, 'selectedNodeId', null);
+                        updateEditData(componentPart.id, 'hasNode', false);
+                        handleSave(componentPart.id);
+                        return;
+                      }
+                      if (value === "__none__") return;
+                      updateEditData(componentPart.id, 'selectedNodeId', value);
+                      updateEditData(componentPart.id, 'hasNode', true);
+                      handleSave(componentPart.id);
+                    }}
+                  >
+                    <SelectTrigger className="h-8 text-xs flex-1">
+                      <SelectValue placeholder={loadingRecommendations === componentPart.id ? "Ieškoma..." : "Pasirinkite mazgą..."}>
+                        {getFieldValue(componentPart, 'selectedNodeId') && (
+                          <span>
+                            {nodeRecommendations[componentPart.id]?.find(r => r.node.id === getFieldValue(componentPart, 'selectedNodeId'))?.node.partName || 
+                             allNodesData?.nodes.find(n => n.id === getFieldValue(componentPart, 'selectedNodeId'))?.partName ||
+                             getFieldValue(componentPart, 'selectedNodeId')}
+                          </span>
+                        )}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {getFieldValue(componentPart, 'selectedNodeId') && (
+                        <SelectItem value="__clear__">-- Išvalyti --</SelectItem>
+                      )}
+                      {nodeRecommendations[componentPart.id]?.map((rec) => (
+                        <SelectItem key={rec.node.id} value={rec.node.id} className="py-2">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-xs bg-green-500/10 text-green-700 border-green-500/20">
+                              {Math.round(rec.matchScore)}
+                            </Badge>
+                            <div className="flex flex-col">
+                              <span className="font-medium text-sm">{rec.node.partName}</span>
+                              <span className="text-xs text-muted-foreground">{rec.node.brandName} • {rec.reason}</span>
+                            </div>
+                          </div>
+                        </SelectItem>
+                      ))}
+                      {(!nodeRecommendations[componentPart.id] || nodeRecommendations[componentPart.id]?.length === 0) && (
+                        <SelectItem value="__none__" disabled>
+                          {loadingRecommendations === componentPart.id ? "Ieškoma pasiūlymų..." : "Nerasta pasiūlymų"}
+                        </SelectItem>
+                      )}
+                      <SelectItem value="search" className="text-blue-600 font-medium">
+                        🔍 {expandedNodeView === componentPart.id ? 'Paslėpti' : 'Rodyti'} visus mazgus
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {expandedNodeView === componentPart.id && (
+                  <Card className="border-2 border-blue-200 dark:border-blue-800">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm flex items-center justify-between">
+                        <span>Visi mazgai - {componentPart.partName}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setExpandedNodeView(null)}
+                          className="h-6 px-2"
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2 max-h-96 overflow-y-auto">
+                      {allNodesData?.nodes
+                        ?.filter(node => {
+                          const partName = componentPart.partName?.toLowerCase() || '';
+                          const nodePart = node.partName?.toLowerCase() || '';
+                          return nodePart.includes(partName) || partName.includes(nodePart);
+                        })
+                        .map(node => (
+                          <Button
+                            key={node.id}
+                            variant={getFieldValue(componentPart, 'selectedNodeId') === node.id ? "default" : "outline"}
+                            size="sm"
+                            className="w-full justify-start h-auto py-2 px-3"
+                            onClick={() => {
+                              updateEditData(componentPart.id, 'selectedNodeId', node.id);
+                              updateEditData(componentPart.id, 'hasNode', true);
+                              handleSave(componentPart.id);
+                              setExpandedNodeView(null);
+                            }}
+                          >
+                            <div className="flex flex-col items-start w-full">
+                              <div className="flex items-center gap-2 w-full">
+                                <span className="font-medium text-sm">{node.partName}</span>
+                                {node.pdfUrl && (
+                                  <ExternalLink className="h-3 w-3 ml-auto" />
+                                )}
+                              </div>
+                              <span className="text-xs text-muted-foreground">
+                                {node.brandName} • {node.productName}
+                              </span>
+                            </div>
+                          </Button>
+                        ))}
+                      {allNodesData?.nodes?.filter(node => {
+                        const partName = componentPart.partName?.toLowerCase() || '';
+                        const nodePart = node.partName?.toLowerCase() || '';
+                        return nodePart.includes(partName) || partName.includes(nodePart);
+                      }).length === 0 && (
+                        <p className="text-xs text-muted-foreground text-center py-4">
+                          Nerasta mazgų su pavadinimu "{componentPart.partName}"
+                        </p>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
             </div>
 
             <div className="space-y-1">
