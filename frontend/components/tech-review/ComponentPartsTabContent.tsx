@@ -197,54 +197,57 @@ export function ComponentPartsTabContent({
                 <Label htmlFor={`node-${componentPart.id}`}>Brėžinio mazgas</Label>
                 {editingPart === componentPart.id ? (
                   <>
-                    <Select
-                      value={getFieldValue(componentPart, 'selectedNodeId') || 'none'}
-                      onValueChange={(value) => updateEditData(componentPart.id, 'selectedNodeId', value === 'none' ? null : value)}
-                    >
-                      <SelectTrigger id={`node-${componentPart.id}`}>
-                        <SelectValue placeholder="Pasirinkite mazgą..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">-- Nepasirinkta --</SelectItem>
-                        {allNodesData?.nodes
-                          ?.filter(node => {
-                            const partName = componentPart.partName?.toLowerCase().trim() || '';
-                            const nodePart = node.partName?.toLowerCase().trim() || '';
-                            
-                            return partName === nodePart || 
-                                   nodePart.includes(partName) || 
-                                   partName.includes(nodePart);
-                          })
-                          .map(node => (
-                            <SelectItem key={node.id} value={node.id}>
-                              {node.productCode} - {node.brandName} ({node.partName})
-                            </SelectItem>
-                          ))}
-                        {(!allNodesData?.nodes || allNodesData.nodes.filter(node => {
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      {allNodesData?.nodes
+                        ?.filter(node => {
                           const partName = componentPart.partName?.toLowerCase().trim() || '';
                           const nodePart = node.partName?.toLowerCase().trim() || '';
+                          
                           return partName === nodePart || 
                                  nodePart.includes(partName) || 
                                  partName.includes(nodePart);
-                        }).length === 0) && (
-                          <SelectItem value="none" disabled>Nerasta mazgų "{componentPart.partName}"</SelectItem>
-                        )}
-                      </SelectContent>
-                    </Select>
-                    {getFieldValue(componentPart, 'selectedNodeId') && getFieldValue(componentPart, 'selectedNodeId') !== 'none' && (() => {
-                      const selectedNode = allNodesData?.nodes?.find(n => n.id === getFieldValue(componentPart, 'selectedNodeId'));
-                      return selectedNode ? (
-                        <div className="border rounded-lg p-3 bg-muted/50 space-y-2">
-                          <div className="text-sm font-medium">{selectedNode.productCode} - {selectedNode.brandName}</div>
-                          <div className="text-xs text-muted-foreground">{selectedNode.description}</div>
-                          <iframe
-                            src={`/api/nodes/${selectedNode.id}/pdf`}
-                            className="w-full h-96 border rounded"
-                            title={`PDF: ${selectedNode.productCode}`}
-                          />
+                        })
+                        .map(node => {
+                          const isSelected = getFieldValue(componentPart, 'selectedNodeId') === node.id;
+                          return (
+                            <div
+                              key={node.id}
+                              onClick={() => updateEditData(componentPart.id, 'selectedNodeId', isSelected ? null : node.id)}
+                              className={`cursor-pointer border rounded-lg p-3 transition-all hover:shadow-md ${
+                                isSelected ? 'border-primary bg-primary/5 ring-2 ring-primary' : 'border-border hover:border-primary/50'
+                              }`}
+                            >
+                              <div className="aspect-video bg-muted rounded overflow-hidden mb-2">
+                                <iframe
+                                  src={`/api/nodes/${node.id}/pdf#view=FitH`}
+                                  className="w-full h-full pointer-events-none"
+                                  title={node.productCode}
+                                />
+                              </div>
+                              <div className="text-xs font-medium truncate">{node.productCode}</div>
+                              <div className="text-xs text-muted-foreground truncate">{node.brandName}</div>
+                            </div>
+                          );
+                        })}
+                    </div>
+                    {(!allNodesData?.nodes || allNodesData.nodes.filter(node => {
+                      const partName = componentPart.partName?.toLowerCase().trim() || '';
+                      const nodePart = node.partName?.toLowerCase().trim() || '';
+                      return partName === nodePart || 
+                             nodePart.includes(partName) || 
+                             partName.includes(nodePart);
+                    }).length === 0) && (
+                      <div className="text-sm text-muted-foreground text-center py-8 border rounded-lg bg-muted/50">
+                        Nerasta mazgų detalei "{componentPart.partName}"
+                        <div className="mt-2">
+                          <Button variant="link" asChild>
+                            <a href="/nodes" target="_blank" rel="noopener noreferrer">
+                              Pridėti naują mazgą →
+                            </a>
+                          </Button>
                         </div>
-                      ) : null;
-                    })()}
+                      </div>
+                    )}
                   </>
                 ) : (
                   <div className="space-y-2">
