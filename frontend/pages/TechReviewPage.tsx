@@ -203,12 +203,9 @@ export function TechReviewPage() {
           <div className="w-64 flex-shrink-0">
             <TabsList className="flex flex-col h-auto w-full items-stretch">
               {productTypeParts?.parts.map((part) => {
-                const partCount = componentPartsData?.parts.filter(
-                  cp => cp.productTypePartId === part.id
-                ).length || 0;
                 return (
                   <TabsTrigger key={part.id} value={part.name} className="justify-start">
-                    {part.name} ({partCount})
+                    {part.name}
                   </TabsTrigger>
                 );
               })}

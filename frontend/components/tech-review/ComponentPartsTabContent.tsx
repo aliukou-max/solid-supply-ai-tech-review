@@ -75,22 +75,24 @@ export function ComponentPartsTabContent({
         <Card key={componentPart.id}>
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
-              <span>{componentPart.partName}</span>
-              <div className="flex gap-2">
+              <span className="text-base">{componentPart.partName}</span>
+              <div className="flex gap-1">
                 {editingPart === componentPart.id ? (
                   <>
                     <Button 
                       variant="default" 
                       size="sm"
                       onClick={() => handleSave(componentPart.id)}
+                      className="h-7 px-2 text-xs"
                     >
-                      <Save className="h-4 w-4 mr-2" />
+                      <Save className="h-3 w-3 mr-1" />
                       Išsaugoti
                     </Button>
                     <Button 
                       variant="outline" 
                       size="sm"
                       onClick={() => handleCancel(componentPart.id)}
+                      className="h-7 px-2 text-xs"
                     >
                       Atšaukti
                     </Button>
@@ -113,11 +115,11 @@ export function ComponentPartsTabContent({
                         variant="outline" 
                         size="sm" 
                         disabled={uploadingPhoto === componentPart.id} 
+                        className="h-7 px-2"
                         asChild
                       >
                         <span>
-                          <Upload className="h-4 w-4 mr-2" />
-                          {uploadingPhoto === componentPart.id ? "Keliama..." : "Įkelti nuotrauką"}
+                          <Upload className="h-3 w-3" />
                         </span>
                       </Button>
                     </label>
@@ -125,15 +127,17 @@ export function ComponentPartsTabContent({
                       variant="outline" 
                       size="sm"
                       onClick={() => setEditingPart(componentPart.id)}
+                      className="h-7 px-2"
                     >
-                      <Edit2 className="h-4 w-4" />
+                      <Edit2 className="h-3 w-3" />
                     </Button>
                     <Button 
                       variant="outline" 
                       size="sm"
                       onClick={() => onDeletePart(componentPart.id)}
+                      className="h-7 px-2"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-3 w-3" />
                     </Button>
                   </>
                 )}
