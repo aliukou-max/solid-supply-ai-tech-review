@@ -20,21 +20,38 @@ export const bulkAssignNodes = api(
     path: "/tech-review/bulk-assign-nodes",
   },
   async (req: BulkAssignNodesRequest): Promise<BulkAssignNodesResponse> => {
-    const now = new Date();
-    let updated = 0;
-
-    for (const assignment of req.assignments) {
-      await db.exec`
-        UPDATE component_parts
-        SET 
-          selected_node_id = ${assignment.nodeId},
-          has_node = true,
-          updated_at = ${now}
-        WHERE id = ${assignment.componentPartId}
-      `;
-      updated++;
+    if (req.assignments.length === 0) {
+      return { success: true, updated: 0 };
     }
 
-    return { success: true, updated };
+    const now = new Date();
+
+    await db.exec`
+      BEGIN
+    `;
+
+    try {
+      for (const assignment of req.assignments) {
+        await db.exec`
+          UPDATE component_parts
+          SET 
+            selected_node_id = ${assignment.nodeId},
+            has_node = true,
+            updated_at = ${now}
+          WHERE id = ${assignment.componentPartId}
+        `;
+      }
+
+      await db.exec`
+        COMMIT
+      `;
+
+      return { success: true, updated: req.assignments.length };
+    } catch (error) {
+      await db.exec`
+        ROLLBACK
+      `;
+      throw error;
+    }
   }
 );

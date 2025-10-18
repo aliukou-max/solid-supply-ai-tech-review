@@ -1,6 +1,6 @@
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, FileText, Lightbulb, Sparkles } from "lucide-react";
+import { ArrowLeft, FileText, Lightbulb, Sparkles, Layers } from "lucide-react";
 import backend from "~backend/client";
 import { MainLayout } from "@/components/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import { LessonsTab } from "@/components/tech-review/LessonsTab";
 import { ComponentPartsTabContent } from "@/components/tech-review/ComponentPartsTabContent";
 import { ReanalyzeDialog } from "@/components/tech-review/ReanalyzeDialog";
 import { NodeAssignmentSummary } from "@/components/tech-review/NodeAssignmentSummary";
+import { BatchNodeAssignment } from "@/components/tech-review/BatchNodeAssignment";
 
 export function TechReviewPage() {
   const { productId } = useParams<{ productId: string }>();
@@ -20,6 +21,7 @@ export function TechReviewPage() {
   const [uploadingPhoto, setUploadingPhoto] = useState<number | null>(null);
   const [reanalyzeOpen, setReanalyzeOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("");
+  const [showBatchAssignment, setShowBatchAssignment] = useState(false);
 
   const { data: product, isLoading: productLoading } = useQuery({
     queryKey: ["product", productId],
@@ -207,6 +209,31 @@ export function TechReviewPage() {
         </div>
       ) : (
         <div className="space-y-4">
+          <div className="flex items-center gap-2 mb-4">
+            <Button
+              variant={showBatchAssignment ? "default" : "outline"}
+              onClick={() => setShowBatchAssignment(!showBatchAssignment)}
+            >
+              <Layers className="h-4 w-4 mr-2" />
+              {showBatchAssignment ? "Paprasta priskyrimo vaizdavimas" : "Paketinis mazgų priskyrimas"}
+            </Button>
+            {showBatchAssignment && componentPartsData && (
+              <Badge variant="secondary">
+                {componentPartsData.parts.filter(p => !p.selectedNodeId && !p.hasNode).length} nepriskirtos dalys
+              </Badge>
+            )}
+          </div>
+
+          {showBatchAssignment && componentPartsData && product ? (
+            <BatchNodeAssignment
+              parts={componentPartsData.parts}
+              productType={product.type || ""}
+              onAssignmentComplete={() => {
+                refetchParts();
+                refetch();
+              }}
+            />
+          ) : (
           <Tabs 
             key={productTypeParts?.parts[0]?.name} 
             value={activeTab || productTypeParts?.parts[0]?.name || "errors"}
@@ -251,6 +278,7 @@ export function TechReviewPage() {
             })}
             </div>
           </Tabs>
+          )}
         </div>
       )}
 
