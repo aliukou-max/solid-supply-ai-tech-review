@@ -1,7 +1,7 @@
 export interface ProductionError {
   id: number;
-  projectCode: string;
-  productCode: string;
+  projectCode?: string;
+  productCode?: string;
   partName?: string;
   errorDescription: string;
   isResolved: boolean;

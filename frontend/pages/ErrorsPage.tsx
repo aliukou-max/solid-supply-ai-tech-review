@@ -111,10 +111,10 @@ export function ErrorsPage() {
         k.toLowerCase().includes("description")
       );
 
-      if (!projectKey || !productKey || !errorKey) {
+      if (!errorKey) {
         toast({ 
-          title: "Nerastos reikalingos kolonos", 
-          description: "Excel failas turi turėti: Projekto kodas, Gaminio kodas, Klaidos aprašymas",
+          title: "Nerasta klaidos aprašymo kolona", 
+          description: "Excel failas turi turėti bent: Klaidos aprašymas",
           variant: "destructive" 
         });
         return;
@@ -123,8 +123,8 @@ export function ErrorsPage() {
       const errorsToImport = jsonData
         .filter((row) => row[errorKey] && String(row[errorKey]).trim())
         .map((row) => ({
-          projectCode: row[projectKey] ? String(row[projectKey]).trim() : "",
-          productCode: row[productKey] ? String(row[productKey]).trim() : "",
+          projectCode: projectKey && row[projectKey] ? String(row[projectKey]).trim() : undefined,
+          productCode: productKey && row[productKey] ? String(row[productKey]).trim() : undefined,
           errorDescription: String(row[errorKey]).trim(),
         }));
 

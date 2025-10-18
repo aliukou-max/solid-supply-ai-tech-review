@@ -4,8 +4,8 @@ import type { ProductionError } from "./types";
 
 interface BulkCreateProductionErrorsRequest {
   errors: Array<{
-    projectCode: string;
-    productCode: string;
+    projectCode?: string;
+    productCode?: string;
     errorDescription: string;
   }>;
 }

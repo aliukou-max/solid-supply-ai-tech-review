@@ -3,8 +3,8 @@ import db from "../db";
 import type { ProductionError } from "./types";
 
 interface CreateProductionErrorRequest {
-  projectCode: string;
-  productCode: string;
+  projectCode?: string;
+  productCode?: string;
   partName?: string;
   errorDescription: string;
 }
