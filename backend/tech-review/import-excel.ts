@@ -1,6 +1,7 @@
 import { api } from "encore.dev/api";
 import { secret } from "encore.dev/config";
 import db from "../db";
+import ExcelJS from "exceljs";
 
 const openAIKey = secret("OpenAIKey");
 
@@ -53,51 +54,29 @@ export const importExcel = api(
         throw new Error("Excel failas negali būti nuskaitytas");
       }
 
-      // Use dynamic import with proper error handling
-      let XLSX;
-      try {
-        XLSX = await import("xlsx");
-      } catch (error) {
-        console.error("Failed to load xlsx package:", error);
-        throw new Error("Excel biblioteka nepasiekiama. Prašome susisiekti su administratoriumi.");
-      }
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.load(buffer);
 
-      const workbook = XLSX.read(buffer, { type: "buffer" });
+      const sheet = workbook.getWorksheet("Products information");
       
-      if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
-        throw new Error("Excel failas neturi lapų");
+      if (!sheet) {
+        const availableSheets = workbook.worksheets.map(s => s.name).join(", ");
+        throw new Error(`Lapas "Products information" nerastas. Rasti lapai: ${availableSheets}`);
       }
 
-      // Look for "products information" sheet
-      const sheetName = workbook.SheetNames.find(name => 
-        name.toLowerCase().includes("products information") || 
-        name.toLowerCase().includes("products_information") ||
-        name.toLowerCase() === "products information"
-      );
+      console.log(`Reading from sheet: Products information`);
 
-      if (!sheetName) {
-        throw new Error(`Nerastas "products information" lapas. Rasti lapai: ${workbook.SheetNames.join(", ")}`);
+      // Get project information using .text for reliable reading
+      let projectCode = sheet.getCell("C8").text?.trim() || null;
+      const projectName = sheet.getCell("C9").text?.trim() || projectCode || "Unknown Project";
+      const clientName = sheet.getCell("C10").text?.trim() || "Unknown Client";
+
+      // Backup: extract project code from filename if C8 is empty
+      if (!projectCode) {
+        const match = req.filename.match(/(MKZ\d{6}|AB\d{6}|[A-Z]{2,3}\d{5,7})/i);
+        projectCode = match ? match[0].toUpperCase() : `TEMP-${Date.now()}`;
+        console.warn(`⚠ Projekto kodas nerastas C8 langelyje. Naudojamas iš failo pavadinimo: ${projectCode}`);
       }
-
-      const firstSheet = workbook.Sheets[sheetName];
-
-      if (!firstSheet) {
-        throw new Error("Nepavyko nuskaityti Excel lapo");
-      }
-
-      console.log(`Reading from sheet: ${sheetName}`);
-
-      const projectCodeCell = firstSheet["C8"];
-      const projectNameCell = firstSheet["C9"];
-      const clientNameCell = firstSheet["C10"];
-
-      if (!projectCodeCell || !projectCodeCell.v) {
-        throw new Error("Projekto kodas nerastas langelyje C8. Patikrinkite ar failas turi teisingą formatą.");
-      }
-
-      const projectCode = String(projectCodeCell.v).trim();
-      const projectName = projectNameCell?.v ? String(projectNameCell.v).trim() : projectCode;
-      const clientName = clientNameCell?.v ? String(clientNameCell.v).trim() : "Unknown Client";
 
       console.log(`Importing project: ${projectCode} - ${projectName} (${clientName})`);
 
@@ -119,22 +98,23 @@ export const importExcel = api(
       let rowIndex = 26;
 
       while (true) {
-        const ssCodeCell = firstSheet[`B${rowIndex}`];
-        if (!ssCodeCell || !ssCodeCell.v) break;
+        const ssCode = sheet.getCell(`B${rowIndex}`).text?.trim();
+        const productName = sheet.getCell(`C${rowIndex}`).text?.trim();
+        const description = sheet.getCell(`AC${rowIndex}`).text?.trim();
 
-        const productNameCell = firstSheet[`C${rowIndex}`];
-        const descriptionCell = firstSheet[`AC${rowIndex}`];
+        // Stop when B column is empty
+        if (!ssCode) break;
 
-        if (productNameCell?.v) {
+        if (productName) {
           rows.push({
-            ssCode: String(ssCodeCell.v).trim(),
-            productName: String(productNameCell.v).trim(),
-            description: descriptionCell?.v ? String(descriptionCell.v).trim() : "",
+            ssCode,
+            productName,
+            description: description || "",
           });
         }
 
         rowIndex++;
-        if (rowIndex > 1000) break;
+        if (rowIndex > 1000) break; // Safety limit
       }
 
       console.log(`Found ${rows.length} products to import`);
