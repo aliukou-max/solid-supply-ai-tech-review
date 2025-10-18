@@ -64,10 +64,15 @@ export const importExcel = api(
         );
 
       let projectCode = sheet.getCell("C8").text?.trim() || null;
-      const projectName =
-        sheet.getCell("C9").text?.trim() || projectCode || "Unnamed project";
-      const clientName =
-        sheet.getCell("C10").text?.trim() || "Unknown Client";
+      const rawProjectName = sheet.getCell("C9").text?.trim();
+      const rawClientName = sheet.getCell("C10").text?.trim();
+      
+      const projectName = rawProjectName && !rawProjectName.includes("GMT") && !rawProjectName.includes("Coordinated") 
+        ? rawProjectName 
+        : projectCode || "Unnamed project";
+      const clientName = rawClientName && !rawClientName.includes("GMT") && !rawClientName.includes("Coordinated")
+        ? rawClientName
+        : "";
 
       if (!projectCode) {
         const match = req.filename.match(/(MKZ\d{6}|AB\d{6})/i);
@@ -92,8 +97,13 @@ export const importExcel = api(
         `;
       }
 
+      const projectDescription = sheet.getCell("AC26").text?.trim();
+      if (projectDescription && !projectDescription.includes("GMT") && !projectDescription.includes("Coordinated")) {
+        console.log(`📝 Projekto aprašymas: ${projectDescription.substring(0, 100)}...`);
+      }
+
       const rows: ExcelRow[] = [];
-      let i = 26;
+      let i = 27;
 
       while (true) {
         const ss = sheet.getCell(`B${i}`).text?.trim();
@@ -101,7 +111,8 @@ export const importExcel = api(
         const desc = sheet.getCell(`AC${i}`).text?.trim();
         if (!ss) break;
 
-        rows.push({ ssCode: ss, productName: name, description: desc });
+        const cleanDesc = desc && !desc.includes("GMT") && !desc.includes("Coordinated") ? desc : "";
+        rows.push({ ssCode: ss, productName: name, description: cleanDesc });
         i++;
         if (i > 2000) break;
       }
