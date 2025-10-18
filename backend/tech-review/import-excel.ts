@@ -132,11 +132,6 @@ export const importExcel = api(
         }
 
         if (!ss) break;
-        
-        if (!name) {
-          warnings.push(`⚠ Eilutė ${i}: Tuščias pavadinimas (C stulpelis), praleista.`);
-          continue;
-        }
 
         if (i === 26) {
           console.log(`\n📋 FIRST PRODUCT Row ${i}:`);
