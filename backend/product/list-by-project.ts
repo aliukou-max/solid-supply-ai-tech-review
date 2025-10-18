@@ -12,13 +12,16 @@ export const listByProject = api<{ projectId: string }, ListProductsResponse>(
   async ({ projectId }) => {
     const rows = await db.queryAll<Product>`
       SELECT 
-        id, project_id as "projectId", ss_code as "ssCode", 
-        name, type, dimensions, has_drawing as "hasDrawing",
-        drawing_reference as "drawingReference",
-        created_at as "createdAt", updated_at as "updatedAt"
-      FROM products
-      WHERE project_id = ${projectId}
-      ORDER BY created_at DESC
+        p.id, p.project_id as "projectId", p.ss_code as "ssCode", 
+        p.name, p.type, p.product_type_id as "productTypeId",
+        pt.name as "productTypeName",
+        p.dimensions, p.has_drawing as "hasDrawing",
+        p.drawing_reference as "drawingReference",
+        p.created_at as "createdAt", p.updated_at as "updatedAt"
+      FROM products p
+      LEFT JOIN product_types pt ON p.product_type_id = pt.id
+      WHERE p.project_id = ${projectId}
+      ORDER BY p.created_at DESC
     `;
 
     return { products: rows };
