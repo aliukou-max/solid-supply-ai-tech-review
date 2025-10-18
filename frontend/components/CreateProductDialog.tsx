@@ -47,6 +47,16 @@ export function CreateProductDialog({ open, onOpenChange, projectId, onSuccess }
   });
 
   const hasDrawing = watch("hasDrawing");
+  const selectedProductTypeId = watch("productTypeId");
+
+  useEffect(() => {
+    if (selectedProductTypeId && productTypesData?.productTypes) {
+      const selectedType = productTypesData.productTypes.find(pt => pt.id === selectedProductTypeId);
+      if (selectedType) {
+        setValue("type", selectedType.name as ProductType);
+      }
+    }
+  }, [selectedProductTypeId, productTypesData, setValue]);
 
   const onSubmit = async (data: FormData) => {
     setIsLoading(true);
