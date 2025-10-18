@@ -33,9 +33,9 @@ interface ImportExcelResponse {
 }
 
 export const importExcel = api(
-  { 
-    expose: true, 
-    method: "POST", 
+  {
+    expose: true,
+    method: "POST",
     path: "/tech-review/import-excel",
     bodyLimit: 50 * 1024 * 1024,
   },
@@ -50,38 +50,27 @@ export const importExcel = api(
       const workbook = new ExcelJS.Workbook();
       await workbook.xlsx.load(buffer);
 
-      const sheet =
-        workbook.getWorksheet("Products information") ||
-        workbook.worksheets.find((s) =>
-          s.name.toLowerCase().includes("products information")
-        );
-
-      if (!sheet)
-        throw new Error(
-          `Nerastas lapas "Products information". Rasti: ${workbook.worksheets
-            .map((s) => s.name)
-            .join(", ")}`
-        );
+      const sheet = await findValidSheet(workbook);
+      console.log(`📘 Naudojamas lapas: ${sheet.name}`);
 
       let projectCode = sheet.getCell("C8").text?.trim() || null;
       const rawProjectName = sheet.getCell("C9").text?.trim();
       const rawClientName = sheet.getCell("C10").text?.trim();
-      
-      const projectName = rawProjectName && !rawProjectName.includes("GMT") && !rawProjectName.includes("Coordinated") 
-        ? rawProjectName 
+
+      const projectName = rawProjectName && !rawProjectName.includes("GMT") && !rawProjectName.includes("Coordinated")
+        ? rawProjectName
         : projectCode || "Unnamed project";
       const clientName = rawClientName && !rawClientName.includes("GMT") && !rawClientName.includes("Coordinated")
         ? rawClientName
         : "";
 
       if (!projectCode) {
-        const match = req.filename.match(/(MKZ\d{6}|AB\d{6})/i);
-        if (match) {
-          projectCode = match[0].toUpperCase();
-          warnings.push(`⚠ Projekto kodas paimtas iš failo pavadinimo: ${projectCode}`);
-        } else {
+        projectCode = extractProjectCode(req.filename);
+        if (!projectCode) {
           projectCode = "TEMP-" + Date.now();
-          warnings.push("⚠ Projekto kodas nerastas — naudotas laikinas kodas.");
+          warnings.push("⚠ Projekto kodas nerastas – naudotas laikinas kodas.");
+        } else {
+          warnings.push(`⚠ Projekto kodas paimtas iš failo pavadinimo: ${projectCode}`);
         }
       }
 
@@ -90,6 +79,7 @@ export const importExcel = api(
       const existingProject = await db.queryRow`
         SELECT id FROM projects WHERE id = ${projectCode}
       `;
+
       if (!existingProject) {
         await db.exec`
           INSERT INTO projects (id, name, client, status, project_type, created_at, updated_at)
@@ -97,40 +87,32 @@ export const importExcel = api(
         `;
       }
 
-      const projectDescription = sheet.getCell("AC26").text?.trim();
-      if (projectDescription && !projectDescription.includes("GMT") && !projectDescription.includes("Coordinated")) {
-        console.log(`📝 Projekto aprašymas: ${projectDescription.substring(0, 100)}...`);
-      }
-
       const rows: ExcelRow[] = [];
-      let i = 27;
-
-      while (true) {
+      for (let i = 27; i < 1000; i++) {
         const ss = sheet.getCell(`B${i}`).text?.trim();
         const name = sheet.getCell(`C${i}`).text?.trim();
         const desc = sheet.getCell(`AC${i}`).text?.trim();
+
         if (!ss) break;
 
-        const cleanDesc = desc && !desc.includes("GMT") && !desc.includes("Coordinated") ? desc : "";
-        rows.push({ ssCode: ss, productName: name, description: cleanDesc });
-        i++;
-        if (i > 2000) break;
+        if (name) {
+          const cleanDesc = desc && !desc.includes("GMT") && !desc.includes("Coordinated") ? desc : "";
+          rows.push({ ssCode: ss, productName: name, description: cleanDesc });
+        }
       }
 
-      if (rows.length === 0)
-        throw new Error("Excel faile nerasta produktų (B26+ tušti).");
-
-      console.log(`🔍 Rasta ${rows.length} produktų.`);
+      console.log(`📦 Rasta produktų: ${rows.length}`);
+      if (rows.length === 0) throw new Error("Excel faile nerasta produktų nuo B27 eilutės.");
 
       for (const row of rows) {
         try {
           const productId = `${projectCode}-${row.ssCode}`;
 
-          const existingProduct = await db.queryRow`
+          const existing = await db.queryRow`
             SELECT id FROM products WHERE id = ${productId}
           `;
-          if (existingProduct) {
-            warnings.push(`SS ${row.ssCode} jau egzistuoja, praleista.`);
+          if (existing) {
+            warnings.push(`SS kodas ${row.ssCode} jau egzistuoja, praleistas.`);
             continue;
           }
 
@@ -152,33 +134,34 @@ export const importExcel = api(
             continue;
           }
 
-          if (!row.description) {
-            warnings.push(`${row.ssCode} – aprašymas tuščias (stulpelis AC).`);
-            productsCreated++;
-            continue;
-          }
+          if (row.description) {
+            const components = await analyzeDescriptionWithAI(row.description, productType);
 
-          const components = await analyzeDescriptionWithAI(row.description);
-
-          for (const comp of components) {
-            const note =
-              comp.uncertainTerms?.length
+            for (const comp of components) {
+              const note = comp.uncertainTerms?.length
                 ? `⚠ Neaiškūs terminai: ${comp.uncertainTerms.join(", ")}`
                 : comp.other;
 
-            await db.exec`
-              INSERT INTO components (
-                tech_review_id, name, material, finish, technical_notes, created_at, updated_at
-              )
-              VALUES (
-                ${techReview.id},
-                ${comp.name},
-                ${comp.material || null},
-                ${comp.finish || null},
-                ${note || null},
-                NOW(), NOW()
-              )
-            `;
+              await db.exec`
+                INSERT INTO components (
+                  tech_review_id, name, material, finish, technical_notes, created_at, updated_at
+                )
+                VALUES (
+                  ${techReview.id},
+                  ${comp.name},
+                  ${comp.material || null},
+                  ${comp.finish || null},
+                  ${note || null},
+                  NOW(), NOW()
+                )
+              `;
+
+              if (comp.uncertainTerms?.length) {
+                warnings.push(`${row.ssCode} – "${comp.name}" turi neaiškių terminų: ${comp.uncertainTerms.join(", ")}`);
+              }
+            }
+          } else {
+            warnings.push(`${row.ssCode} – trūksta aprašymo, komponentai nesukurti`);
           }
 
           productsCreated++;
@@ -187,33 +170,97 @@ export const importExcel = api(
         }
       }
 
-      console.log(`✅ Importuota: ${productsCreated} produktų.`);
-      return {
-        success: true,
-        projectId: projectCode,
-        projectName,
-        productsCreated,
-        warnings,
-      };
-    } catch (err) {
-      console.error("❌ Klaida importuojant:", err);
-      throw new Error(
-        `Nepavyko importuoti Excel failo: ${
-          err instanceof Error ? err.message : String(err)
-        }`
-      );
+      console.log(`✅ Importuota ${productsCreated} produktų su ${warnings.length} perspėjimų.`);
+      return { success: true, projectId: projectCode, projectName, productsCreated, warnings };
+
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      throw new Error(`Nepavyko importuoti Excel failo: ${msg}`);
     }
   }
 );
 
-async function analyzeDescriptionWithAI(description: string): Promise<ParsedComponent[]> {
-  try {
-    const prompt = `
+async function findValidSheet(workbook: ExcelJS.Workbook): Promise<ExcelJS.Worksheet> {
+  const main = workbook.getWorksheet("Products information");
+  if (main && main.getCell("B27").text?.trim()) return main;
+
+  let best: ExcelJS.Worksheet | null = null;
+  let maxCount = 0;
+
+  for (const s of workbook.worksheets) {
+    let count = 0;
+    for (let i = 27; i < 100; i++) {
+      const ss = s.getCell(`B${i}`).text;
+      const desc = s.getCell(`AC${i}`).text;
+      if (ss && desc) count++;
+    }
+    if (count > maxCount) {
+      maxCount = count;
+      best = s;
+    }
+  }
+
+  if (!best) throw new Error("Nerasta lapų su duomenimis.");
+  return best;
+}
+
+function extractProjectCode(filename: string): string {
+  const match = filename.match(/[A-Z]{2,3}\d{6}/i);
+  return match ? match[0].toUpperCase() : "";
+}
+
+async function determineProductTypeFromName(productName: string): Promise<string> {
+  const name = productName.toLowerCase();
+
+  const allTypes = await db.queryAll<{ id: string; name: string }>`
+    SELECT id, name FROM product_types ORDER BY name
+  `;
+
+  for (const type of allTypes) {
+    const typeName = type.name.toLowerCase();
+    const typeWords = typeName.split(/\s+/);
+
+    for (const word of typeWords) {
+      if (word.length > 3 && name.includes(word)) {
+        console.log(`✓ Produktas "${productName}" priskirtas tipui "${type.name}"`);
+        return type.id;
+      }
+    }
+  }
+
+  if (name.includes("backwall") || name.includes("back wall") || name.includes("wall")) {
+    const backwall = allTypes.find(t => t.name.toLowerCase().includes("backwall"));
+    if (backwall) return backwall.id;
+  }
+  if (name.includes("shelf") || name.includes("shelv") || name.includes("lentyna")) {
+    const shelf = allTypes.find(t => t.name.toLowerCase().includes("lentyna") || t.name.toLowerCase().includes("shelf"));
+    if (shelf) return shelf.id;
+  }
+  if (name.includes("vitrina") || name.includes("showcase") || name.includes("cabinet") || name.includes("counter")) {
+    const vitrina = allTypes.find(t => t.name.toLowerCase().includes("vitrina") || t.name.toLowerCase().includes("cabinet"));
+    if (vitrina) return vitrina.id;
+  }
+  if (name.includes("table") || name.includes("stalas") || name.includes("island") || name.includes("desk")) {
+    const table = allTypes.find(t => t.name.toLowerCase().includes("stalas") || t.name.toLowerCase().includes("table"));
+    if (table) return table.id;
+  }
+  if (name.includes("lightbox") || name.includes("light box")) {
+    const lightbox = allTypes.find(t => t.name.toLowerCase().includes("lightbox"));
+    if (lightbox) return lightbox.id;
+  }
+
+  console.log(`⚠ Produktas "${productName}" nebuvo priskirtas jokiam tipui, naudojamas "Kita"`);
+  const kita = allTypes.find(t => t.name.toLowerCase() === "kita");
+  return kita?.id || "Kita";
+}
+
+async function analyzeDescriptionWithAI(description: string, productType: string): Promise<ParsedComponent[]> {
+  const prompt = `
 You are an expert in furniture and retail fixture engineering.
 Parse the following technical description into structured component data.
 
-Description:
-${description}
+Product Type: ${productType}
+Description: ${description}
 
 For each distinct component, extract:
 - "name" (e.g. Carcass, Header, Shelves, Back panel, Wall cladding)
@@ -224,9 +271,21 @@ If something is unclear or ambiguous, include it in "uncertainTerms".
 
 Also detect dimensions like "2815 x 582mm H2002mm" and include them in "other".
 
-Return valid JSON array only.
+Respond ONLY with valid JSON array format:
+[
+  {
+    "name": "component name",
+    "material": "material name or null",
+    "finish": "finish description or null", 
+    "other": "other technical details or null",
+    "uncertainTerms": ["list", "of", "unclear", "terms"] or null
+  }
+]
+
+If the description is too vague or empty, return an empty array: []
 `;
 
+  try {
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -262,51 +321,6 @@ Return valid JSON array only.
     console.error("AI analizės klaida:", error);
     return createFallbackComponent(description);
   }
-}
-
-async function determineProductTypeFromName(productName: string): Promise<string> {
-  const name = productName.toLowerCase();
-
-  const allTypes = await db.queryAll<{ id: string; name: string }>`
-    SELECT id, name FROM product_types ORDER BY name
-  `;
-
-  for (const type of allTypes) {
-    const typeName = type.name.toLowerCase();
-    const typeWords = typeName.split(/\s+/);
-    
-    for (const word of typeWords) {
-      if (word.length > 3 && name.includes(word)) {
-        console.log(`✓ Produktas "${productName}" priskirtas tipui "${type.name}"`);
-        return type.id;
-      }
-    }
-  }
-
-  if (name.includes("backwall") || name.includes("back wall") || name.includes("wall")) {
-    const backwall = allTypes.find(t => t.name.toLowerCase().includes("backwall"));
-    if (backwall) return backwall.id;
-  }
-  if (name.includes("shelf") || name.includes("shelv") || name.includes("lentyna")) {
-    const shelf = allTypes.find(t => t.name.toLowerCase().includes("lentyna") || t.name.toLowerCase().includes("shelf"));
-    if (shelf) return shelf.id;
-  }
-  if (name.includes("vitrina") || name.includes("showcase") || name.includes("cabinet") || name.includes("counter")) {
-    const vitrina = allTypes.find(t => t.name.toLowerCase().includes("vitrina") || t.name.toLowerCase().includes("cabinet"));
-    if (vitrina) return vitrina.id;
-  }
-  if (name.includes("table") || name.includes("stalas") || name.includes("island") || name.includes("desk")) {
-    const table = allTypes.find(t => t.name.toLowerCase().includes("stalas") || t.name.toLowerCase().includes("table"));
-    if (table) return table.id;
-  }
-  if (name.includes("lightbox") || name.includes("light box")) {
-    const lightbox = allTypes.find(t => t.name.toLowerCase().includes("lightbox"));
-    if (lightbox) return lightbox.id;
-  }
-
-  console.log(`⚠ Produktas "${productName}" nebuvo priskirtas jokiam tipui, naudojamas "Kita"`);
-  const kita = allTypes.find(t => t.name.toLowerCase() === "kita");
-  return kita?.id || "Kita";
 }
 
 function createFallbackComponent(description: string): ParsedComponent[] {
