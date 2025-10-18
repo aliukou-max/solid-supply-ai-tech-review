@@ -60,11 +60,24 @@ export const importExcel = api(
         throw new Error("Excel failas neturi lapų");
       }
 
-      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      // Look for "products information" sheet
+      const sheetName = workbook.SheetNames.find(name => 
+        name.toLowerCase().includes("products information") || 
+        name.toLowerCase().includes("products_information") ||
+        name.toLowerCase() === "products information"
+      );
+
+      if (!sheetName) {
+        throw new Error(`Nerastas "products information" lapas. Rasti lapai: ${workbook.SheetNames.join(", ")}`);
+      }
+
+      const firstSheet = workbook.Sheets[sheetName];
 
       if (!firstSheet) {
         throw new Error("Nepavyko nuskaityti Excel lapo");
       }
+
+      console.log(`Reading from sheet: ${sheetName}`);
 
       const projectCodeCell = firstSheet["C8"];
       const projectNameCell = firstSheet["C9"];
