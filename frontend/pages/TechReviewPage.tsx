@@ -395,7 +395,11 @@ export function TechReviewPage() {
                                 <SelectContent>
                                   <SelectItem value="none">-- Nepasirinkta --</SelectItem>
                                   {allNodesData?.nodes
-                                    ?.filter(node => node.partName?.toLowerCase().includes(part.name?.toLowerCase() || ''))
+                                    ?.filter(node => {
+                                      const partName = componentPart.partName?.toLowerCase() || '';
+                                      const nodePart = node.partName?.toLowerCase() || '';
+                                      return nodePart.includes(partName) || partName.includes(nodePart);
+                                    })
                                     .map(node => (
                                       <SelectItem key={node.id} value={node.id}>
                                         {node.code} - {node.brand} ({node.productName})
@@ -491,11 +495,8 @@ export function TechReviewPage() {
                                   {allErrorsData?.errors
                                     ?.filter(error => {
                                       const lowerDesc = error.description?.toLowerCase() || '';
-                                      const productType = product?.type?.toLowerCase() || '';
-                                      return lowerDesc.includes(productType) || 
-                                             lowerDesc.includes('cabinet') || 
-                                             lowerDesc.includes('spintele') ||
-                                             lowerDesc.includes('counter');
+                                      const partName = componentPart.partName?.toLowerCase() || '';
+                                      return lowerDesc.includes(partName);
                                     })
                                     .map(error => (
                                       <SelectItem key={error.id} value={error.id.toString()}>
