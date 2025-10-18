@@ -323,7 +323,7 @@ export const exportProjectExcel = api(
               const extension = ext === 'jpg' ? 'jpeg' : (ext === 'png' || ext === 'gif' ? ext : 'jpeg') as 'jpeg' | 'png' | 'gif';
               
               const imageId = workbook.addImage({
-                buffer: Buffer.from(imageData).buffer,
+                buffer: imageData,
                 extension,
               });
 
@@ -332,8 +332,8 @@ export const exportProjectExcel = api(
                 ext: { width: 180, height: 135 }
               });
             } catch (error) {
-              console.error(`Failed to add image ${photo.photoUrl}:`, error);
-              row.getCell(4 + i).value = `[Error loading image]`;
+              console.error(`Failed to load image ${photo.photoUrl}:`, error);
+              row.getCell(4 + i).value = `[Image not found]`;
             }
           }
 
