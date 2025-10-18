@@ -1,4 +1,4 @@
-import { AlertCircle, AlertTriangle, Info, XCircle, CheckCircle, XOctagon, Sparkles, Shield } from "lucide-react";
+import { AlertCircle, AlertTriangle, Info, XCircle, CheckCircle, XOctagon } from "lucide-react";
 import type { LessonLearnt } from "~backend/lessons-learnt/types";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -26,62 +26,42 @@ export function LessonCard({ lesson }: LessonCardProps) {
         ? "border-red-200 bg-red-50/30" 
         : ""
     }>
-      <CardHeader>
+      <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
-          <div className="flex items-start gap-3 flex-1">
-            <Icon className={`h-5 w-5 mt-0.5 ${config.color}`} />
-            <div className="flex-1">
-              <p className="font-medium">{lesson.errorDescription}</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                {lesson.productType}
-              </p>
-            </div>
+          <div className="flex-1">
+            <p className="font-medium text-base">{lesson.errorDescription}</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             {lesson.practiceType === "good" && (
-              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">
+              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300 text-xs">
                 <CheckCircle className="h-3 w-3 mr-1" />
                 Geroji praktika
               </Badge>
             )}
             {lesson.practiceType === "bad" && (
-              <Badge variant="outline" className="bg-red-50 text-red-700 border-red-300">
+              <Badge variant="outline" className="bg-red-50 text-red-700 border-red-300 text-xs">
                 <XOctagon className="h-3 w-3 mr-1" />
                 Blogoji praktika
               </Badge>
             )}
-            <Badge variant={config.badge as any}>{lesson.severity}</Badge>
+            <Badge variant={config.badge as any} className="text-xs">{lesson.severity}</Badge>
             {lesson.occurrenceCount > 1 && (
-              <Badge variant="outline">{lesson.occurrenceCount}× pasikartojo</Badge>
+              <Badge variant="outline" className="text-xs">{lesson.occurrenceCount}×</Badge>
             )}
           </div>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="bg-accent/50 rounded-md p-3">
-          <p className="text-sm font-medium text-foreground mb-1">Sprendimas:</p>
-          <p className="text-sm text-muted-foreground whitespace-pre-wrap">{lesson.solution}</p>
+        <div className="flex items-center gap-2 mt-2">
+          <Icon className={`h-4 w-4 ${config.color}`} />
+          <p className="text-xs text-muted-foreground">
+            {lesson.productType}
+          </p>
         </div>
-
-        {lesson.prevention && (
-          <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
-            <p className="text-sm font-medium text-blue-900 mb-1 flex items-center gap-2">
-              <Shield className="h-4 w-4" />
-              Prevencija:
-            </p>
-            <p className="text-sm text-blue-800 whitespace-pre-wrap">{lesson.prevention}</p>
-          </div>
-        )}
-
-        {lesson.aiSuggestion && (
-          <div className="bg-purple-50 border border-purple-200 rounded-md p-3">
-            <p className="text-sm font-medium text-purple-900 mb-1 flex items-center gap-2">
-              <Sparkles className="h-4 w-4" />
-              AI pasiūlymas:
-            </p>
-            <p className="text-sm text-purple-800 whitespace-pre-wrap">{lesson.aiSuggestion}</p>
-          </div>
-        )}
+      </CardHeader>
+      <CardContent className="pt-0">
+        <div className="bg-accent/50 rounded-md p-3">
+          <p className="text-xs font-medium text-muted-foreground mb-1">Sprendimas:</p>
+          <p className="text-sm whitespace-pre-wrap">{lesson.solution}</p>
+        </div>
       </CardContent>
     </Card>
   );
