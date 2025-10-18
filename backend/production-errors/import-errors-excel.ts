@@ -37,6 +37,14 @@ export const importErrorsExcel = api(
       if (!sheet) throw new Error("Excel faile nėra lapų");
 
       console.log(`📘 Naudojamas lapas: ${sheet.name}`);
+      console.log(`📊 Excel DEBUG - pirmos 5 eilutės:`);
+      
+      for (let testRow = 1; testRow <= 5; testRow++) {
+        const a = sheet.getCell(`A${testRow}`).text?.trim();
+        const b = sheet.getCell(`B${testRow}`).text?.trim();
+        const c = sheet.getCell(`C${testRow}`).text?.trim();
+        console.log(`  Eilutė ${testRow}: A="${a || 'EMPTY'}" | B="${b || 'EMPTY'}" | C="${c ? c.substring(0, 50) : 'EMPTY'}..."`);
+      }
 
       let currentProjectCode: string | null = null;
 
@@ -44,6 +52,10 @@ export const importErrorsExcel = api(
         const cellA = sheet.getCell(`A${i}`).text?.trim();
         const cellB = sheet.getCell(`B${i}`).text?.trim();
         const cellC = sheet.getCell(`C${i}`).text?.trim();
+
+        if (i <= 10) {
+          console.log(`📝 Row ${i}: A="${cellA || 'EMPTY'}" | B="${cellB || 'EMPTY'}" | C="${cellC ? cellC.substring(0, 40) : 'EMPTY'}"`);
+        }
 
         if (!cellA && !cellB && !cellC) {
           continue;
@@ -56,16 +68,19 @@ export const importErrorsExcel = api(
         }
 
         if (!cellB || !cellC) {
+          if (i <= 10) console.log(`  ⚠ Praleista: trūksta B arba C`);
           continue;
         }
 
         if (!currentProjectCode) {
           warnings.push(`Eilutė ${i}: Klaida be projekto kodo, praleista (${cellB})`);
+          console.log(`  ⚠ Praleista: nėra projekto kodo`);
           skipped++;
           continue;
         }
 
         const productId = `${currentProjectCode}-${cellB}`;
+        console.log(`  🔍 Tikrinama: ${productId}`);
 
         const product = await db.queryRow<{ id: string }>`
           SELECT id FROM products WHERE id = ${productId}
