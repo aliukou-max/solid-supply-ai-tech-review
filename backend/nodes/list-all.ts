@@ -1,6 +1,6 @@
 import { api } from "encore.dev/api";
 import db from "../db";
-import type { Node } from "./types";
+import type { Node, DrawingFile } from "./types";
 
 interface ListAllNodesResponse {
   nodes: Node[];
@@ -16,7 +16,7 @@ export const listAll = api<void, ListAllNodesResponse>(
       part_name: string;
       description: string;
       pdf_url: string;
-      drawing_files: string;
+      drawing_files: DrawingFile[];
       product_type: string | null;
       created_at: Date;
     }>`
@@ -33,7 +33,7 @@ export const listAll = api<void, ListAllNodesResponse>(
         partName: row.part_name,
         description: row.description,
         pdfUrl: row.pdf_url,
-        drawingFiles: row.drawing_files ? JSON.parse(row.drawing_files) : [],
+        drawingFiles: row.drawing_files || [],
         productType: row.product_type || undefined,
         createdAt: row.created_at,
       })),
