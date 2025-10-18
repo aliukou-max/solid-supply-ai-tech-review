@@ -28,7 +28,6 @@ export function TechReviewPage() {
   const [uploadingPhoto, setUploadingPhoto] = useState<number | null>(null);
   const [reanalyzeOpen, setReanalyzeOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("");
-  const [creatingParts, setCreatingParts] = useState(false);
 
   const { data: product, isLoading: productLoading } = useQuery({
     queryKey: ["product", productId],
@@ -169,28 +168,7 @@ export function TechReviewPage() {
     }
   };
 
-  const handleCreatePartsFromDescription = async () => {
-    if (!productId) return;
-    
-    try {
-      setCreatingParts(true);
-      const result = await backend.techReview.createPartsFromDescription({ productId });
-      toast({ 
-        title: "Dalys sukurtos", 
-        description: `Sukurta ${result.partsCreated} dalių iš aprašymo` 
-      });
-      refetchParts();
-    } catch (error) {
-      console.error(error);
-      toast({ 
-        title: "Klaida kuriant dalis", 
-        description: error instanceof Error ? error.message : "Nežinoma klaida",
-        variant: "destructive" 
-      });
-    } finally {
-      setCreatingParts(false);
-    }
-  };
+
 
   const handleExportPDF = async () => {
     if (!productId) return;
@@ -316,24 +294,10 @@ export function TechReviewPage() {
           <div className="bg-muted/50 rounded-lg p-4">
             <div className="flex items-center justify-between mb-2">
               <Label className="text-sm font-medium">Aprašymas:</Label>
-              <div className="flex gap-2">
-                {data?.review.generalNotes && (!productTypeParts?.parts || productTypeParts.parts.length === 0) && (
-                  <Button 
-                    variant="default" 
-                    size="sm" 
-                    onClick={handleCreatePartsFromDescription}
-                    disabled={creatingParts}
-                  >
-                    <Sparkles className="h-4 w-4 mr-2" />
-                    {creatingParts ? "Kuriama..." : "Sukurti dalis iš aprašymo"}
-                  </Button>
-                )}
-
-                <Button variant="outline" size="sm" onClick={() => setReanalyzeOpen(true)}>
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  {data?.review.generalNotes ? "Redaguoti aprašymą" : "Pridėti aprašymą"}
-                </Button>
-              </div>
+              <Button variant="outline" size="sm" onClick={() => setReanalyzeOpen(true)}>
+                <Sparkles className="h-4 w-4 mr-2" />
+                Pažymėti dalis aprašinėjimui
+              </Button>
             </div>
             {data?.review.generalNotes ? (
               <p className="text-sm text-muted-foreground whitespace-pre-wrap">

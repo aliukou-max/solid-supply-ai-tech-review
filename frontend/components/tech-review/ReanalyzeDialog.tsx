@@ -18,7 +18,6 @@ interface ReanalyzeDialogProps {
 }
 
 export function ReanalyzeDialog({ open, onOpenChange, productId, productTypeId, productDescription, onSuccess }: ReanalyzeDialogProps) {
-  const [description, setDescription] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [availableParts, setAvailableParts] = useState<Array<{ id: string; name: string; selected: boolean }>>([]);
   const { toast } = useToast();
@@ -39,12 +38,8 @@ export function ReanalyzeDialog({ open, onOpenChange, productId, productTypeId, 
       }
     };
 
-    if (open && productDescription) {
-      setDescription(productDescription);
-    }
-
     loadParts();
-  }, [open, productTypeId, productDescription]);
+  }, [open, productTypeId]);
 
   const togglePart = (partId: string) => {
     setAvailableParts(prev => prev.map(p => 
@@ -58,15 +53,6 @@ export function ReanalyzeDialog({ open, onOpenChange, productId, productTypeId, 
   };
 
   const handleSave = async () => {
-    if (!description.trim()) {
-      toast({
-        title: "Klaida",
-        description: "Įveskite aprašymą",
-        variant: "destructive",
-      });
-      return;
-    }
-
     const selectedPartIds = availableParts.filter(p => p.selected).map(p => p.id);
     if (selectedPartIds.length === 0) {
       toast({
@@ -82,13 +68,13 @@ export function ReanalyzeDialog({ open, onOpenChange, productId, productTypeId, 
     try {
       await backend.techReview.reanalyzeProduct({
         productId,
-        description,
+        description: productDescription || "",
         selectedPartIds,
       });
 
       toast({
         title: "Išsaugota",
-        description: "Aprašymas išsaugotas",
+        description: `Pažymėtos ${selectedPartIds.length} dalys aprašinėjimui`,
       });
 
       onSuccess();
@@ -106,7 +92,6 @@ export function ReanalyzeDialog({ open, onOpenChange, productId, productTypeId, 
   };
 
   const handleClose = () => {
-    setDescription("");
     onOpenChange(false);
   };
 
@@ -118,23 +103,11 @@ export function ReanalyzeDialog({ open, onOpenChange, productId, productTypeId, 
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Save className="h-5 w-5" />
-            Redaguoti aprašymą
+            Pažymėti dalis aprašinėjimui
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="description">Aprašymas:</Label>
-            <Textarea
-              id="description"
-              value={description}
-              onChange={(e: any) => setDescription(e.target.value)}
-              placeholder="Įklijuokite gaminio aprašymą iš Excel failo arba įveskite rankiniu būdu..."
-              rows={10}
-              className="font-mono text-sm"
-              disabled={isSaving}
-            />
-          </div>
 
           {availableParts.length > 0 && (
             <div className="space-y-2 border rounded-lg p-4">
