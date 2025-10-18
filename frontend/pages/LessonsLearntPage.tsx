@@ -252,7 +252,7 @@ export function LessonsLearntPage() {
 
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-semibold">Pamokos</h2>
+           
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 text-muted-foreground" />
               <Select value={filterType} onValueChange={(value: any) => setFilterType(value)}>
@@ -269,11 +269,7 @@ export function LessonsLearntPage() {
           </div>
 
           {lessonsData?.lessons.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">
-                Nėra įrašytų pamokų
-              </p>
-            </div>
+           
           ) : (
             <div className="space-y-4">
               {lessonsData?.lessons.map((lesson) => (
