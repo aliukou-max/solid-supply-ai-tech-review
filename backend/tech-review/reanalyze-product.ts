@@ -15,6 +15,7 @@ interface ParsedComponent {
 interface ReanalyzeProductRequest {
   productId: string;
   description: string;
+  selectedPartIds?: string[];
 }
 
 interface ReanalyzeProductResponse {
@@ -60,17 +61,25 @@ export const reanalyzeProduct = api(
         warnings.push("AI did not return any components");
       }
 
-      const createdComponentParts = await db.queryAll<{ id: number; partName: string }>`
-        SELECT id, part_name as "partName"
+      const createdComponentParts = await db.queryAll<{ id: number; partName: string; productTypePartId: string }>`
+        SELECT id, part_name as "partName", product_type_part_id as "productTypePartId"
         FROM component_parts
         WHERE tech_review_id = ${techReview.id}
       `;
 
+      const allowedPartIds = req.selectedPartIds && req.selectedPartIds.length > 0 
+        ? new Set(req.selectedPartIds)
+        : null;
+
       for (const comp of analysisResult.components || []) {
-        const matchingPart = createdComponentParts.find(p => 
-          p.partName.toLowerCase().includes(comp.name.toLowerCase()) ||
-          comp.name.toLowerCase().includes(p.partName.toLowerCase())
-        );
+        const matchingPart = createdComponentParts.find(p => {
+          const nameMatch = p.partName.toLowerCase().includes(comp.name.toLowerCase()) ||
+                           comp.name.toLowerCase().includes(p.partName.toLowerCase());
+          
+          const isAllowed = !allowedPartIds || allowedPartIds.has(p.productTypePartId);
+          
+          return nameMatch && isAllowed;
+        });
 
         if (matchingPart) {
           const notes = [

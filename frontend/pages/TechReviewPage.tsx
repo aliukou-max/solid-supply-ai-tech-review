@@ -264,11 +264,12 @@ export function TechReviewPage() {
         </div>
       )}
 
-      {productId && (
+      {productId && product?.productTypeId && (
         <ReanalyzeDialog
           open={reanalyzeOpen}
           onOpenChange={setReanalyzeOpen}
           productId={productId}
+          productTypeId={product.productTypeId}
           onSuccess={() => {
             refetchParts();
             setReanalyzeOpen(false);

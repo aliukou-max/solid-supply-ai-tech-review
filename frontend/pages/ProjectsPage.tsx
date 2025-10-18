@@ -92,28 +92,28 @@ export function ProjectsPage() {
       title="Projektai"
       description="Visi Solid Supply projektai ir jų techniniai vertinimai"
       actions={
-        <div className="flex gap-2">
-          <Button size="sm" onClick={() => setCreateOpen(true)} className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200">
+        <div className="flex gap-3">
+          <Button onClick={() => setCreateOpen(true)}>
             {/* @ts-ignore */}
-            <Plus className="h-3.5 w-3.5 mr-1.5" />
+            <Plus className="h-4 w-4 mr-2" />
             Pridėti projektą
           </Button>
-          <Button size="sm" variant="outline" onClick={() => setImportOpen(true)} className="border-slate-700 text-slate-300 hover:bg-slate-800">
+          <Button variant="outline" onClick={() => setImportOpen(true)}>
             {/* @ts-ignore */}
-            <FileSpreadsheet className="h-3.5 w-3.5 mr-1.5" />
+            <FileSpreadsheet className="h-4 w-4 mr-2" />
             Importuoti Excel
           </Button>
         </div>
       }
     >
       {isLoading ? (
-        <div className="text-center py-12 text-slate-500 text-sm">Kraunama...</div>
+        <div className="text-center py-12 text-muted-foreground">Kraunama...</div>
       ) : data?.projects.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-slate-500 text-sm">Nėra sukurtų projektų</p>
+          <p className="text-muted-foreground">Nėra sukurtų projektų</p>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-4">
           {data?.projects.map((project) => {
             const stats = projectStats[project.id] || { products: [] };
             
@@ -123,66 +123,64 @@ export function ProjectsPage() {
                 to={`/projects/${project.id}`}
                 className="block"
               >
-                <div className={`bg-slate-900 border border-slate-800 rounded-lg overflow-hidden hover:border-slate-700 transition-all border-l-2 ${getProjectTypeColor(project.projectType)}`}>
-                  <div className="p-3">
-                    <div className="flex items-start justify-between mb-2">
+                <div className={`bg-card border rounded-lg overflow-hidden hover:shadow-md transition-all border-l-4 ${getProjectTypeColor(project.projectType)}`}>
+                  <div className="p-6">
+                    <div className="flex items-start justify-between mb-3">
                       <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-[10px] text-slate-600 uppercase tracking-wide">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-xs text-muted-foreground uppercase tracking-wide">
                             {getProjectTypeLabel(project.projectType)}
                           </span>
-                          <Badge variant="outline" className="text-[10px] h-4 border-slate-700 text-slate-400">
+                          <Badge variant="outline">
                             {project.client}
                           </Badge>
                         </div>
-                        <h3 className="font-medium text-sm text-slate-200">{project.id}</h3>
-                        <p className="text-xs text-slate-400 mt-0.5">{project.name}</p>
+                        <h3 className="font-semibold text-lg">{project.id}</h3>
+                        <p className="text-sm text-muted-foreground mt-1">{project.name}</p>
                       </div>
                       
-                      <div className="flex items-center gap-1">
-                        <Badge variant={project.status === 'active' ? 'default' : 'secondary'} className="text-[10px] h-5">
+                      <div className="flex items-center gap-2">
+                        <Badge variant={project.status === 'active' ? 'default' : 'secondary'}>
                           {project.status}
                         </Badge>
                         <Button
                           variant="ghost"
-                          size="sm"
-                          className="h-7 w-7 p-0"
+                          size="icon"
                           onClick={(e) => {
                             e.preventDefault();
                             setEditProject(project);
                           }}
                         >
                           {/* @ts-ignore */}
-                          <Edit2 className="h-3 w-3 text-slate-500" />
+                          <Edit2 className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="ghost"
-                          size="sm"
-                          className="h-7 w-7 p-0"
+                          size="icon"
                           onClick={(e) => handleDelete(project.id, e as any)}
                         >
                           {/* @ts-ignore */}
-                          <Trash2 className="h-3 w-3 text-red-500" />
+                          <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </div>
                     </div>
 
-                    <div className="space-y-1">
+                    <div className="space-y-2">
                       {stats.products.length > 0 ? (
-                        <div className="flex flex-wrap gap-1">
+                        <div className="flex flex-wrap gap-2">
                           {stats.products.slice(0, 5).map((product, idx) => (
-                            <Badge key={idx} variant="secondary" className="text-[10px] h-4 bg-slate-800 text-slate-400 border-slate-700">
+                            <Badge key={idx} variant="secondary">
                               {product.name}
                             </Badge>
                           ))}
                           {stats.products.length > 5 && (
-                            <Badge variant="outline" className="text-[10px] h-4 border-slate-700 text-slate-500">
-                              +{stats.products.length - 5}
+                            <Badge variant="outline">
+                              +{stats.products.length - 5} more
                             </Badge>
                           )}
                         </div>
                       ) : (
-                        <p className="text-xs text-slate-600">Nėra gaminių</p>
+                        <p className="text-sm text-muted-foreground">Nėra gaminių</p>
                       )}
                     </div>
                   </div>
