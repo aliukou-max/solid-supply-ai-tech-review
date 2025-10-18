@@ -95,8 +95,18 @@ export const importExcel = api(
 
         if (!ss) break;
 
+        if (i === 26) {
+          console.log(`📋 DEBUG Row ${i}:`);
+          console.log(`  SS Code (B): "${ss}"`);
+          console.log(`  Name (C): "${name}"`);
+          console.log(`  Description (AC): "${desc}"`);
+        }
+
         if (name) {
           const cleanDesc = desc && !desc.includes("GMT") && !desc.includes("Coordinated") ? desc : "";
+          if (i === 26 && !cleanDesc && desc) {
+            console.log(`⚠️ Description filtered out (contains GMT/Coordinated): "${desc}"`);
+          }
           rows.push({ ssCode: ss, productName: name, description: cleanDesc });
         }
       }
