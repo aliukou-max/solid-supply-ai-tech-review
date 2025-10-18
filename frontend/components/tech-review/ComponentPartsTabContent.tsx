@@ -342,25 +342,35 @@ export function ComponentPartsTabContent({
                                 setExpandedNodeView(null);
                               }}
                             >
-                              <div className="flex flex-col items-start w-full">
+                              <div className="flex flex-col items-start w-full gap-1">
                                 <div className="flex items-center gap-2 w-full">
                                   <span className="font-medium text-sm">{node.partName}</span>
                                 </div>
                                 <span className="text-xs text-muted-foreground">
                                   {node.brandName} • {node.productName}
                                 </span>
+                                {node.drawingFiles && node.drawingFiles.length > 0 && (
+                                  <div className="flex flex-wrap gap-1 mt-1">
+                                    {node.drawingFiles.map((file: any, idx: number) => (
+                                      <Badge key={idx} variant="secondary" className="text-[10px] px-1 py-0">
+                                        {file.filename}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                )}
                               </div>
                             </Button>
-                            {node.pdfUrl && (
+                            {node.drawingFiles && node.drawingFiles.length > 0 && (
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 className="h-auto px-2"
                                 onClick={async () => {
-                                  setSelectedNodePreview({ id: node.id, pdfUrl: node.pdfUrl, partName: node.partName });
+                                  const file = node.drawingFiles[0];
+                                  setSelectedNodePreview({ id: node.id, pdfUrl: file.path, partName: node.partName });
                                   setLoadingPdf(true);
                                   try {
-                                    const { url } = await backend.nodes.getPdfUrl({ pdfPath: node.pdfUrl });
+                                    const { url } = await backend.nodes.getPdfUrl({ pdfPath: file.path });
                                     setPdfPreviewUrl(url);
                                     
                                     const response = await fetch(url);

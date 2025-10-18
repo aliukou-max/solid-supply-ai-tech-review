@@ -16,10 +16,11 @@ export const listAll = api<void, ListAllNodesResponse>(
       part_name: string;
       description: string;
       pdf_url: string;
+      drawing_files: string;
       product_type: string | null;
       created_at: Date;
     }>`
-      SELECT id, product_code, brand_name, part_name, description, pdf_url, product_type, created_at
+      SELECT id, product_code, brand_name, part_name, description, pdf_url, drawing_files, product_type, created_at
       FROM nodes
       ORDER BY created_at DESC
     `;
@@ -32,6 +33,7 @@ export const listAll = api<void, ListAllNodesResponse>(
         partName: row.part_name,
         description: row.description,
         pdfUrl: row.pdf_url,
+        drawingFiles: row.drawing_files ? JSON.parse(row.drawing_files) : [],
         productType: row.product_type || undefined,
         createdAt: row.created_at,
       })),
