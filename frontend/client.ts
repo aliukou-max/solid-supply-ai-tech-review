@@ -672,6 +672,7 @@ export namespace production_errors {
 import { create as api_project_create_create } from "~backend/project/create";
 import { deleteProject as api_project_delete_deleteProject } from "~backend/project/delete";
 import { exportProject as api_project_export_excel_exportProject } from "~backend/project/export-excel";
+import { exportProjectExcel as api_project_export_project_excel_exportProjectExcel } from "~backend/project/export-project-excel";
 import { get as api_project_get_get } from "~backend/project/get";
 import { list as api_project_list_list } from "~backend/project/list";
 import { update as api_project_update_update } from "~backend/project/update";
@@ -686,6 +687,7 @@ export namespace project {
             this.create = this.create.bind(this)
             this.deleteProject = this.deleteProject.bind(this)
             this.exportProject = this.exportProject.bind(this)
+            this.exportProjectExcel = this.exportProjectExcel.bind(this)
             this.get = this.get.bind(this)
             this.list = this.list.bind(this)
             this.update = this.update.bind(this)
@@ -708,6 +710,12 @@ export namespace project {
             // Now make the actual call to the API
             const resp = await this.baseClient.callTypedAPI(`/project/export-excel`, {method: "POST", body: JSON.stringify(params)})
             return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_project_export_excel_exportProject>
+        }
+
+        public async exportProjectExcel(params: { projectId: string }): Promise<ResponseType<typeof api_project_export_project_excel_exportProjectExcel>> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI(`/project/${encodeURIComponent(params.projectId)}/export-excel`, {method: "POST", body: undefined})
+            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_project_export_project_excel_exportProjectExcel>
         }
 
         /**

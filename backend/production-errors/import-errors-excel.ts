@@ -31,7 +31,7 @@ export const importErrorsExcel = api(
 
       const buffer = Buffer.from(req.fileData, "base64");
       const workbook = new ExcelJS.Workbook();
-      await workbook.xlsx.load(buffer);
+      await workbook.xlsx.load(Buffer.from(buffer).buffer);
 
       const sheet = workbook.worksheets[0];
       if (!sheet) throw new Error("Excel faile nėra lapų");

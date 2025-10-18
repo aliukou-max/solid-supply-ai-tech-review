@@ -63,7 +63,7 @@ export function ProjectDetailPage() {
         description: "Generuojamas Excel failas",
       });
 
-      const result = await backend.project.exportProject({ projectId });
+      const result = await backend.project.exportProjectExcel({ projectId });
 
       const link = document.createElement('a');
       link.href = `data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,${result.fileData}`;
