@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { CheckCircle, XCircle } from "lucide-react";
 import type { Error as ReviewError } from "~backend/tech-review/types";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";

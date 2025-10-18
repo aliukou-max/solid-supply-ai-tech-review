@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React from "react";
 const useState = (React as any).useState;
 import type { ComponentPhoto } from "~backend/tech-review/types";

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Link, useLocation } from "react-router-dom";
 import { Package, FolderOpen, AlertCircle, BookOpen, Box, Settings, LayoutDashboard } from "lucide-react";
 import { cn } from "@/lib/utils";

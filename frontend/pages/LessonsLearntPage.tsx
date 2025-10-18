@@ -27,7 +27,7 @@ export function LessonsLearntPage() {
 
   const { data: errorsData } = useQuery({
     queryKey: ["production-errors"],
-    queryFn: async () => backend.productionErrors.list(),
+    queryFn: async () => backend.production_errors.list(),
   });
 
   const { data: lessonsData, refetch: refetchLessons } = useQuery({

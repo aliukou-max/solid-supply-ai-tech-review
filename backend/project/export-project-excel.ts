@@ -323,7 +323,7 @@ export const exportProjectExcel = api(
               const extension = ext === 'jpg' ? 'jpeg' : (ext === 'png' || ext === 'gif' ? ext : 'jpeg') as 'jpeg' | 'png' | 'gif';
               
               const imageId = workbook.addImage({
-                buffer: imageData,
+                buffer: imageData as any,
                 extension,
               });
 

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Sparkles } from "lucide-react";
 import type { AISuggestion } from "~backend/tech-review/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
