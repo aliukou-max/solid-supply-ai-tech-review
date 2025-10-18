@@ -13,14 +13,65 @@ interface GetTechReviewResponse {
 export const get = api<{ productId: string }, GetTechReviewResponse>(
   { expose: true, method: "GET", path: "/tech-reviews/:productId" },
   async ({ productId }) => {
-    const review = await db.queryRow<TechReview>`
+    let review = await db.queryRow<TechReview>`
       SELECT id, product_id as "productId", status, created_at as "createdAt", updated_at as "updatedAt"
       FROM tech_reviews
       WHERE product_id = ${productId}
     `;
 
     if (!review) {
-      throw APIError.notFound("tech review not found");
+      const product = await db.queryRow<{ type: string; productTypeId: string | null }>`
+        SELECT type, product_type_id as "productTypeId"
+        FROM products
+        WHERE id = ${productId}
+      `;
+
+      if (!product) {
+        throw APIError.notFound("product not found");
+      }
+
+      const now = new Date();
+      const reviewRow = await db.queryRow<{ id: number }>`
+        INSERT INTO tech_reviews (product_id, status, created_at, updated_at)
+        VALUES (${productId}, 'draft', ${now}, ${now})
+        RETURNING id
+      `;
+
+      if (!reviewRow) {
+        throw new Error("Failed to create tech review");
+      }
+
+      const techReviewId = reviewRow.id;
+
+      if (product.productTypeId) {
+        const parts = await db.queryAll<{ id: string; name: string; sortOrder: number }>`
+          SELECT id, name, sort_order AS "sortOrder"
+          FROM product_type_parts
+          WHERE product_type_id = ${product.productTypeId}
+          ORDER BY sort_order, name
+        `;
+        
+        for (const part of parts) {
+          await db.exec`
+            INSERT INTO component_parts (
+              tech_review_id, product_type_part_id, part_name, sort_order, 
+              has_done, has_node, had_errors, created_at, updated_at
+            )
+            VALUES (
+              ${techReviewId}, ${part.id}, ${part.name}, ${part.sortOrder},
+              false, false, false, ${now}, ${now}
+            )
+          `;
+        }
+      }
+
+      review = {
+        id: techReviewId,
+        productId: productId,
+        status: "draft",
+        createdAt: now,
+        updatedAt: now,
+      };
     }
 
     const components = await db.queryAll<Component>`

@@ -134,7 +134,7 @@ export function TechReviewPage() {
       {productLoading || reviewLoading ? (
         <div className="text-center py-12 text-muted-foreground">Kraunama...</div>
       ) : (
-        <Tabs defaultValue={productTypeParts?.parts[0]?.name || "errors"} className="space-y-4">
+        <Tabs key={productTypeParts?.parts[0]?.name} defaultValue={productTypeParts?.parts[0]?.name || "errors"} className="space-y-4">
           <TabsList>
             {productTypeParts?.parts.map((part) => {
               const partCount = componentPartsData?.parts.filter(
