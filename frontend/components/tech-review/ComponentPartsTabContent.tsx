@@ -39,6 +39,9 @@ export function ComponentPartsTabContent({
   const [expandedNodeView, setExpandedNodeView] = useState<number | null>(null);
   const [selectedPdfForExtraction, setSelectedPdfForExtraction] = useState<{partId: number, pdfPath: string} | null>(null);
   const [extractingCode, setExtractingCode] = useState(false);
+  const [showNotesFor, setShowNotesFor] = useState<Set<number>>(new Set());
+  const [errorSuggestions, setErrorSuggestions] = useState<Record<number, any[]>>({});
+  const [loadingErrorSuggestions, setLoadingErrorSuggestions] = useState<number | null>(null);
 
 
   const updateEditData = (componentPartId: number, field: string, value: any) => {
@@ -68,6 +71,25 @@ export function ComponentPartsTabContent({
       console.error("Failed to load recommendations:", error);
     } finally {
       setLoadingRecommendations(null);
+    }
+  };
+
+  const loadErrorSuggestions = async (componentPart: any) => {
+    setLoadingErrorSuggestions(componentPart.id);
+    try {
+      const result = await backend.lessonsLearnt.suggestForPart({
+        partName: componentPart.partName,
+        productType: productType,
+        limit: 10,
+      });
+      setErrorSuggestions(prev => ({
+        ...prev,
+        [componentPart.id]: result.suggestions,
+      }));
+    } catch (error) {
+      console.error("Failed to load error suggestions:", error);
+    } finally {
+      setLoadingErrorSuggestions(null);
     }
   };
 
@@ -201,7 +223,7 @@ export function ComponentPartsTabContent({
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-2">
               <div className="space-y-1">
                 <Label htmlFor={`material-${componentPart.id}`} className="text-xs">Medžiaga</Label>
                 <Input
@@ -209,7 +231,7 @@ export function ComponentPartsTabContent({
                   value={getFieldValue(componentPart, 'material') || ''}
                   onChange={(e) => updateEditData(componentPart.id, 'material', e.target.value)}
                   onBlur={() => handleSave(componentPart.id)}
-                  placeholder="Pvz.: MDF, Fanera..."
+                  placeholder="Pvz.: MDF"
                   className="h-8 text-sm"
                 />
               </div>
@@ -220,25 +242,24 @@ export function ComponentPartsTabContent({
                   value={getFieldValue(componentPart, 'finish') || ''}
                   onChange={(e) => updateEditData(componentPart.id, 'finish', e.target.value)}
                   onBlur={() => handleSave(componentPart.id)}
-                  placeholder="Pvz.: Dažyta, Laminuota..."
+                  placeholder="Pvz.: Dažyta"
                   className="h-8 text-sm"
                 />
               </div>
-            </div>
-
-            <div className="space-y-1">
-              <div className="flex items-center justify-between">
-                <Label htmlFor={`drawing-${componentPart.id}`} className="text-xs">Brėžinio kodas</Label>
-                {extractingCode && <Badge variant="outline" className="text-xs">Ištraukiama...</Badge>}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor={`drawing-${componentPart.id}`} className="text-xs">Brėžinio kodas</Label>
+                  {extractingCode && <Badge variant="outline" className="text-xs px-1 py-0 h-4">...</Badge>}
+                </div>
+                <Input
+                  id={`drawing-${componentPart.id}`}
+                  value={getFieldValue(componentPart, 'drawingCode') || ''}
+                  onChange={(e) => updateEditData(componentPart.id, 'drawingCode', e.target.value)}
+                  onBlur={() => handleSave(componentPart.id)}
+                  placeholder="F12345"
+                  className="h-8 text-sm"
+                />
               </div>
-              <Input
-                id={`drawing-${componentPart.id}`}
-                value={getFieldValue(componentPart, 'drawingCode') || ''}
-                onChange={(e) => updateEditData(componentPart.id, 'drawingCode', e.target.value)}
-                onBlur={() => handleSave(componentPart.id)}
-                placeholder="Brėžinio kodas"
-                className="h-8 text-sm"
-              />
             </div>
 
             <div className="space-y-2">
@@ -483,42 +504,295 @@ export function ComponentPartsTabContent({
 
             <div className="space-y-1">
               <Label htmlFor={`tech-desc-${componentPart.id}`} className="text-xs">Technologinis aprašymas</Label>
-              <Textarea
-                id={`tech-desc-${componentPart.id}`}
-                value={getFieldValue(componentPart, 'technologicalDescription') || ''}
-                onChange={(e) => updateEditData(componentPart.id, 'technologicalDescription', e.target.value)}
-                onBlur={() => handleSave(componentPart.id)}
-                placeholder="Technologinis aprašymas..."
-                rows={2}
-                className="text-sm"
-              />
+              <div className="space-y-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    variant={getFieldValue(componentPart, 'technologicalDescription')?.includes('Pjovimas') ? 'default' : 'outline'}
+                    size="sm"
+                    className="h-7 text-xs justify-start"
+                    onClick={() => {
+                      const current = getFieldValue(componentPart, 'technologicalDescription') || '';
+                      const items = current.split('\n').filter(Boolean);
+                      const newItem = '✓ Pjovimas';
+                      if (items.includes(newItem)) {
+                        updateEditData(componentPart.id, 'technologicalDescription', items.filter(i => i !== newItem).join('\n'));
+                      } else {
+                        updateEditData(componentPart.id, 'technologicalDescription', [...items, newItem].join('\n'));
+                      }
+                      handleSave(componentPart.id);
+                    }}
+                  >
+                    Pjovimas
+                  </Button>
+                  <Button
+                    variant={getFieldValue(componentPart, 'technologicalDescription')?.includes('Frezavimas') ? 'default' : 'outline'}
+                    size="sm"
+                    className="h-7 text-xs justify-start"
+                    onClick={() => {
+                      const current = getFieldValue(componentPart, 'technologicalDescription') || '';
+                      const items = current.split('\n').filter(Boolean);
+                      const newItem = '✓ Frezavimas';
+                      if (items.includes(newItem)) {
+                        updateEditData(componentPart.id, 'technologicalDescription', items.filter(i => i !== newItem).join('\n'));
+                      } else {
+                        updateEditData(componentPart.id, 'technologicalDescription', [...items, newItem].join('\n'));
+                      }
+                      handleSave(componentPart.id);
+                    }}
+                  >
+                    Frezavimas
+                  </Button>
+                  <Button
+                    variant={getFieldValue(componentPart, 'technologicalDescription')?.includes('Gręžimas') ? 'default' : 'outline'}
+                    size="sm"
+                    className="h-7 text-xs justify-start"
+                    onClick={() => {
+                      const current = getFieldValue(componentPart, 'technologicalDescription') || '';
+                      const items = current.split('\n').filter(Boolean);
+                      const newItem = '✓ Gręžimas';
+                      if (items.includes(newItem)) {
+                        updateEditData(componentPart.id, 'technologicalDescription', items.filter(i => i !== newItem).join('\n'));
+                      } else {
+                        updateEditData(componentPart.id, 'technologicalDescription', [...items, newItem].join('\n'));
+                      }
+                      handleSave(componentPart.id);
+                    }}
+                  >
+                    Gręžimas
+                  </Button>
+                  <Button
+                    variant={getFieldValue(componentPart, 'technologicalDescription')?.includes('Laminavimas') ? 'default' : 'outline'}
+                    size="sm"
+                    className="h-7 text-xs justify-start"
+                    onClick={() => {
+                      const current = getFieldValue(componentPart, 'technologicalDescription') || '';
+                      const items = current.split('\n').filter(Boolean);
+                      const newItem = '✓ Laminavimas';
+                      if (items.includes(newItem)) {
+                        updateEditData(componentPart.id, 'technologicalDescription', items.filter(i => i !== newItem).join('\n'));
+                      } else {
+                        updateEditData(componentPart.id, 'technologicalDescription', [...items, newItem].join('\n'));
+                      }
+                      handleSave(componentPart.id);
+                    }}
+                  >
+                    Laminavimas
+                  </Button>
+                  <Button
+                    variant={getFieldValue(componentPart, 'technologicalDescription')?.includes('Dažymas') ? 'default' : 'outline'}
+                    size="sm"
+                    className="h-7 text-xs justify-start"
+                    onClick={() => {
+                      const current = getFieldValue(componentPart, 'technologicalDescription') || '';
+                      const items = current.split('\n').filter(Boolean);
+                      const newItem = '✓ Dažymas';
+                      if (items.includes(newItem)) {
+                        updateEditData(componentPart.id, 'technologicalDescription', items.filter(i => i !== newItem).join('\n'));
+                      } else {
+                        updateEditData(componentPart.id, 'technologicalDescription', [...items, newItem].join('\n'));
+                      }
+                      handleSave(componentPart.id);
+                    }}
+                  >
+                    Dažymas
+                  </Button>
+                  <Button
+                    variant={getFieldValue(componentPart, 'technologicalDescription')?.includes('Šlifavimas') ? 'default' : 'outline'}
+                    size="sm"
+                    className="h-7 text-xs justify-start"
+                    onClick={() => {
+                      const current = getFieldValue(componentPart, 'technologicalDescription') || '';
+                      const items = current.split('\n').filter(Boolean);
+                      const newItem = '✓ Šlifavimas';
+                      if (items.includes(newItem)) {
+                        updateEditData(componentPart.id, 'technologicalDescription', items.filter(i => i !== newItem).join('\n'));
+                      } else {
+                        updateEditData(componentPart.id, 'technologicalDescription', [...items, newItem].join('\n'));
+                      }
+                      handleSave(componentPart.id);
+                    }}
+                  >
+                    Šlifavimas
+                  </Button>
+                </div>
+                <Textarea
+                  id={`tech-desc-${componentPart.id}`}
+                  value={getFieldValue(componentPart, 'technologicalDescription') || ''}
+                  onChange={(e) => updateEditData(componentPart.id, 'technologicalDescription', e.target.value)}
+                  onBlur={() => handleSave(componentPart.id)}
+                  placeholder="Pasirinkite procesus arba įrašykite rankiniu būdu..."
+                  rows={3}
+                  className="text-sm"
+                />
+              </div>
             </div>
 
             <div className="space-y-1">
               <Label htmlFor={`assembly-${componentPart.id}`} className="text-xs">Surinkimo technologija</Label>
-              <Textarea
-                id={`assembly-${componentPart.id}`}
-                value={getFieldValue(componentPart, 'assemblyTechnology') || ''}
-                onChange={(e) => updateEditData(componentPart.id, 'assemblyTechnology', e.target.value)}
-                onBlur={() => handleSave(componentPart.id)}
-                placeholder="Surinkimo technologija..."
-                rows={2}
-                className="text-sm"
-              />
+              <div className="space-y-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    variant={getFieldValue(componentPart, 'assemblyTechnology')?.includes('Klijuojama') ? 'default' : 'outline'}
+                    size="sm"
+                    className="h-7 text-xs justify-start"
+                    onClick={() => {
+                      const current = getFieldValue(componentPart, 'assemblyTechnology') || '';
+                      const items = current.split('\n').filter(Boolean);
+                      const newItem = '✓ Klijuojama';
+                      if (items.includes(newItem)) {
+                        updateEditData(componentPart.id, 'assemblyTechnology', items.filter(i => i !== newItem).join('\n'));
+                      } else {
+                        updateEditData(componentPart.id, 'assemblyTechnology', [...items, newItem].join('\n'));
+                      }
+                      handleSave(componentPart.id);
+                    }}
+                  >
+                    Klijuojama
+                  </Button>
+                  <Button
+                    variant={getFieldValue(componentPart, 'assemblyTechnology')?.includes('Varžtais') ? 'default' : 'outline'}
+                    size="sm"
+                    className="h-7 text-xs justify-start"
+                    onClick={() => {
+                      const current = getFieldValue(componentPart, 'assemblyTechnology') || '';
+                      const items = current.split('\n').filter(Boolean);
+                      const newItem = '✓ Varžtais';
+                      if (items.includes(newItem)) {
+                        updateEditData(componentPart.id, 'assemblyTechnology', items.filter(i => i !== newItem).join('\n'));
+                      } else {
+                        updateEditData(componentPart.id, 'assemblyTechnology', [...items, newItem].join('\n'));
+                      }
+                      handleSave(componentPart.id);
+                    }}
+                  >
+                    Varžtais
+                  </Button>
+                  <Button
+                    variant={getFieldValue(componentPart, 'assemblyTechnology')?.includes('Smeigėmis') ? 'default' : 'outline'}
+                    size="sm"
+                    className="h-7 text-xs justify-start"
+                    onClick={() => {
+                      const current = getFieldValue(componentPart, 'assemblyTechnology') || '';
+                      const items = current.split('\n').filter(Boolean);
+                      const newItem = '✓ Smeigėmis';
+                      if (items.includes(newItem)) {
+                        updateEditData(componentPart.id, 'assemblyTechnology', items.filter(i => i !== newItem).join('\n'));
+                      } else {
+                        updateEditData(componentPart.id, 'assemblyTechnology', [...items, newItem].join('\n'));
+                      }
+                      handleSave(componentPart.id);
+                    }}
+                  >
+                    Smeigėmis
+                  </Button>
+                  <Button
+                    variant={getFieldValue(componentPart, 'assemblyTechnology')?.includes('Ekscentrikai') ? 'default' : 'outline'}
+                    size="sm"
+                    className="h-7 text-xs justify-start"
+                    onClick={() => {
+                      const current = getFieldValue(componentPart, 'assemblyTechnology') || '';
+                      const items = current.split('\n').filter(Boolean);
+                      const newItem = '✓ Ekscentrikai';
+                      if (items.includes(newItem)) {
+                        updateEditData(componentPart.id, 'assemblyTechnology', items.filter(i => i !== newItem).join('\n'));
+                      } else {
+                        updateEditData(componentPart.id, 'assemblyTechnology', [...items, newItem].join('\n'));
+                      }
+                      handleSave(componentPart.id);
+                    }}
+                  >
+                    Ekscentrikai
+                  </Button>
+                  <Button
+                    variant={getFieldValue(componentPart, 'assemblyTechnology')?.includes('Lankstas') ? 'default' : 'outline'}
+                    size="sm"
+                    className="h-7 text-xs justify-start"
+                    onClick={() => {
+                      const current = getFieldValue(componentPart, 'assemblyTechnology') || '';
+                      const items = current.split('\n').filter(Boolean);
+                      const newItem = '✓ Lankstas';
+                      if (items.includes(newItem)) {
+                        updateEditData(componentPart.id, 'assemblyTechnology', items.filter(i => i !== newItem).join('\n'));
+                      } else {
+                        updateEditData(componentPart.id, 'assemblyTechnology', [...items, newItem].join('\n'));
+                      }
+                      handleSave(componentPart.id);
+                    }}
+                  >
+                    Lankstas
+                  </Button>
+                  <Button
+                    variant={getFieldValue(componentPart, 'assemblyTechnology')?.includes('Magnetas') ? 'default' : 'outline'}
+                    size="sm"
+                    className="h-7 text-xs justify-start"
+                    onClick={() => {
+                      const current = getFieldValue(componentPart, 'assemblyTechnology') || '';
+                      const items = current.split('\n').filter(Boolean);
+                      const newItem = '✓ Magnetas';
+                      if (items.includes(newItem)) {
+                        updateEditData(componentPart.id, 'assemblyTechnology', items.filter(i => i !== newItem).join('\n'));
+                      } else {
+                        updateEditData(componentPart.id, 'assemblyTechnology', [...items, newItem].join('\n'));
+                      }
+                      handleSave(componentPart.id);
+                    }}
+                  >
+                    Magnetas
+                  </Button>
+                </div>
+                <Textarea
+                  id={`assembly-${componentPart.id}`}
+                  value={getFieldValue(componentPart, 'assemblyTechnology') || ''}
+                  onChange={(e) => updateEditData(componentPart.id, 'assemblyTechnology', e.target.value)}
+                  onBlur={() => handleSave(componentPart.id)}
+                  placeholder="Pasirinkite surinkimo būdus arba įrašykite rankiniu būdu..."
+                  rows={3}
+                  className="text-sm"
+                />
+              </div>
             </div>
 
-            <div className="space-y-1">
-              <Label htmlFor={`notes-${componentPart.id}`} className="text-xs">Pastabos</Label>
-              <Textarea
-                id={`notes-${componentPart.id}`}
-                value={getFieldValue(componentPart, 'notes') || ''}
-                onChange={(e) => updateEditData(componentPart.id, 'notes', e.target.value)}
-                onBlur={() => handleSave(componentPart.id)}
-                placeholder="Pastabos..."
-                rows={2}
-                className="text-sm"
-              />
-            </div>
+            {showNotesFor.has(componentPart.id) ? (
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor={`notes-${componentPart.id}`} className="text-xs">Pastabos</Label>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 px-2 text-xs"
+                    onClick={() => {
+                      const newSet = new Set(showNotesFor);
+                      newSet.delete(componentPart.id);
+                      setShowNotesFor(newSet);
+                    }}
+                  >
+                    Paslėpti
+                  </Button>
+                </div>
+                <Textarea
+                  id={`notes-${componentPart.id}`}
+                  value={getFieldValue(componentPart, 'notes') || ''}
+                  onChange={(e) => updateEditData(componentPart.id, 'notes', e.target.value)}
+                  onBlur={() => handleSave(componentPart.id)}
+                  placeholder="Pastabos..."
+                  rows={2}
+                  className="text-sm"
+                />
+              </div>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 text-xs w-full justify-start"
+                onClick={() => {
+                  const newSet = new Set(showNotesFor);
+                  newSet.add(componentPart.id);
+                  setShowNotesFor(newSet);
+                }}
+              >
+                + Pridėti pastabas
+              </Button>
+            )}
 
             <div className="flex gap-3">
               <div className="flex items-center space-x-1.5">
@@ -558,7 +832,20 @@ export function ComponentPartsTabContent({
 
             {getFieldValue(componentPart, 'hadErrors') && (
               <div className="space-y-2">
-                <Label className="text-xs">Susijusios klaidos</Label>
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs">Susijusios klaidos</Label>
+                  {!errorSuggestions[componentPart.id] && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-xs"
+                      onClick={() => loadErrorSuggestions(componentPart)}
+                      disabled={loadingErrorSuggestions === componentPart.id}
+                    >
+                      {loadingErrorSuggestions === componentPart.id ? 'Ieškoma...' : '💡 Pasiūlyti klaidas'}
+                    </Button>
+                  )}
+                </div>
                 <Select
                   value="__none__"
                   onValueChange={(value) => {
@@ -575,6 +862,29 @@ export function ComponentPartsTabContent({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="__none__">-- Pasirinkite klaidą --</SelectItem>
+                    {errorSuggestions[componentPart.id] && errorSuggestions[componentPart.id].length > 0 && (
+                      <>
+                        <SelectItem value="__divider__" disabled className="text-xs font-semibold">
+                          💡 Pasiūlytos klaidos:
+                        </SelectItem>
+                        {errorSuggestions[componentPart.id].map((suggestion: any) => (
+                          <SelectItem key={`suggestion-${suggestion.id}`} value={suggestion.id.toString()} className="py-2">
+                            <div className="flex items-start gap-2">
+                              <Badge variant="outline" className="text-[10px] px-1 bg-amber-500/10 text-amber-700 border-amber-500/20">
+                                {suggestion.occurrenceCount}x
+                              </Badge>
+                              <div className="flex flex-col">
+                                <span className="font-medium text-xs">{suggestion.errorDescription}</span>
+                                <span className="text-[10px] text-muted-foreground">Sprendimas: {suggestion.solution?.slice(0, 60)}...</span>
+                              </div>
+                            </div>
+                          </SelectItem>
+                        ))}
+                        <SelectItem value="__divider2__" disabled className="text-xs font-semibold mt-2">
+                          Kitos klaidos:
+                        </SelectItem>
+                      </>
+                    )}
                     {allErrorsData?.errors
                       ?.filter(error => {
                         const partName = componentPart.partName?.toLowerCase() || '';
