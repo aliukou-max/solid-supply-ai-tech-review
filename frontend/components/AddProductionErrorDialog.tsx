@@ -34,6 +34,7 @@ interface AddProductionErrorDialogProps {
 interface FormData {
   projectCode: string;
   productCode: string;
+  partName: string;
   errorDescription: string;
 }
 
@@ -48,6 +49,7 @@ export function AddProductionErrorDialog({ open, onOpenChange, onSuccess }: AddP
       await backend.production_errors.create({
         projectCode: data.projectCode,
         productCode: data.productCode,
+        partName: data.partName,
         errorDescription: data.errorDescription,
       });
       toast({ title: "Klaida pridėta!" });
@@ -86,6 +88,14 @@ export function AddProductionErrorDialog({ open, onOpenChange, onSuccess }: AddP
                 id="productCode"
                 {...register("productCode", { required: true })}
                 placeholder="pvz. SS-001"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="partName">Detalės pavadinimas</Label>
+              <Input
+                id="partName"
+                {...register("partName")}
+                placeholder="pvz. Durys, Stalviršis, Fasadas"
               />
             </div>
             <div className="space-y-2">

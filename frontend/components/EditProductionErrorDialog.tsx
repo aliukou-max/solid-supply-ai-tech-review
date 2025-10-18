@@ -38,6 +38,7 @@ interface EditProductionErrorDialogProps {
 interface FormData {
   projectCode: string;
   productCode: string;
+  partName: string;
   errorDescription: string;
   isResolved: boolean;
 }
@@ -47,6 +48,7 @@ export function EditProductionErrorDialog({ error, open, onOpenChange, onSuccess
     defaultValues: {
       projectCode: error.projectCode,
       productCode: error.productCode,
+      partName: error.partName || '',
       errorDescription: error.errorDescription,
       isResolved: error.isResolved,
     },
@@ -60,6 +62,7 @@ export function EditProductionErrorDialog({ error, open, onOpenChange, onSuccess
       reset({
         projectCode: error.projectCode,
         productCode: error.productCode,
+        partName: error.partName || '',
         errorDescription: error.errorDescription,
         isResolved: error.isResolved,
       });
@@ -73,6 +76,7 @@ export function EditProductionErrorDialog({ error, open, onOpenChange, onSuccess
         id: error.id,
         projectCode: data.projectCode,
         productCode: data.productCode,
+        partName: data.partName,
         errorDescription: data.errorDescription,
         isResolved: data.isResolved,
       });
@@ -111,6 +115,14 @@ export function EditProductionErrorDialog({ error, open, onOpenChange, onSuccess
                 id="productCode"
                 {...register("productCode", { required: true })}
                 placeholder="pvz. SS-001"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="partName">Detalės pavadinimas</Label>
+              <Input
+                id="partName"
+                {...register("partName")}
+                placeholder="pvz. Durys, Stalviršis, Fasadas"
               />
             </div>
             <div className="space-y-2">
