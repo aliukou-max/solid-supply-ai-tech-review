@@ -108,9 +108,6 @@ export namespace aiAnalysis {
             this.analyze = this.analyze.bind(this)
         }
 
-        /**
-         * Analyzes an error and generates AI-powered improvement suggestions
-         */
         public async analyze(params: RequestType<typeof api_aiAnalysis_analyze_analyze>): Promise<ResponseType<typeof api_aiAnalysis_analyze_analyze>> {
             // Now make the actual call to the API
             const resp = await this.baseClient.callTypedAPI(`/ai-analysis/analyze`, {method: "POST", body: JSON.stringify(params)})
@@ -127,6 +124,7 @@ import { incrementOccurrence as api_lessonsLearnt_increment_occurrence_increment
 import { list as api_lessonsLearnt_list_list } from "~backend/lessons-learnt/list";
 import { listByType as api_lessonsLearnt_list_by_type_listByType } from "~backend/lessons-learnt/list-by-type";
 import { searchSimilar as api_lessonsLearnt_search_similar_searchSimilar } from "~backend/lessons-learnt/search-similar";
+import { suggestForPart as api_lessonsLearnt_suggest_for_part_suggestForPart } from "~backend/lessons-learnt/suggest-for-part";
 
 export namespace lessonsLearnt {
 
@@ -140,6 +138,7 @@ export namespace lessonsLearnt {
             this.list = this.list.bind(this)
             this.listByType = this.listByType.bind(this)
             this.searchSimilar = this.searchSimilar.bind(this)
+            this.suggestForPart = this.suggestForPart.bind(this)
         }
 
         /**
@@ -178,12 +177,19 @@ export namespace lessonsLearnt {
             const resp = await this.baseClient.callTypedAPI(`/lessons-learnt/search-similar`, {method: "POST", body: JSON.stringify(params)})
             return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_lessonsLearnt_search_similar_searchSimilar>
         }
+
+        public async suggestForPart(params: RequestType<typeof api_lessonsLearnt_suggest_for_part_suggestForPart>): Promise<ResponseType<typeof api_lessonsLearnt_suggest_for_part_suggestForPart>> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI(`/lessons-learnt/suggest-for-part`, {method: "POST", body: JSON.stringify(params)})
+            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_lessonsLearnt_suggest_for_part_suggestForPart>
+        }
     }
 }
 
 /**
  * Import the endpoint handlers to derive the types for the client.
  */
+import { batchExtractAllDrawings as api_nodes_batch_extract_all_drawings_batchExtractAllDrawings } from "~backend/nodes/batch-extract-all-drawings";
 import { create as api_nodes_create_create } from "~backend/nodes/create";
 import { deleteNode as api_nodes_delete_deleteNode } from "~backend/nodes/delete";
 import { getPdfUrl as api_nodes_get_pdf_url_getPdfUrl } from "~backend/nodes/get-pdf-url";
@@ -206,6 +212,7 @@ export namespace nodes {
 
         constructor(baseClient: BaseClient) {
             this.baseClient = baseClient
+            this.batchExtractAllDrawings = this.batchExtractAllDrawings.bind(this)
             this.create = this.create.bind(this)
             this.deleteNode = this.deleteNode.bind(this)
             this.getPdfUrl = this.getPdfUrl.bind(this)
@@ -220,6 +227,12 @@ export namespace nodes {
             this.recommend = this.recommend.bind(this)
             this.recommendForPart = this.recommendForPart.bind(this)
             this.update = this.update.bind(this)
+        }
+
+        public async batchExtractAllDrawings(): Promise<ResponseType<typeof api_nodes_batch_extract_all_drawings_batchExtractAllDrawings>> {
+            // Now make the actual call to the API
+            const resp = await this.baseClient.callTypedAPI(`/nodes/batch-extract-drawings`, {method: "POST", body: undefined})
+            return JSON.parse(await resp.text(), dateReviver) as ResponseType<typeof api_nodes_batch_extract_all_drawings_batchExtractAllDrawings>
         }
 
         public async create(params: RequestType<typeof api_nodes_create_create>): Promise<ResponseType<typeof api_nodes_create_create>> {

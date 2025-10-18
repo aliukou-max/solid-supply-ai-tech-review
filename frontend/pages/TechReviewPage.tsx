@@ -200,6 +200,11 @@ export function TechReviewPage() {
     >
       {productLoading || reviewLoading ? (
         <div className="text-center py-12 text-muted-foreground">Kraunama...</div>
+      ) : !productTypeParts?.parts || productTypeParts.parts.length === 0 ? (
+        <div className="text-center py-12">
+          <p className="text-muted-foreground mb-4">Šis gaminio tipas neturi apibrėžtų dalių.</p>
+          <p className="text-sm text-muted-foreground">Pridėkite dalis gaminio tipo nustatymuose.</p>
+        </div>
       ) : (
         <div className="space-y-4">
           <NodeAssignmentSummary 
