@@ -37,10 +37,7 @@ export function ComponentPartsTabContent({
   const [nodeRecommendations, setNodeRecommendations] = useState<Record<number, any[]>>({});
   const [loadingRecommendations, setLoadingRecommendations] = useState<number | null>(null);
   const [expandedNodeView, setExpandedNodeView] = useState<number | null>(null);
-  const [selectedNodePreview, setSelectedNodePreview] = useState<{id: string, pdfUrl: string, partName: string} | null>(null);
-  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
-  const [extractedCode, setExtractedCode] = useState<string | null>(null);
-  const [loadingPdf, setLoadingPdf] = useState(false);
+
 
   const updateEditData = (componentPartId: number, field: string, value: any) => {
     setEditData(prev => ({
@@ -83,37 +80,6 @@ export function ComponentPartsTabContent({
   const getFieldValue = (componentPart: any, field: string) => {
     const editValue = editData[componentPart.id]?.[field];
     return editValue !== undefined ? editValue : componentPart[field];
-  };
-
-  const extractTextFromPdf = async (blob: Blob): Promise<string> => {
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        try {
-          const arrayBuffer = e.target?.result as ArrayBuffer;
-          const uint8Array = new Uint8Array(arrayBuffer);
-          let text = '';
-          
-          for (let i = 0; i < uint8Array.length; i++) {
-            const char = String.fromCharCode(uint8Array[i]);
-            if (char.match(/[A-Z0-9\s\-_]/)) {
-              text += char;
-            }
-          }
-          
-          resolve(text);
-        } catch (error) {
-          console.error('PDF text extraction error:', error);
-          resolve('');
-        }
-      };
-      reader.readAsArrayBuffer(blob);
-    });
-  };
-
-  const extractProductCode = (text: string): string | null => {
-    const fCodeMatch = text.match(/F\d{5,6}/);
-    return fCodeMatch ? fCodeMatch[0] : null;
   };
 
   const handleSave = async (componentPartId: number) => {
@@ -366,22 +332,12 @@ export function ComponentPartsTabContent({
                                 size="sm"
                                 className="h-auto px-2"
                                 onClick={async () => {
-                                  const file = node.drawingFiles[0];
-                                  setSelectedNodePreview({ id: node.id, pdfUrl: file.path, partName: node.partName });
-                                  setLoadingPdf(true);
                                   try {
+                                    const file = node.drawingFiles[0];
                                     const { url } = await backend.nodes.getPdfUrl({ pdfPath: file.path });
-                                    setPdfPreviewUrl(url);
-                                    
-                                    const response = await fetch(url);
-                                    const blob = await response.blob();
-                                    const text = await extractTextFromPdf(blob);
-                                    const code = extractProductCode(text);
-                                    setExtractedCode(code);
+                                    window.open(url, '_blank');
                                   } catch (error) {
                                     console.error('Failed to load PDF:', error);
-                                  } finally {
-                                    setLoadingPdf(false);
                                   }
                                 }}
                               >
@@ -564,57 +520,6 @@ export function ComponentPartsTabContent({
           </CardContent>
         </Card>
       ))}
-
-      {selectedNodePreview && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => {
-          setSelectedNodePreview(null);
-          setPdfPreviewUrl(null);
-          setExtractedCode(null);
-        }}>
-          <Card className="w-full max-w-4xl max-h-[90vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <div>
-                  <div className="text-base">{selectedNodePreview.partName}</div>
-                  {extractedCode && (
-                    <Badge variant="outline" className="mt-2 text-sm font-mono">
-                      Gaminio kodas: {extractedCode}
-                    </Badge>
-                  )}
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setSelectedNodePreview(null);
-                    setPdfPreviewUrl(null);
-                    setExtractedCode(null);
-                  }}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="overflow-y-auto max-h-[calc(90vh-8rem)]">
-              {loadingPdf ? (
-                <div className="flex items-center justify-center h-96">
-                  <p className="text-muted-foreground">Kraunama...</p>
-                </div>
-              ) : pdfPreviewUrl ? (
-                <iframe 
-                  src={pdfPreviewUrl} 
-                  className="w-full h-[600px] border rounded"
-                  title="PDF Preview"
-                />
-              ) : (
-                <div className="flex items-center justify-center h-96">
-                  <p className="text-muted-foreground">Nepavyko įkelti PDF</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      )}
     </div>
   );
 }
