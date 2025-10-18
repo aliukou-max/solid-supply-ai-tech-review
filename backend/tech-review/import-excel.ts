@@ -295,6 +295,13 @@ async function determineProductTypeFromName(productName: string): Promise<string
 }
 
 async function analyzeDescriptionWithAI(description: string, productType: string): Promise<ParsedComponent[]> {
+  const apiKey = openAIKey();
+  
+  if (!apiKey) {
+    console.error("OpenAI API key not configured");
+    return createFallbackComponent(description, "OpenAI API key missing - configure in Settings");
+  }
+
   const prompt = `
 You are an expert in furniture and retail fixture engineering.
 Parse the following technical description into structured component data.
@@ -340,8 +347,9 @@ If the description is too vague or empty, return an empty array: []
     });
 
     if (!response.ok) {
-      console.error("OpenAI API klaida:", await response.text());
-      return createFallbackComponent(description);
+      const errorText = await response.text();
+      console.error("OpenAI API klaida:", response.status, errorText);
+      return createFallbackComponent(description, `API error ${response.status}: ${errorText.slice(0, 100)}`);
     }
 
     const data = (await response.json()) as {
@@ -349,28 +357,37 @@ If the description is too vague or empty, return an empty array: []
     };
     const content = data.choices?.[0]?.message?.content;
 
-    if (!content) return createFallbackComponent(description);
+    if (!content) {
+      console.error("OpenAI grąžino tuščią atsakymą");
+      return createFallbackComponent(description, "Empty AI response");
+    }
 
     try {
       const parsed = JSON.parse(content);
-      return Array.isArray(parsed) ? parsed : createFallbackComponent(description);
-    } catch {
-      return createFallbackComponent(description);
+      if (!Array.isArray(parsed)) {
+        console.error("AI response not an array:", content.slice(0, 200));
+        return createFallbackComponent(description, "Invalid JSON structure");
+      }
+      return parsed;
+    } catch (parseError) {
+      console.error("JSON parse error:", parseError, "Content:", content.slice(0, 200));
+      return createFallbackComponent(description, "JSON parse failed");
     }
   } catch (error) {
     console.error("AI analizės klaida:", error);
-    return createFallbackComponent(description);
+    return createFallbackComponent(description, `Network error: ${error}`);
   }
 }
 
-function createFallbackComponent(description: string): ParsedComponent[] {
+function createFallbackComponent(description: string, reason?: string): ParsedComponent[] {
+  console.log("Fallback triggered for description:", description.slice(0, 100), "Reason:", reason);
   return [
     {
       name: "Main component",
       material: undefined,
       finish: undefined,
       other: description.slice(0, 400),
-      uncertainTerms: ["AI analysis failed – manual review required"],
+      uncertainTerms: reason ? [`AI failed: ${reason}`] : ["AI analysis failed – manual review required"],
     },
   ];
 }
