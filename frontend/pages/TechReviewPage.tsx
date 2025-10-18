@@ -1,19 +1,16 @@
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, FileText, Lightbulb } from "lucide-react";
 import backend from "~backend/client";
 import { MainLayout } from "@/components/MainLayout";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ComponentsTab } from "@/components/tech-review/ComponentsTab";
-import { ComponentPartsTab } from "@/components/tech-review/ComponentPartsTab";
-import { ErrorsTab } from "@/components/tech-review/ErrorsTab";
-import { LessonsTab } from "@/components/tech-review/LessonsTab";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { NodeRecommendations } from "@/components/NodeRecommendations";
 
 export function TechReviewPage() {
   const { productId } = useParams<{ productId: string }>();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const { data: product, isLoading: productLoading } = useQuery({
     queryKey: ["product", productId],
@@ -21,7 +18,7 @@ export function TechReviewPage() {
     enabled: !!productId,
   });
 
-  const { data, isLoading: reviewLoading, refetch } = useQuery({
+  const { data, isLoading: reviewLoading } = useQuery({
     queryKey: ["tech-review", productId],
     queryFn: async () => backend.techReview.get({ productId: productId! }),
     enabled: !!productId,
@@ -40,6 +37,12 @@ export function TechReviewPage() {
   });
 
   const openErrors = data?.errors.filter(e => e.status === "open") || [];
+
+  const currentTab = location.pathname.split('/').pop() || 'parts';
+
+  const handleTabChange = (value: string) => {
+    navigate(`/tech-review/${productId}/${value}`);
+  };
 
   return (
     <MainLayout
@@ -82,57 +85,25 @@ export function TechReviewPage() {
       {productLoading || reviewLoading ? (
         <div className="text-center py-12 text-muted-foreground">Kraunama...</div>
       ) : (
-        <Tabs defaultValue="parts" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="parts">
-              Detalės ({componentPartsData?.parts.length || 0})
-            </TabsTrigger>
-            <TabsTrigger value="components">
-              Mazgai ({data?.components.length || 0})
-            </TabsTrigger>
-            <TabsTrigger value="errors">
-              Klaidos {openErrors.length > 0 && `(${openErrors.length})`}
-            </TabsTrigger>
-            <TabsTrigger value="lessons">
-              Lessons Learnt ({lessonsData?.lessons.length || 0})
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="parts" className="space-y-4">
-            <ComponentPartsTab
-              techReviewId={data?.review.id!}
-              productId={productId!}
-              onUpdate={refetch}
-            />
-          </TabsContent>
-
-          <TabsContent value="components" className="space-y-4">
-            <NodeRecommendations productId={productId!} />
-            <ComponentsTab
-              components={data?.components || []}
-              onUpdate={refetch}
-            />
-          </TabsContent>
-
-          <TabsContent value="errors" className="space-y-4">
-            <ErrorsTab
-              techReviewId={data?.review.id!}
-              errors={data?.errors || []}
-              suggestions={data?.suggestions || []}
-              productType={product?.type!}
-              projectCode={product?.projectId!}
-              productCode={product?.ssCode!}
-              onUpdate={refetch}
-            />
-          </TabsContent>
-
-          <TabsContent value="lessons" className="space-y-4">
-            <LessonsTab
-              productType={product?.type!}
-              lessons={lessonsData?.lessons || []}
-            />
-          </TabsContent>
-        </Tabs>
+        <div className="space-y-4">
+          <Tabs value={currentTab} onValueChange={handleTabChange}>
+            <TabsList>
+              <TabsTrigger value="parts">
+                Detalės ({componentPartsData?.parts.length || 0})
+              </TabsTrigger>
+              <TabsTrigger value="components">
+                Mazgai ({data?.components.length || 0})
+              </TabsTrigger>
+              <TabsTrigger value="errors">
+                Klaidos {openErrors.length > 0 && `(${openErrors.length})`}
+              </TabsTrigger>
+              <TabsTrigger value="lessons">
+                Lessons Learnt ({lessonsData?.lessons.length || 0})
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+          <Outlet />
+        </div>
       )}
     </MainLayout>
   );
