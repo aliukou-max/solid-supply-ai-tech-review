@@ -16,9 +16,11 @@ export const deleteErrors = api<DeleteProductionErrorsRequest, DeleteProductionE
       return { deletedCount: 0 };
     }
 
+    const now = new Date();
     const result = await db.exec`
-      DELETE FROM production_errors
-      WHERE id = ANY(${req.ids})
+      UPDATE production_errors
+      SET deleted_at = ${now}
+      WHERE id = ANY(${req.ids}) AND deleted_at IS NULL
     `;
 
     return { deletedCount: req.ids.length };

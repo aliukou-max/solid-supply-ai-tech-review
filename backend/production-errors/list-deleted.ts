@@ -2,12 +2,12 @@ import { api } from "encore.dev/api";
 import db from "../db";
 import type { ProductionError } from "./types";
 
-interface ListProductionErrorsResponse {
-  errors: ProductionError[];
+interface ListDeletedProductionErrorsResponse {
+  errors: Array<ProductionError & { deletedAt: Date }>;
 }
 
-export const list = api<void, ListProductionErrorsResponse>(
-  { expose: true, method: "GET", path: "/production-errors" },
+export const listDeleted = api<void, ListDeletedProductionErrorsResponse>(
+  { expose: true, method: "GET", path: "/production-errors/deleted" },
   async () => {
     const rows = await db.queryAll<{
       id: number;
@@ -18,11 +18,12 @@ export const list = api<void, ListProductionErrorsResponse>(
       is_resolved: boolean;
       created_at: Date;
       resolved_at: Date | null;
+      deleted_at: Date;
     }>`
-      SELECT id, project_code, product_code, part_name, error_description, is_resolved, created_at, resolved_at
+      SELECT id, project_code, product_code, part_name, error_description, is_resolved, created_at, resolved_at, deleted_at
       FROM production_errors
-      WHERE deleted_at IS NULL
-      ORDER BY created_at DESC
+      WHERE deleted_at IS NOT NULL
+      ORDER BY deleted_at DESC
     `;
 
     return {
@@ -35,6 +36,7 @@ export const list = api<void, ListProductionErrorsResponse>(
         isResolved: row.is_resolved,
         createdAt: row.created_at,
         resolvedAt: row.resolved_at || undefined,
+        deletedAt: row.deleted_at,
       })),
     };
   }
