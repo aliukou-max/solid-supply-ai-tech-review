@@ -55,7 +55,7 @@ export function TechReviewPage() {
 
   const { data: allNodesData } = useQuery({
     queryKey: ["all-nodes"],
-    queryFn: async () => backend.nodes.listParts(),
+    queryFn: async () => backend.nodes.listAll(),
   });
 
   const { data: allErrorsData } = useQuery({
