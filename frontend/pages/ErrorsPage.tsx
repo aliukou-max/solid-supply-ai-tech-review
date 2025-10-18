@@ -86,15 +86,46 @@ export function ErrorsPage() {
       const arrayBuffer = await file.arrayBuffer();
       const workbook = XLSX.read(arrayBuffer, { type: "array" });
       const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-      const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 }) as string[][];
+      const jsonData = XLSX.utils.sheet_to_json(firstSheet, { defval: "" }) as Record<string, any>[];
+
+      if (jsonData.length === 0) {
+        toast({ title: "Nėra duomenų importavimui", variant: "destructive" });
+        return;
+      }
+
+      const keys = Object.keys(jsonData[0]);
+      const projectKey = keys.find(k => 
+        k.toLowerCase().includes("projekt") || 
+        k.toLowerCase().includes("project") ||
+        k.toLowerCase().includes("proj")
+      );
+      const productKey = keys.find(k => 
+        k.toLowerCase().includes("gamin") || 
+        k.toLowerCase().includes("product") ||
+        k.toLowerCase().includes("prod")
+      );
+      const errorKey = keys.find(k => 
+        k.toLowerCase().includes("klaid") || 
+        k.toLowerCase().includes("error") ||
+        k.toLowerCase().includes("apra") ||
+        k.toLowerCase().includes("description")
+      );
+
+      if (!projectKey || !productKey || !errorKey) {
+        toast({ 
+          title: "Nerastos reikalingos kolonos", 
+          description: "Excel failas turi turėti: Projekto kodas, Gaminio kodas, Klaidos aprašymas",
+          variant: "destructive" 
+        });
+        return;
+      }
 
       const errorsToImport = jsonData
-        .slice(1)
-        .filter((row) => row[0] && row[1] && row[2])
+        .filter((row) => row[projectKey] && row[productKey] && row[errorKey])
         .map((row) => ({
-          projectCode: String(row[0]).trim(),
-          productCode: String(row[1]).trim(),
-          errorDescription: String(row[2]).trim(),
+          projectCode: String(row[projectKey]).trim(),
+          productCode: String(row[productKey]).trim(),
+          errorDescription: String(row[errorKey]).trim(),
         }));
 
       if (errorsToImport.length === 0) {
