@@ -19,6 +19,8 @@ export function ImportExcelDialog({ open, onOpenChange, onSuccess }: ImportExcel
   const [isUploading, setIsUploading] = useState(false);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [importResult, setImportResult] = useState<{ projectId: string; projectName: string; productsCreated: number } | null>(null);
+  const [aiAnalysisResults, setAiAnalysisResults] = useState<any[]>([]);
+  const [showAIDebug, setShowAIDebug] = useState(false);
   const { toast } = useToast();
 
   const handleFileChange = (e: any) => {
@@ -81,6 +83,10 @@ export function ImportExcelDialog({ open, onOpenChange, onSuccess }: ImportExcel
                 setWarnings(result.warnings);
               }
 
+              if (result.aiAnalysisResults && result.aiAnalysisResults.length > 0) {
+                setAiAnalysisResults(result.aiAnalysisResults);
+              }
+
               toast({
                 title: "Importuota sėkmingai",
                 description: `Projektas "${result.projectName}" sukurtas su ${result.productsCreated} produktais`,
@@ -118,6 +124,8 @@ export function ImportExcelDialog({ open, onOpenChange, onSuccess }: ImportExcel
     setWarnings([]);
     setFile(null);
     setImportResult(null);
+    setAiAnalysisResults([]);
+    setShowAIDebug(false);
     onOpenChange(false);
   };
 
@@ -201,6 +209,61 @@ export function ImportExcelDialog({ open, onOpenChange, onSuccess }: ImportExcel
                 </div>
               </AlertDescription>
             </Alert>
+          )}
+
+          {aiAnalysisResults.length > 0 && (
+            <div className="space-y-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowAIDebug(!showAIDebug)}
+                className="w-full"
+              >
+                {showAIDebug ? "Slėpti" : "Rodyti"} AI analizės detalės ({aiAnalysisResults.length})
+              </Button>
+              
+              {showAIDebug && (
+                <div className="border rounded-md p-3 bg-muted/30 max-h-96 overflow-y-auto">
+                  <div className="space-y-3">
+                    {aiAnalysisResults.map((result, idx) => (
+                      <div key={idx} className="border-b pb-3 last:border-b-0">
+                        <div className="font-medium text-sm mb-1">
+                          {result.ssCode} - {result.productName}
+                        </div>
+                        <div className="space-y-1 text-xs">
+                          <div>
+                            <span className="text-muted-foreground">Aprašymas:</span>
+                            <div className="bg-background rounded p-2 mt-1 max-h-20 overflow-y-auto">
+                              {result.description || <span className="text-destructive">TUŠČIA</span>}
+                            </div>
+                          </div>
+                          <div className="flex gap-4">
+                            <span className={result.componentsFound > 0 ? "text-green-600" : "text-destructive"}>
+                              Komponentų rasta: {result.componentsFound}
+                            </span>
+                            {result.error && (
+                              <span className="text-destructive">Klaida: {result.error}</span>
+                            )}
+                          </div>
+                          {result.aiResponse && (
+                            <details className="mt-2">
+                              <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
+                                AI atsakymas
+                              </summary>
+                              <div className="bg-background rounded p-2 mt-1 max-h-40 overflow-y-auto">
+                                <pre className="text-xs whitespace-pre-wrap font-mono">
+                                  {result.aiResponse}
+                                </pre>
+                              </div>
+                            </details>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           )}
 
           <div className="flex justify-end gap-2 pt-4">

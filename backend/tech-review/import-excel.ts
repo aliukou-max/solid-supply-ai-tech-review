@@ -30,6 +30,16 @@ interface ImportExcelResponse {
   projectName: string;
   productsCreated: number;
   warnings: string[];
+  aiAnalysisResults?: AIAnalysisDebugInfo[];
+}
+
+interface AIAnalysisDebugInfo {
+  ssCode: string;
+  productName: string;
+  description: string;
+  aiResponse?: string;
+  componentsFound: number;
+  error?: string;
 }
 
 export const importExcel = api(
@@ -42,6 +52,7 @@ export const importExcel = api(
   async (req: ImportExcelRequest): Promise<ImportExcelResponse> => {
     const warnings: string[] = [];
     let productsCreated = 0;
+    const aiAnalysisResults: AIAnalysisDebugInfo[] = [];
 
     try {
       if (!req.fileData) throw new Error("Excel failas tuščias arba nerastas");
@@ -89,27 +100,56 @@ export const importExcel = api(
       }
 
       const rows: ExcelRow[] = [];
+      console.log(`\n📊 EXCEL DEBUG - Testing multiple column positions for description:`);
+      for (let testRow = 26; testRow <= 28; testRow++) {
+        console.log(`\nRow ${testRow}:`);
+        console.log(`  B (SS Code): "${sheet.getCell(`B${testRow}`).text?.trim() || 'EMPTY'}"`);
+        console.log(`  C (Name): "${sheet.getCell(`C${testRow}`).text?.trim() || 'EMPTY'}"`);
+        console.log(`  AC (Desc?): "${sheet.getCell(`AC${testRow}`).text?.trim() || 'EMPTY'}"`);
+        console.log(`  AD: "${sheet.getCell(`AD${testRow}`).text?.trim() || 'EMPTY'}"`);
+        console.log(`  AE: "${sheet.getCell(`AE${testRow}`).text?.trim() || 'EMPTY'}"`);
+        console.log(`  Z: "${sheet.getCell(`Z${testRow}`).text?.trim() || 'EMPTY'}"`);
+        console.log(`  AA: "${sheet.getCell(`AA${testRow}`).text?.trim() || 'EMPTY'}"`);
+        console.log(`  AB: "${sheet.getCell(`AB${testRow}`).text?.trim() || 'EMPTY'}"`);
+      }
+
       for (let i = 26; i < 1000; i++) {
         const ss = sheet.getCell(`B${i}`).text?.trim();
         const name = sheet.getCell(`C${i}`).text?.trim();
-        const desc = sheet.getCell(`AC${i}`).text?.trim();
+        let desc = sheet.getCell(`AC${i}`).text?.trim() || "";
+        
+        if (!desc) {
+          desc = sheet.getCell(`AD${i}`).text?.trim() || "";
+        }
+        if (!desc) {
+          desc = sheet.getCell(`AE${i}`).text?.trim() || "";
+        }
+        if (!desc) {
+          desc = sheet.getCell(`AB${i}`).text?.trim() || "";
+        }
+        if (!desc) {
+          desc = sheet.getCell(`AA${i}`).text?.trim() || "";
+        }
+        if (!desc) {
+          desc = sheet.getCell(`Z${i}`).text?.trim() || "";
+        }
 
         if (!ss) break;
 
         if (i === 26) {
-          console.log(`📋 DEBUG Row ${i}:`);
+          console.log(`\n📋 FIRST PRODUCT Row ${i}:`);
           console.log(`  SS Code (B): "${ss}"`);
           console.log(`  Name (C): "${name}"`);
-          console.log(`  Description (AC): "${desc}"`);
+          console.log(`  Description found: "${desc}"`);
+          console.log(`  Description length: ${desc?.length || 0}`);
           
-          warnings.push(`DEBUG AC26: "${desc || 'TUŠČIA'}" (ilgis: ${desc?.length || 0})`);
+          warnings.push(`First product: ${ss} | Name: ${name} | Desc length: ${desc?.length || 0}`);
         }
 
         if (name) {
-          // Keep description even if it contains GMT/Coordinated - might be important data
           const cleanDesc = desc || "";
-          if (i === 26) {
-            console.log(`📝 Row ${i} parsed:`, { ssCode: ss, productName: name, description: cleanDesc ? `"${cleanDesc.slice(0, 50)}..."` : "EMPTY" });
+          if (i <= 28) {
+            console.log(`📝 Row ${i} parsed:`, { ssCode: ss, productName: name, description: cleanDesc ? `"${cleanDesc.slice(0, 80)}..."` : "EMPTY" });
           }
           rows.push({ ssCode: ss, productName: name, description: cleanDesc });
         }
@@ -170,48 +210,72 @@ export const importExcel = api(
 
           if (row.description) {
             console.log(`🤖 Analyzing description for ${row.ssCode}: "${row.description.slice(0, 100)}..."`);
-            const analysisResult = await analyzeDescriptionWithAI(row.description, productType);
-            console.log(`🤖 AI returned ${analysisResult.length} components for ${row.ssCode}`);
-            
-            const createdComponentParts = await db.queryAll<{ id: number; partName: string }>`
-              SELECT id, part_name as "partName"
-              FROM component_parts
-              WHERE tech_review_id = ${techReview.id}
-            `;
+            const debugInfo: AIAnalysisDebugInfo = {
+              ssCode: row.ssCode,
+              productName: row.productName,
+              description: row.description,
+              componentsFound: 0,
+            };
 
-            for (const comp of analysisResult) {
-              const matchingPart = createdComponentParts.find(p => 
-                p.partName.toLowerCase().includes(comp.name.toLowerCase()) ||
-                comp.name.toLowerCase().includes(p.partName.toLowerCase())
-              );
+            try {
+              const analysisResult = await analyzeDescriptionWithAI(row.description, productType);
+              debugInfo.componentsFound = analysisResult.components?.length || 0;
+              debugInfo.aiResponse = analysisResult.rawResponse;
+              
+              console.log(`🤖 AI returned ${debugInfo.componentsFound} components for ${row.ssCode}`);
+              
+              const createdComponentParts = await db.queryAll<{ id: number; partName: string }>`
+                SELECT id, part_name as "partName"
+                FROM component_parts
+                WHERE tech_review_id = ${techReview.id}
+              `;
 
-              if (matchingPart) {
-                const notes = [
-                  comp.other,
-                  comp.uncertainTerms?.length ? `⚠ ${comp.uncertainTerms.join(", ")}` : null
-                ].filter(Boolean).join(" | ");
+              for (const comp of analysisResult.components || []) {
+                const matchingPart = createdComponentParts.find(p => 
+                  p.partName.toLowerCase().includes(comp.name.toLowerCase()) ||
+                  comp.name.toLowerCase().includes(p.partName.toLowerCase())
+                );
 
-                await db.exec`
-                  UPDATE component_parts
-                  SET 
-                    material = ${comp.material || null},
-                    finish = ${comp.finish || null},
-                    notes = ${notes || null},
-                    updated_at = NOW()
-                  WHERE id = ${matchingPart.id}
-                `;
+                if (matchingPart) {
+                  const notes = [
+                    comp.other,
+                    comp.uncertainTerms?.length ? `⚠ ${comp.uncertainTerms.join(", ")}` : null
+                  ].filter(Boolean).join(" | ");
 
-                console.log(`✓ AI matched "${comp.name}" → "${matchingPart.partName}": ${comp.material}, ${comp.finish}`);
-              } else {
-                warnings.push(`${row.ssCode} – AI rado "${comp.name}", bet nerasta atitinkama kortelė`);
+                  await db.exec`
+                    UPDATE component_parts
+                    SET 
+                      material = ${comp.material || null},
+                      finish = ${comp.finish || null},
+                      notes = ${notes || null},
+                      updated_at = NOW()
+                    WHERE id = ${matchingPart.id}
+                  `;
+
+                  console.log(`✓ AI matched "${comp.name}" → "${matchingPart.partName}": ${comp.material}, ${comp.finish}`);
+                } else {
+                  warnings.push(`${row.ssCode} – AI rado "${comp.name}", bet nerasta atitinkama kortelė`);
+                }
+
+                if (comp.uncertainTerms?.length) {
+                  warnings.push(`${row.ssCode} – "${comp.name}" turi neaiškių terminų: ${comp.uncertainTerms.join(", ")}`);
+                }
               }
-
-              if (comp.uncertainTerms?.length) {
-                warnings.push(`${row.ssCode} – "${comp.name}" turi neaiškių terminų: ${comp.uncertainTerms.join(", ")}`);
-              }
+            } catch (aiError) {
+              debugInfo.error = aiError instanceof Error ? aiError.message : String(aiError);
+              warnings.push(`${row.ssCode} – AI analizės klaida: ${debugInfo.error}`);
             }
+
+            aiAnalysisResults.push(debugInfo);
           } else {
             warnings.push(`${row.ssCode} – trūksta aprašymo`);
+            aiAnalysisResults.push({
+              ssCode: row.ssCode,
+              productName: row.productName,
+              description: "",
+              componentsFound: 0,
+              error: "No description found in AC column",
+            });
           }
 
           productsCreated++;
@@ -221,7 +285,7 @@ export const importExcel = api(
       }
 
       console.log(`✅ Importuota ${productsCreated} produktų su ${warnings.length} perspėjimų.`);
-      return { success: true, projectId: projectCode, projectName, productsCreated, warnings };
+      return { success: true, projectId: projectCode, projectName, productsCreated, warnings, aiAnalysisResults };
 
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
@@ -309,12 +373,28 @@ async function determineProductTypeFromName(productName: string): Promise<string
   return kita?.id || "Kita";
 }
 
-async function analyzeDescriptionWithAI(description: string, productType: string): Promise<ParsedComponent[]> {
+interface AIAnalysisResult {
+  components: ParsedComponent[];
+  rawResponse?: string;
+}
+
+async function analyzeDescriptionWithAI(description: string, productType: string): Promise<AIAnalysisResult> {
   const apiKey = openAIKey();
   
   if (!apiKey) {
     console.error("OpenAI API key not configured");
-    return createFallbackComponent(description, "OpenAI API key missing - configure in Settings");
+    return { 
+      components: createFallbackComponent(description, "OpenAI API key missing - configure in Settings"),
+      rawResponse: "NO_API_KEY"
+    };
+  }
+  
+  if (!description || description.trim().length === 0) {
+    console.log("Empty description provided to AI");
+    return {
+      components: [],
+      rawResponse: "EMPTY_DESCRIPTION"
+    };
   }
 
   const prompt = `
@@ -364,7 +444,10 @@ If the description is too vague or empty, return an empty array: []
     if (!response.ok) {
       const errorText = await response.text();
       console.error("OpenAI API klaida:", response.status, errorText);
-      return createFallbackComponent(description, `API error ${response.status}: ${errorText.slice(0, 100)}`);
+      return { 
+        components: createFallbackComponent(description, `API error ${response.status}: ${errorText.slice(0, 100)}`),
+        rawResponse: `ERROR_${response.status}: ${errorText.slice(0, 200)}`
+      };
     }
 
     const data = (await response.json()) as {
@@ -374,23 +457,38 @@ If the description is too vague or empty, return an empty array: []
 
     if (!content) {
       console.error("OpenAI grąžino tuščią atsakymą");
-      return createFallbackComponent(description, "Empty AI response");
+      return { 
+        components: createFallbackComponent(description, "Empty AI response"),
+        rawResponse: "EMPTY_AI_RESPONSE"
+      };
     }
 
     try {
       const parsed = JSON.parse(content);
       if (!Array.isArray(parsed)) {
         console.error("AI response not an array:", content.slice(0, 200));
-        return createFallbackComponent(description, "Invalid JSON structure");
+        return { 
+          components: createFallbackComponent(description, "Invalid JSON structure"),
+          rawResponse: content
+        };
       }
-      return parsed;
+      return {
+        components: parsed,
+        rawResponse: content
+      };
     } catch (parseError) {
       console.error("JSON parse error:", parseError, "Content:", content.slice(0, 200));
-      return createFallbackComponent(description, "JSON parse failed");
+      return { 
+        components: createFallbackComponent(description, "JSON parse failed"),
+        rawResponse: content
+      };
     }
   } catch (error) {
     console.error("AI analizės klaida:", error);
-    return createFallbackComponent(description, `Network error: ${error}`);
+    return { 
+      components: createFallbackComponent(description, `Network error: ${error}`),
+      rawResponse: `NETWORK_ERROR: ${error}`
+    };
   }
 }
 

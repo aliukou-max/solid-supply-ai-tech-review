@@ -1,6 +1,6 @@
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, FileText, Lightbulb } from "lucide-react";
+import { ArrowLeft, FileText, Lightbulb, Sparkles } from "lucide-react";
 import backend from "~backend/client";
 import { MainLayout } from "@/components/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -11,11 +11,13 @@ import { useToast } from "@/components/ui/use-toast";
 import { ErrorsTab } from "@/components/tech-review/ErrorsTab";
 import { LessonsTab } from "@/components/tech-review/LessonsTab";
 import { ComponentPartsTabContent } from "@/components/tech-review/ComponentPartsTabContent";
+import { ReanalyzeDialog } from "@/components/tech-review/ReanalyzeDialog";
 
 export function TechReviewPage() {
   const { productId } = useParams<{ productId: string }>();
   const { toast } = useToast();
   const [uploadingPhoto, setUploadingPhoto] = useState<number | null>(null);
+  const [reanalyzeOpen, setReanalyzeOpen] = useState(false);
 
   const { data: product, isLoading: productLoading } = useQuery({
     queryKey: ["product", productId],
@@ -181,6 +183,10 @@ export function TechReviewPage() {
       }
       actions={
         <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => setReanalyzeOpen(true)}>
+            <Sparkles className="h-4 w-4 mr-2" />
+            AI analizė
+          </Button>
           {product?.drawingReference && (
             <Button variant="outline">
               <FileText className="h-4 w-4 mr-2" />
@@ -236,6 +242,18 @@ export function TechReviewPage() {
             })}
           </div>
         </Tabs>
+      )}
+
+      {productId && (
+        <ReanalyzeDialog
+          open={reanalyzeOpen}
+          onOpenChange={setReanalyzeOpen}
+          productId={productId}
+          onSuccess={() => {
+            refetchParts();
+            setReanalyzeOpen(false);
+          }}
+        />
       )}
     </MainLayout>
   );
