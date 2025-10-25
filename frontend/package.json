@@ -43,5 +43,8 @@
   },
   "optionalDependencies": {
     "rollup": "^4.39.0"
+  },
+  "scripts": {
+    "build": "vite build --outDir=../backend/frontend/dist"
   }
 }
